@@ -562,11 +562,7 @@
       background-color: rgba(32, 64, 154, 0.08);
     }
 
-    /* Role Header Adaptation for Sales vs Estimator (Request #2) */
-    body.user-is-sales #headerSearchBarWrap,
-    body.user-is-sales #headerExportCsvBtn {
-      display: none !important;
-    }
+    /* Role Header Adaptation for Sales vs Estimator */
     body.user-is-sales #desktopSalesUploadBtn {
       display: inline-flex !important;
     }
@@ -1028,7 +1024,7 @@
       border-color: transparent #334155 transparent transparent;
     }
 
-    .sidebar:not(.minimized) .nav-tooltip {
+    .sidebar:not(.minimized):not(.mobile-open) .nav-tooltip {
       display: none !important;
     }
 
@@ -1175,6 +1171,30 @@
     .user-role {
       font-size: 0.72rem;
       color: #94a3b8;
+    }
+
+    .user-online-device-status {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.22rem;
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: #86efac;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .online-glow-green-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+      flex-shrink: 0;
+      box-shadow: 0 0 6px #22c55e, 0 0 12px rgba(34, 197, 94, 0.85);
+      animation: livePulse 1.8s infinite;
     }
 
     .btn-profile-sidebar {
@@ -2628,19 +2648,24 @@
       width: 40px;
       height: 40px;
       border-radius: var(--radius-md);
-      background: #ffffff;
-      border: 1px solid var(--border-color);
-      color: var(--text-main);
+      background: #20409a;
+      border: 1px solid #20409a;
+      color: #ffffff;
       cursor: pointer;
       flex-shrink: 0;
       transition: var(--transition);
-      box-shadow: var(--shadow-xs);
+      box-shadow: 0 2px 8px rgba(32, 64, 154, 0.28);
     }
 
-    .mobile-menu-toggle-btn:hover {
-      background: var(--primary-light);
-      color: var(--primary);
-      border-color: var(--primary-border);
+    .mobile-menu-toggle-btn svg {
+      stroke: #ffffff;
+    }
+
+    .mobile-menu-toggle-btn:hover,
+    .mobile-menu-toggle-btn:active {
+      background: #173078;
+      color: #ffffff;
+      border-color: #173078;
     }
 
     .sidebar-mobile-overlay {
@@ -2731,10 +2756,62 @@
         padding: 0.45rem;
       }
 
-      /* Hover atau sentuhan layar pada mobile memunculkan keterangan nama menu */
+      /* Hover atau sentuhan jari pada mobile memunculkan keterangan nama judul menu */
+      .sidebar.mobile-open .sidebar-nav-container {
+        overflow: visible !important;
+      }
+
+      .sidebar.mobile-open .btn-profile-sidebar,
+      .sidebar.mobile-open .btn-logout-sidebar {
+        position: relative;
+        overflow: visible;
+      }
+
+      .sidebar.mobile-open .nav-tooltip {
+        display: block !important;
+        background: #20409a;
+        border-color: #3b82f6;
+        color: #ffffff;
+      }
+
+      .sidebar.mobile-open .nav-tooltip::before {
+        border-color: transparent #20409a transparent transparent;
+      }
+
       .sidebar.mobile-open .nav-item-btn:hover .nav-tooltip,
       .sidebar.mobile-open .nav-item-btn:focus .nav-tooltip,
-      .sidebar.mobile-open .nav-item-btn:active .nav-tooltip {
+      .sidebar.mobile-open .nav-item-btn:active .nav-tooltip,
+      .sidebar.mobile-open .nav-item-btn.touch-tooltip-active .nav-tooltip {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(-50%) translateX(2px);
+      }
+
+      .sidebar.mobile-open [data-mobile-tooltip]::after {
+        content: attr(data-mobile-tooltip);
+        position: absolute;
+        left: calc(100% + 12px);
+        top: 50%;
+        transform: translateY(-50%);
+        background: #20409a;
+        color: #ffffff;
+        border: 1px solid #3b82f6;
+        padding: 0.4rem 0.75rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.78rem;
+        font-weight: 700;
+        white-space: nowrap;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        pointer-events: none;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+        z-index: 9999;
+      }
+
+      .sidebar.mobile-open [data-mobile-tooltip]:hover::after,
+      .sidebar.mobile-open [data-mobile-tooltip]:active::after,
+      .sidebar.mobile-open [data-mobile-tooltip].touch-tooltip-active::after {
         opacity: 1;
         visibility: visible;
         transform: translateY(-50%) translateX(2px);
@@ -4364,16 +4441,6 @@
         </button>
       </form>
 
-      <div class="login-online-bar" id="loginOnlineBar">
-        <div class="login-online-status" id="loginOnlineStatusText">
-          <span class="live-pulse-dot" id="loginOnlineDot" style="background:#f59e0b;"></span>
-          <span id="loginOnlineLabel">Mode Lokal (Atur URL Server untuk Sync HP &amp; Komputer)</span>
-        </div>
-        <button type="button" class="btn-login-server-cfg" onclick="openGasSettingsModal()">
-          Atur URL Server Online
-        </button>
-      </div>
-
     </div>
   </div>
 
@@ -4484,14 +4551,18 @@
           <div class="user-avatar" id="sidebarUserAvatar">BY</div>
           <div class="user-info">
             <div class="user-name" id="sidebarUserName">Bayu</div>
-            <div class="user-role" id="sidebarUserRole">Estimator / Full Access</div>
+            <div class="user-role" id="sidebarUserRole">Estimator Lead (Full Access)</div>
+            <div class="user-online-device-status" id="sidebarOnlineAllDevices">
+              <span class="online-glow-green-dot" id="sidebarOnlineGreenDot"></span>
+              <span id="sidebarOnlineDeviceText">Online Ke Semua Perangkat</span>
+            </div>
           </div>
         </div>
-        <button type="button" class="btn-profile-sidebar" id="btnLihatProfilSidebar" onclick="openEmployeeProfileModal()" title="Lihat Profil Karyawan">
+        <button type="button" class="btn-profile-sidebar" id="btnLihatProfilSidebar" onclick="openEmployeeProfileModal()" title="Lihat Profil Karyawan" data-mobile-tooltip="Lihat Profil Karyawan">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
           <span>Lihat Profil Karyawan</span>
         </button>
-        <button type="button" class="btn-logout-sidebar" onclick="confirmLogoutPopup()" title="Logout (Keluar)">
+        <button type="button" class="btn-logout-sidebar" onclick="confirmLogoutPopup()" title="Logout (Keluar)" data-mobile-tooltip="Logout (Keluar)">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
           <span>Logout (Keluar)</span>
         </button>
@@ -4526,26 +4597,7 @@
           </div>
 
           <div class="header-actions" id="headerActionsWrap">
-            <!-- Search Bar (Estimator only, Sales hides) -->
-            <div class="search-bar-wrap" id="headerSearchBarWrap">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-              <input type="text" id="globalTableSearch" placeholder="Cari Sales, Customer, Proyek...">
-            </div>
-
-            <!-- Export Excel Button (Estimator only, Sales hides) -->
-            <button class="btn btn-secondary" id="headerExportCsvBtn" onclick="exportDataToCSV()" title="Export CSV Data">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              <span>Export CSV</span>
-            </button>
-
-            <!-- Desktop Windows Sales Upload Button (Menggantikan Cari & Export CSV di Desktop Windows) -->
+            <!-- Desktop Windows Sales Upload Button -->
             <button class="btn btn-primary btn-upload-prominent" id="desktopSalesUploadBtn" onclick="openSalesUploadModal()" style="display: none;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="width: 20px; height: 20px;">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -4789,12 +4841,6 @@
                   Reset Filter
                 </button>
               </div>
-
-              <div class="scroll-hint-notice">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                <span>Gulir tabel ke kanan untuk melihat rincian estimator</span>
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-              </div>
             </div>
             
             <div class="table-scroll-wrapper" style="margin-bottom: 0;">
@@ -4913,12 +4959,6 @@
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M3 21v-5h5"></path></svg>
                 Reset Filter
               </button>
-            </div>
-
-            <div class="scroll-hint-notice">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
-              <span>Tabel berurutan melebar dapat digulir kiri &amp; kanan | Sinkronisasi Otomatis Terhubung ke Google Spreadsheet &amp; Drive</span>
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </div>
           </div>
 
@@ -5092,11 +5132,6 @@
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M3 21v-5h5"></path></svg>
                 Reset Filter
               </button>
-            </div>
-
-            <div class="scroll-hint-notice">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-              <span>Gulir tabel ke kanan untuk melihat rincian revisi 1 s/d 8 &amp; aksi estimator</span>
             </div>
           </div>
 
@@ -7914,6 +7949,36 @@
 
     function setupSidebarNavigation() {
       const navButtons = document.querySelectorAll('.nav-item-btn');
+      const allTooltipButtons = document.querySelectorAll('.nav-item-btn, #btnLihatProfilSidebar, .btn-logout-sidebar');
+      let touchTipTimer = null;
+
+      function activateMobileTouchTooltip(el) {
+        allTooltipButtons.forEach(b => {
+          if (b !== el) b.classList.remove('touch-tooltip-active');
+        });
+        if (!el) return;
+        el.classList.add('touch-tooltip-active');
+        if (touchTipTimer) clearTimeout(touchTipTimer);
+        touchTipTimer = setTimeout(() => {
+          el.classList.remove('touch-tooltip-active');
+        }, 1800);
+      }
+
+      allTooltipButtons.forEach(btn => {
+        btn.addEventListener('touchstart', () => {
+          const sidebar = document.getElementById('sidebarMenu');
+          if (sidebar && sidebar.classList.contains('mobile-open')) {
+            activateMobileTouchTooltip(btn);
+          }
+        }, { passive: true });
+        btn.addEventListener('pointerenter', (ev) => {
+          const sidebar = document.getElementById('sidebarMenu');
+          if (sidebar && sidebar.classList.contains('mobile-open') && ev.pointerType !== 'mouse') {
+            activateMobileTouchTooltip(btn);
+          }
+        });
+      });
+
       navButtons.forEach(btn => {
         btn.addEventListener('click', () => {
           const targetPaneId = btn.getAttribute('data-target');
@@ -12753,9 +12818,12 @@
       }, 4000);
     }
 
-    document.getElementById('globalTableSearch').addEventListener('input', () => {
-      renderAllTables();
-    });
+    const _globalSearchEl = document.getElementById('globalTableSearch');
+    if (_globalSearchEl) {
+      _globalSearchEl.addEventListener('input', () => {
+        renderAllTables();
+      });
+    }
 
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
