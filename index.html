@@ -6332,11 +6332,11 @@
           <a href="https://drive.google.com/drive/u/0/folders/1as43AZ9wp0Fi3RkjGHTUz7Tsn5M7Jmvf" target="_blank" style="color: #1d4ed8; font-weight: 700;">Samuel</a> &bull;
           <a href="https://drive.google.com/drive/u/0/folders/1lS5O70gI_duX74xhvf6GpWPdWrCCywEv" target="_blank" style="color: #1d4ed8; font-weight: 700;">Priyo Utomo</a> &bull;
           <a href="https://drive.google.com/drive/u/0/folders/1pW6wz3N1L4jZBGr1aYEM2MfUoduq-JT4" target="_blank" style="color: #1d4ed8; font-weight: 700;">Rini Eldiarty</a><br>
-          Deploy file <code>GoogleAppsScript_Code.js</code> pada Spreadsheet target sebagai <em>Web app (Who has access: Anyone)</em>, lalu tempel URL <code>/exec</code> di bawah ini (atau pada konstanta <code>GOOGLE_SCRIPT_WEB_APP_URL</code> di file <code>index.html</code> agar otomatis terhubung di semua HP &amp; komputer).
+          Deploy file <code>GoogleAppsScript_Code.js</code> sebagai Web app <em>Anyone</em>, <strong>atau</strong> unggah <code>index.html</code> + <code>api.php</code> ke hosting Anda (otomatis terdeteksi 100% sinkron di seluruh HP &amp; Komputer).
         </div>
         <div class="form-group" style="margin-bottom: 0.75rem;">
-          <label class="form-label" style="font-weight: 700;">URL Web App Google Apps Script (/exec)</label>
-          <input type="url" class="form-control" id="gasWebAppUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
+          <label class="form-label" style="font-weight: 700;">URL Server Sync (Google Apps Script /exec atau api.php)</label>
+          <input type="url" class="form-control" id="gasWebAppUrlInput" placeholder="https://script.google.com/macros/s/.../exec atau https://domainanda.com/api.php">
         </div>
         <div id="gasStatusMessage" style="display: none; border-radius: 8px; padding: 0.7rem 0.9rem; font-size: 0.8rem; margin-top: 0.75rem; word-break: break-all;"></div>
       </div>
@@ -7528,6 +7528,9 @@
 
       const userKey = getProfileStorageKey(userDef);
       const inputHash = computeAccountPasswordHash(userKey, p);
+      if (typeof shouldProbePhpCloudApi === 'function' && shouldProbePhpCloudApi() && typeof ensureCloudApiDetected === 'function') {
+        await ensureCloudApiDetected();
+      }
       const gasUrl = (typeof getGoogleScriptUrl === 'function') ? getGoogleScriptUrl() : '';
 
       // Mode Lokal (bila URL Google Apps Script belum dipasang) -> verifikasi langsung & sinkronisasi instan
@@ -10381,8 +10384,11 @@
       }
 
       if (state.url) {
+        const dlHref = (state.url.indexOf('action=file') !== -1 && state.url.indexOf('dl=1') === -1)
+          ? (state.url + (state.url.indexOf('?') !== -1 ? '&' : '?') + 'dl=1')
+          : state.url;
         const a = document.createElement('a');
-        a.href = state.url;
+        a.href = dlHref;
         a.download = `${p.queueCode}_${safeProject}`;
         a.rel = 'noopener';
         document.body.appendChild(a);
@@ -11927,11 +11933,71 @@
       'https://script.google.com/macros/s/AKfycbyXPBlAjTZuSaQBlBJsz_wVgO0I2MVSUoiXo5_Y458cEcZf2jRH9EBQQSjktlXffLbc/exec'
     ];
 
+    let detectedPhpApiUrl = '';
+    let phpApiProbeFinished = false;
+    let phpApiProbePromise = null;
+
+    function shouldProbePhpCloudApi() {
+      if (detectedPhpApiUrl || phpApiProbeFinished) return false;
+      try {
+        const proto = (typeof window !== 'undefined' && window.location) ? window.location.protocol : '';
+        const host = (typeof window !== 'undefined' && window.location) ? window.location.hostname : '';
+        const searchStr = (typeof window !== 'undefined' && window.location) ? window.location.search : '';
+        if (proto !== 'http:' && proto !== 'https:') return false;
+        if (host.endsWith('.github.io')) return false;
+        const qp = new URLSearchParams(searchStr);
+        if ((qp.get('gas') || '').trim() || (qp.get('api') || '').trim()) return false;
+        if (typeof GOOGLE_SCRIPT_WEB_APP_URL !== 'undefined' && GOOGLE_SCRIPT_WEB_APP_URL && GOOGLE_SCRIPT_WEB_APP_URL.startsWith('http')) {
+          return false;
+        }
+        let savedLocal = '';
+        try { savedLocal = (localStorage.getItem('gas_web_app_url') || '').trim(); } catch (e) {}
+        if (savedLocal && savedLocal.startsWith('http') && !OLD_FAILED_GAS_URLS.includes(savedLocal)) {
+          return false;
+        }
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function ensureCloudApiDetected() {
+      if (detectedPhpApiUrl) return Promise.resolve(detectedPhpApiUrl);
+      if (!shouldProbePhpCloudApi()) {
+        phpApiProbeFinished = true;
+        return Promise.resolve('');
+      }
+      if (phpApiProbePromise) return phpApiProbePromise;
+      phpApiProbePromise = (async function() {
+        try {
+          const candidateUrl = new URL('api.php', window.location.href).href;
+          const sep = candidateUrl.includes('?') ? '&' : '?';
+          const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+          const timer = controller ? setTimeout(function() { controller.abort(); }, 2500) : null;
+          const res = await fetch(candidateUrl + sep + 'action=status&t=' + Date.now(), controller ? { signal: controller.signal } : undefined);
+          if (timer) clearTimeout(timer);
+          if (!res || !res.ok) return '';
+          const json = await res.json();
+          if (json && (json.success === true || json.status === 'active')) {
+            detectedPhpApiUrl = candidateUrl;
+            updateSpreadsheetSyncStatusUI();
+            if (typeof renderOnlineHistoryContainers === 'function') renderOnlineHistoryContainers();
+            return detectedPhpApiUrl;
+          }
+        } catch (err) {
+        } finally {
+          phpApiProbeFinished = true;
+        }
+        return '';
+      })();
+      return phpApiProbePromise;
+    }
+
     function getGoogleScriptUrl() {
       try {
         if (typeof window !== 'undefined' && window.location && window.location.search) {
           var qParams = new URLSearchParams(window.location.search);
-          var qGas = (qParams.get('gas') || '').trim();
+          var qGas = (qParams.get('gas') || qParams.get('api') || '').trim();
           if (qGas && qGas.startsWith('http') && !OLD_FAILED_GAS_URLS.includes(qGas)) {
             localStorage.setItem('gas_web_app_url', qGas);
           }
@@ -11949,6 +12015,8 @@
         if (DEFAULT_GAS_URL && DEFAULT_GAS_URL.startsWith('http')) {
           saved = DEFAULT_GAS_URL;
           try { localStorage.setItem('gas_web_app_url', DEFAULT_GAS_URL); } catch (e) {}
+        } else if (detectedPhpApiUrl && detectedPhpApiUrl.startsWith('http')) {
+          return detectedPhpApiUrl;
         } else {
           saved = '';
           try { localStorage.removeItem('gas_web_app_url'); } catch (e) {}
@@ -11974,23 +12042,28 @@
     function updateSpreadsheetSyncStatusUI() {
       const url = getGoogleScriptUrl();
       const isOnline = Boolean(url && url.startsWith('http'));
+      const isPhpCloud = isOnline && url.toLowerCase().includes('api.php');
       const pill = document.getElementById('sheetsConnectionPill');
       if (pill) {
         if (isOnline) {
-          pill.innerHTML = '<span class="live-pulse-dot" style="background:#10b981;"></span><span>Live Synchronized</span>';
-          pill.title = 'Terhubung ke Google Apps Script Web App';
+          pill.innerHTML = '<span class="live-pulse-dot" style="background:#10b981;"></span><span>' + (isPhpCloud ? 'Live Synchronized (Cloud)' : 'Live Synchronized') + '</span>';
+          pill.title = isPhpCloud ? 'Terhubung ke Cloud Database Hosting (api.php)' : 'Terhubung ke Google Apps Script Web App';
         } else {
-          pill.innerHTML = '<span class="live-pulse-dot" style="background:#f59e0b;"></span><span>Siap Konfigurasi GAS</span>';
-          pill.title = 'Klik untuk memasukkan Web App URL Google Script';
+          pill.innerHTML = '<span class="live-pulse-dot" style="background:#f59e0b;"></span><span>Siap Konfigurasi Server</span>';
+          pill.title = 'Klik untuk memasukkan URL Server Sync (GAS / api.php)';
         }
       }
       const loginDot = document.getElementById('loginOnlineDot');
       const loginLbl = document.getElementById('loginOnlineLabel');
       if (loginDot) loginDot.style.background = isOnline ? '#10b981' : '#f59e0b';
       if (loginLbl) {
-        loginLbl.textContent = isOnline
-          ? 'Server Online Terhubung (Sinkronisasi Lintas HP & Komputer Aktif)'
-          : 'Mode Lokal (Atur URL Server untuk Sync HP & Komputer)';
+        if (isPhpCloud) {
+          loginLbl.textContent = 'Server Cloud Hosting Terhubung (100% Sinkron HP Android/iOS & Komputer)';
+        } else {
+          loginLbl.textContent = isOnline
+            ? 'Server Online Terhubung (Sinkronisasi Lintas HP & Komputer Aktif)'
+            : 'Mode Lokal (Atur URL Server untuk Sync HP & Komputer)';
+        }
       }
     }
 
@@ -12335,7 +12408,10 @@
     }
 
     function schedulePostLoginOnlineSync() {
-      setTimeout(function() {
+      setTimeout(async function() {
+        if (typeof ensureCloudApiDetected === 'function') {
+          try { await ensureCloudApiDetected(); } catch (e) {}
+        }
         if (!currentUser || typeof syncFromGoogleSpreadsheet !== 'function') return;
         if (Date.now() - lastOnlineSyncAt > 2000) {
           syncFromGoogleSpreadsheet(true);
@@ -12531,8 +12607,9 @@
           applyRecentTableFilters();
           if (typeof updateEstimatorCards === 'function') updateEstimatorCards();
           if (typeof renderSpreadsheetTable === 'function') renderSpreadsheetTable();
+          if (typeof renderOnlineHistoryContainers === 'function') renderOnlineHistoryContainers();
           if (currentUser && typeof syncOnlineProfileAndHistory === 'function') {
-            syncOnlineProfileAndHistory(true);
+            try { await syncOnlineProfileAndHistory(true); } catch (histErr) {}
           }
           if (!isSilent) {
             showSpreadsheetSyncToast(`Sinkronisasi balance selesai: ${data.records.length} data diperbarui dari Google Spreadsheet.`);
@@ -12712,6 +12789,13 @@
       initPanAndZoomForTables();
       initGDriveApp();
       updateSpreadsheetSyncStatusUI();
+      ensureCloudApiDetected().then(function(phpUrl) {
+        updateSpreadsheetSyncStatusUI();
+        if (typeof renderOnlineHistoryContainers === 'function') renderOnlineHistoryContainers();
+        if (currentUser && phpUrl) {
+          syncFromGoogleSpreadsheet(true);
+        }
+      });
       if (currentUser) {
         setTimeout(() => { syncFromGoogleSpreadsheet(true); }, 500);
       }
