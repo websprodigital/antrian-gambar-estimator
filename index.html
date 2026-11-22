@@ -4823,7 +4823,11 @@
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#2563eb" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
               <div>
                 <strong style="font-size: 0.88rem; color: var(--text-main);">Filter Data Sales:</strong>
-                <div style="font-size: 0.74rem; color: var(--text-muted);">Pilih sales untuk menampilkan metrik dan antrian proyek terkait</div>
+                <div id="dashboardFilterSalesSubtitle" style="font-size: 0.74rem; color: var(--text-muted);">Pilih sales untuk menampilkan metrik dan antrian proyek terkait</div>
+                <div id="dashboardLiveClock" style="margin-top: 0.32rem; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.76rem; font-weight: 700; color: #20409a; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 0.2rem 0.55rem; font-variant-numeric: tabular-nums;">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#20409a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  <span id="dashboardLiveClockText">--/--/---- -- : -- : --</span>
+                </div>
               </div>
             </div>
 
@@ -5621,7 +5625,7 @@
           <div class="form-grid-3">
             <div class="form-group">
               <label class="form-label">Tanggal & Waktu Upload</label>
-              <input type="datetime-local" class="form-control track-history" id="salesInputUploadTime">
+              <input type="text" class="form-control" id="salesInputUploadTime" readonly style="background-color: #f1f5f9; font-weight: 700; cursor: not-allowed; font-variant-numeric: tabular-nums;">
             </div>
 
             <div class="form-group">
@@ -8965,7 +8969,7 @@
       if (!s || s === '-') return null;
 
       // 1. Format JS Date string (cth: Mon Nov 23 2026 03:05:00 GMT+0700 ...)
-      const jsMatch = s.match(/^[A-Za-z]{3}\s+([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})(?:\s+(\d{1,2}):(\d{1,2}))?/);
+      const jsMatch = s.match(/^[A-Za-z]{3}\s+([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})(?:\s+(\d{1,2})\s*:\s*(\d{1,2})(?:\s*:\s*(\d{1,2}))?)?/);
       if (jsMatch) {
         const mNum = MONTH_NAME_MAP[jsMatch[1].toLowerCase()];
         if (mNum) {
@@ -8975,13 +8979,14 @@
             d: jsMatch[2].padStart(2, '0'),
             hh: (jsMatch[4] || '00').padStart(2, '0'),
             mm: (jsMatch[5] || '00').padStart(2, '0'),
+            ss: (jsMatch[6] || '00').padStart(2, '0'),
             hasTime: Boolean(jsMatch[4] !== undefined)
           };
         }
       }
 
-      // 2. Format YYYY-MM-DD atau YYYY/MM/DD [HH:mm]
-      const ymdMatch = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:[T\s]+(\d{1,2}):(\d{1,2}))?/);
+      // 2. Format YYYY-MM-DD atau YYYY/MM/DD [HH:mm[:ss]]
+      const ymdMatch = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:[T\s]+(\d{1,2})\s*:\s*(\d{1,2})(?:\s*:\s*(\d{1,2}))?)?/);
       if (ymdMatch) {
         return {
           y: ymdMatch[1],
@@ -8989,12 +8994,13 @@
           d: ymdMatch[3].padStart(2, '0'),
           hh: (ymdMatch[4] || '00').padStart(2, '0'),
           mm: (ymdMatch[5] || '00').padStart(2, '0'),
+          ss: (ymdMatch[6] || '00').padStart(2, '0'),
           hasTime: Boolean(ymdMatch[4] !== undefined)
         };
       }
 
-      // 3. Format DD/MM/YYYY atau DD-MM-YYYY [HH:mm]
-      const dmyMatch = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[T\s]+(\d{1,2}):(\d{1,2}))?/);
+      // 3. Format DD/MM/YYYY atau DD-MM-YYYY [HH : mm : ss]
+      const dmyMatch = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[T\s]+(\d{1,2})\s*:\s*(\d{1,2})(?:\s*:\s*(\d{1,2}))?)?/);
       if (dmyMatch) {
         return {
           y: dmyMatch[3],
@@ -9002,6 +9008,7 @@
           d: dmyMatch[1].padStart(2, '0'),
           hh: (dmyMatch[4] || '00').padStart(2, '0'),
           mm: (dmyMatch[5] || '00').padStart(2, '0'),
+          ss: (dmyMatch[6] || '00').padStart(2, '0'),
           hasTime: Boolean(dmyMatch[4] !== undefined)
         };
       }
@@ -9015,6 +9022,7 @@
           d: String(fallback.getDate()).padStart(2, '0'),
           hh: String(fallback.getHours()).padStart(2, '0'),
           mm: String(fallback.getMinutes()).padStart(2, '0'),
+          ss: String(fallback.getSeconds()).padStart(2, '0'),
           hasTime: true
         };
       }
@@ -9047,6 +9055,33 @@
     function toInputDateTimeLocal(val) {
       const p = parseAnyDate(val);
       return p ? `${p.y}-${p.m}-${p.d}T${p.hh}:${p.mm}` : '';
+    }
+
+    function formatLiveDateTimeSpaced(dateObj) {
+      const d = (dateObj instanceof Date && !isNaN(dateObj.getTime())) ? dateObj : new Date();
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = String(d.getFullYear());
+      const hh = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      const ss = String(d.getSeconds()).padStart(2, '0');
+      return `${dd}/${mm}/${yyyy} ${hh} : ${min} : ${ss}`;
+    }
+
+    function updateLiveDateTimeDisplays() {
+      const formatted = formatLiveDateTimeSpaced(new Date());
+      const dashClockEl = document.getElementById('dashboardLiveClockText');
+      if (dashClockEl && dashClockEl.textContent !== formatted) {
+        dashClockEl.textContent = formatted;
+      }
+
+      const uploadModal = document.getElementById('modalSalesUpload');
+      const editIdEl = document.getElementById('editSalesId');
+      const uploadTimeEl = document.getElementById('salesInputUploadTime');
+      const isEditingExisting = Boolean(editIdEl && editIdEl.value.trim() !== '' && uploadModal && uploadModal.classList.contains('open'));
+      if (uploadTimeEl && !isEditingExisting && uploadTimeEl.value !== formatted) {
+        uploadTimeEl.value = formatted;
+      }
     }
 
     // ==========================================================================
@@ -10885,7 +10920,12 @@
 
     function applyFormSnapshot(snap) {
       isApplyingHistory = true;
-      document.getElementById('salesInputUploadTime').value = snap.uploadTime || '';
+      const _editIdSnapshot = document.getElementById('editSalesId');
+      if (_editIdSnapshot && _editIdSnapshot.value.trim() !== '') {
+        document.getElementById('salesInputUploadTime').value = snap.uploadTime || '';
+      } else {
+        updateLiveDateTimeDisplays();
+      }
       document.getElementById('salesInputSalesName').value = snap.salesName || '';
       document.getElementById('salesInputCustomer').value = snap.customer || '';
       document.getElementById('salesInputProject').value = snap.project || '';
@@ -11343,11 +11383,8 @@
       }
 
       document.getElementById('salesInputQueue').value = generateNextQueueCode(salesSelect.value);
-      
-      const now = new Date();
-      const offset = now.getTimezoneOffset() * 60000;
-      const localISOTime = (new Date(now - offset)).toISOString().slice(0, 16);
-      document.getElementById('salesInputUploadTime').value = localISOTime;
+      document.getElementById('salesInputUploadTime').value = formatLiveDateTimeSpaced(new Date());
+      updateLiveDateTimeDisplays();
 
       document.getElementById('salesInputCustomer').value = '';
       document.getElementById('salesInputProject').value = '';
@@ -11409,7 +11446,8 @@
         salesSelect.style.cursor = 'default';
       }
 
-      document.getElementById('salesInputUploadTime').value = toInputDateTimeLocal(item.uploadDateTime);
+      const _parsedUp = parseAnyDate(item.uploadDateTime);
+      document.getElementById('salesInputUploadTime').value = _parsedUp ? `${_parsedUp.d}/${_parsedUp.m}/${_parsedUp.y} ${_parsedUp.hh} : ${_parsedUp.mm} : ${_parsedUp.ss || '00'}` : formatLiveDateTimeSpaced(new Date());
       document.getElementById('salesInputCustomer').value = item.customerName || '';
       document.getElementById('salesInputProject').value = item.projectName || '';
       document.getElementById('salesInputDeadline').value = toInputDateYMD(item.requestDeadline);
@@ -13075,6 +13113,8 @@
         inp.addEventListener('input', syncFilterDatePlaceholderStates);
       });
       checkLoginSession();
+      updateLiveDateTimeDisplays();
+      setInterval(updateLiveDateTimeDisplays, 500);
       initPanAndZoomForTables();
       initGDriveApp();
       updateSpreadsheetSyncStatusUI();
