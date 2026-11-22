@@ -9313,7 +9313,7 @@
       const bEst = document.getElementById('navBadgeEstimator');
       if (bEst) bEst.textContent = baseData.filter(d => d.status === 'Belum Edit' || d.status === 'Sedang Edit' || d.status === 'Revisi Gambar').length;
       const bRosa = document.getElementById('navBadgeRosa');
-      if (bRosa) bRosa.textContent = baseData.filter(d => d.quoteNumber && d.quoteNumber.trim() !== '').length;
+      if (bRosa) bRosa.textContent = baseData.filter(d => (d.status || '').trim().toLowerCase() === 'gambar selesai').length;
     }
 
     // Handler Filter Periode Tanggal Dashboard
@@ -9739,12 +9739,14 @@
         return mSearch && mEst && mSales && mDate && mStatus;
       });
 
-      // 3. Data untuk BAGAN ADMIN KONTRAK (Filter: Status SPH, Sales, Tanggal)
+      // 3. Data untuk BAGAN ADMIN KONTRAK (Hanya menampilkan data berstatus Pengerjaan Gambar: Gambar Selesai)
       const fRosaStatus = document.getElementById('filterStatusRosa')?.value || '';
       const fRosaSales = lockedSalesName || (document.getElementById('filterRosaSales')?.value || '');
       const fRosaDate = document.getElementById('filterRosaDate')?.value || '';
 
       const rosaList = baseData.filter(item => {
+        const isGambarSelesai = ((item.status || '').trim().toLowerCase() === 'gambar selesai');
+        if (!isGambarSelesai) return false;
         const mSearch = matchesSearch(item);
         const mStatus = !fRosaStatus || item.quoteStatus === fRosaStatus;
         const mSales = !fRosaSales || isSalesNameMatch(item.salesName, fRosaSales);
@@ -9855,7 +9857,7 @@
       const rosaTbody = document.getElementById('rosaTableTbody');
       rosaTbody.innerHTML = '';
       if (rosaList.length === 0) {
-        rosaTbody.innerHTML = `<tr><td colspan="${canManageContract ? 18 : 17}" style="text-align:center; padding: 2.5rem; color: #94a3b8; font-weight:600;">Belum ada data penawaran harga pada filter ini</td></tr>`;
+        rosaTbody.innerHTML = `<tr><td colspan="${canManageContract ? 18 : 17}" style="text-align:center; padding: 2.5rem; color: #94a3b8; font-weight:600;">Belum ada proyek berstatus Gambar Selesai untuk Bagan Admin Kontrak</td></tr>`;
       } else {
         rosaList.forEach(row => {
           rosaTbody.innerHTML += `
