@@ -2693,14 +2693,19 @@
         overflow-x: clip;
       }
 
-      /* Tampilan Mobile: Sidebar sticky di kiri, hanya terlihat icon, hidden by default */
+      /* Tampilan Mobile: Sidebar sticky di kiri, hanya terlihat icon, muat penuh 100dvh tanpa terpotong */
       .sidebar {
         position: fixed;
         left: 0;
         top: 0;
         bottom: 0;
         width: 68px;
-        height: 100vh;
+        height: 100dvh;
+        max-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
         z-index: 100;
         overflow: visible !important;
         transform: translateX(-100%);
@@ -2714,8 +2719,14 @@
       }
 
       .sidebar .sidebar-brand {
-        padding: 1rem 0;
+        padding: 0.55rem 0;
+        min-height: auto;
         justify-content: center;
+        flex-shrink: 0;
+      }
+      .sidebar .brand-icon {
+        width: 34px;
+        height: 34px;
       }
       .sidebar .brand-text {
         display: none;
@@ -2723,13 +2734,20 @@
       .sidebar .sidebar-minimize-bar {
         display: none;
       }
+      .sidebar .sidebar-nav-container {
+        padding: 0.45rem 0.35rem;
+        gap: 0.2rem;
+        flex: 1 1 auto;
+        min-height: 0;
+      }
       .sidebar .nav-section-title {
         display: none;
       }
       .sidebar .nav-item-btn {
         position: relative;
         justify-content: center;
-        padding: 0.85rem 0;
+        padding: 0.58rem 0;
+        min-height: 38px;
         overflow: visible;
       }
       .sidebar .nav-btn-left {
@@ -2740,9 +2758,16 @@
         display: none;
       }
       .sidebar .sidebar-user-card {
-        margin: 0.85rem 0.35rem;
-        padding: 0.5rem 0.25rem;
+        margin: 0.35rem 0.35rem 0.65rem 0.35rem;
+        padding: 0.45rem 0.25rem;
+        gap: 0.38rem;
         align-items: center;
+        flex-shrink: 0;
+      }
+      .sidebar .user-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 0.76rem;
       }
       .sidebar .user-info {
         display: none;
@@ -2753,7 +2778,10 @@
       }
       .sidebar .btn-profile-sidebar,
       .sidebar .btn-logout-sidebar {
-        padding: 0.45rem;
+        padding: 0.42rem;
+        min-height: 34px;
+        justify-content: center;
+        flex-shrink: 0;
       }
 
       /* Hover atau sentuhan jari pada mobile memunculkan keterangan nama judul menu */
@@ -2907,7 +2935,11 @@
 
       /* Unified filter bar & elements compact & precise on mobile */
       .unified-filter-bar {
-        padding: 0.65rem 0.75rem !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+        padding: 0.7rem !important;
         border-radius: 10px !important;
         gap: 0.5rem !important;
         margin-bottom: 0.85rem !important;
@@ -2915,37 +2947,100 @@
 
       .unified-filter-bar .filter-group {
         width: 100% !important;
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 0.45rem !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+        align-items: stretch !important;
       }
 
       .unified-filter-bar .filter-date-input,
-      .unified-filter-bar .select-filter {
-        width: 100% !important;
+      .unified-filter-bar .select-filter,
+      .unified-filter-bar .btn,
+      .unified-filter-bar .btn-reset-filter {
+        flex: 1 1 calc(50% - 0.25rem) !important;
+        width: auto !important;
+        max-width: 100% !important;
         min-width: 0 !important;
         box-sizing: border-box !important;
-        padding: 0.35rem 0.5rem !important;
+        padding: 0.38rem 0.6rem !important;
         font-size: 0.76rem !important;
-        min-height: 35px !important;
-        height: auto !important;
-        border-radius: 6px !important;
+        min-height: 38px !important;
+        height: 38px !important;
+        border-radius: 8px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
       }
 
+      .unified-filter-bar #recentFilterStatus,
       .unified-filter-bar #filterStatusSales,
       .unified-filter-bar #filterStatusRosa,
+      .unified-filter-bar #filterEstimatorDate,
       .unified-filter-bar #filterEstimatorStatus,
       .unified-filter-bar .btn-reset-filter {
-        grid-column: span 2 !important;
-        width: 100% !important;
+        flex: 1 1 100% !important;
+      }
+
+      #pane-gambar-sales .unified-filter-bar .btn,
+      #pane-gambar-sales .unified-filter-bar .btn-reset-filter {
+        flex: 1 1 calc(50% - 0.25rem) !important;
+        justify-content: center !important;
       }
 
       .unified-filter-bar .btn-reset-filter {
-        padding: 0.35rem 0.6rem !important;
+        padding: 0.38rem 0.6rem !important;
         font-size: 0.76rem !important;
-        height: 34px !important;
-        border-radius: 6px !important;
+        height: 38px !important;
+        border-radius: 8px !important;
         justify-content: center !important;
+      }
+
+      .filter-date-input {
+        position: relative !important;
+      }
+
+      .filter-date-input:not(.has-date-val):not(:focus) {
+        color: transparent !important;
+        -webkit-text-fill-color: transparent !important;
+      }
+
+      .filter-date-input:not(.has-date-val):not(:focus)::-webkit-datetime-edit,
+      .filter-date-input:not(.has-date-val):not(:focus)::-webkit-datetime-edit-fields-wrapper,
+      .filter-date-input:not(.has-date-val):not(:focus)::-webkit-datetime-edit-text,
+      .filter-date-input:not(.has-date-val):not(:focus)::-webkit-datetime-edit-month-field,
+      .filter-date-input:not(.has-date-val):not(:focus)::-webkit-datetime-edit-day-field,
+      .filter-date-input:not(.has-date-val):not(:focus)::-webkit-datetime-edit-year-field {
+        color: transparent !important;
+        -webkit-text-fill-color: transparent !important;
+        opacity: 0 !important;
+      }
+
+      .filter-date-input:not(.has-date-val):not(:focus)::before {
+        content: 'klik tanggal';
+        position: absolute;
+        left: 0.6rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748b;
+        -webkit-text-fill-color: #64748b;
+        font-size: 0.75rem;
+        font-weight: 600;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+
+      .filter-date-input.has-date-val,
+      .filter-date-input:focus {
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
+      }
+
+      .filter-date-input.has-date-val::before,
+      .filter-date-input:focus::before {
+        content: none !important;
+        display: none !important;
       }
 
       .unified-filter-bar .scroll-hint-notice {
@@ -3069,50 +3164,59 @@
 
       /* Dash Period Card mobile */
       .dash-period-card {
-        padding: 0.65rem 0.75rem !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0.7rem !important;
         box-sizing: border-box !important;
+        overflow: hidden !important;
       }
       .dash-period-header {
         display: flex !important;
         align-items: center !important;
         justify-content: space-between !important;
+        gap: 0.5rem !important;
         width: 100% !important;
-        margin-bottom: 0.45rem !important;
+        margin-bottom: 0.55rem !important;
       }
       .dash-period-title {
         font-size: 0.8rem !important;
+        line-height: 1.25 !important;
       }
       .dash-period-reset {
-        padding: 0.3rem 0.6rem !important;
-        font-size: 0.74rem !important;
-        height: 30px !important;
+        padding: 0.35rem 0.75rem !important;
+        font-size: 0.75rem !important;
+        height: 32px !important;
+        flex-shrink: 0 !important;
       }
       .dash-period-inputs {
         display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 0.45rem !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+        gap: 0.5rem !important;
         width: 100% !important;
         box-sizing: border-box !important;
       }
       .dash-date-col {
         display: flex !important;
-        align-items: center !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
         gap: 0.25rem !important;
         min-width: 0 !important;
+        width: 100% !important;
         box-sizing: border-box !important;
       }
       .dash-date-lbl {
         font-size: 0.72rem !important;
+        font-weight: 700 !important;
       }
       .dash-date-col input[type="date"] {
-        flex: 1 !important;
-        min-width: 0 !important;
         width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
         box-sizing: border-box !important;
-        padding: 0.2rem 0.15rem !important;
-        font-size: 0.68rem !important;
-        letter-spacing: -0.02em !important;
-        height: 32px !important;
+        padding: 0.35rem 0.55rem !important;
+        font-size: 0.75rem !important;
+        height: 36px !important;
+        border-radius: 8px !important;
       }
       .dash-period-subtitle {
         font-size: 0.7rem !important;
@@ -4944,14 +5048,10 @@
                 <option value="Gambar Selesai">Gambar Selesai</option>
               </select>
 
-              <!-- Sync & Refresh Spreedsheet Buttons -->
+              <!-- Sync Spreedsheet Button -->
               <button type="button" class="btn btn-primary btn-sm" onclick="syncAllRecordsToSpreadsheet()" title="Kirim Seluruh Data ke Google Spreadsheet" style="display: inline-flex; align-items: center; gap: 5px;">
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3L21.5 8M22 12.5a10 10 0 0 1-18.8 4.2L2.5 16"/></svg>
                 <span>Sync ke Spreedsheet</span>
-              </button>
-              <button type="button" class="btn btn-secondary btn-sm" onclick="syncFromGoogleSpreadsheet()" title="Tarik & Perbarui Data Balance dari Google Spreadsheet" style="display: inline-flex; align-items: center; gap: 5px;">
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>
-                <span>Tarik dari Spreedsheet</span>
               </button>
 
               <!-- Reset Filter -->
@@ -5302,7 +5402,7 @@
                 <div style="font-size: 0.85rem; font-weight: 800; color: #1e3a8a; margin-bottom: 0.85rem;">
                   Ganti Pasword Login
                 </div>
-                <div class="form-grid-3">
+                <div class="form-grid-2">
                   <div class="form-group" style="margin-bottom: 0;">
                     <label class="form-label" for="settingsInputOldPassword">Masukin Pasword Lama</label>
                     <div class="password-input-wrap">
@@ -5319,15 +5419,6 @@
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                       </button>
                       <input type="password" class="form-control" id="settingsInputNewPassword" placeholder="Password baru" autocomplete="new-password">
-                    </div>
-                  </div>
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label" for="settingsInputConfirmPassword">Ulangi Pasword Baru</label>
-                    <div class="password-input-wrap">
-                      <button type="button" class="btn-toggle-password-eye" onclick="toggleProfilePasswordVisibility('settingsInputConfirmPassword', this)" aria-label="Lihat atau sembunyikan password" title="Lihat / Tutup Password">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                      </button>
-                      <input type="password" class="form-control" id="settingsInputConfirmPassword" placeholder="Ulangi password baru" autocomplete="new-password">
                     </div>
                   </div>
                 </div>
@@ -6506,7 +6597,7 @@
 
           <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: var(--radius-md); padding: 1rem; margin-top: 0.9rem;">
             <div style="font-size: 0.82rem; font-weight: 800; color: #1e3a8a; margin-bottom: 0.75rem;">Ganti Pasword Login</div>
-            <div class="form-grid-3">
+            <div class="form-grid-2">
               <div class="form-group" style="margin-bottom: 0;">
                 <label class="form-label" for="modalProfInputOldPassword">Masukin Pasword Lama</label>
                 <div class="password-input-wrap">
@@ -6523,15 +6614,6 @@
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                   </button>
                   <input type="password" class="form-control" id="modalProfInputNewPassword" placeholder="Password baru" autocomplete="new-password">
-                </div>
-              </div>
-              <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label" for="modalProfInputConfirmPassword">Ulangi Pasword Baru</label>
-                <div class="password-input-wrap">
-                  <button type="button" class="btn-toggle-password-eye" onclick="toggleProfilePasswordVisibility('modalProfInputConfirmPassword', this)" aria-label="Lihat atau sembunyikan password" title="Lihat / Tutup Password">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                  </button>
-                  <input type="password" class="form-control" id="modalProfInputConfirmPassword" placeholder="Ulangi password baru" autocomplete="new-password">
                 </div>
               </div>
             </div>
@@ -8372,7 +8454,7 @@
       var newPw = newPwInput ? newPwInput.value.trim() : '';
       var confPw = confPwInput ? confPwInput.value.trim() : '';
 
-      var wantsPasswordChange = Boolean(oldPw || newPw || confPw);
+      var wantsPasswordChange = Boolean(oldPw || newPw || (confPwInput && confPw));
       if (wantsPasswordChange) {
         if (!oldPw || !verifyUserPasswordLocally(currentUser, oldPw)) {
           if (errEl) {
@@ -8390,12 +8472,12 @@
           if (newPwInput) newPwInput.focus();
           return;
         }
-        if (newPw !== confPw) {
+        if (confPwInput && newPw !== confPw) {
           if (errEl) {
             errEl.textContent = 'Ulangi password baru tidak cocok!';
             errEl.style.display = 'block';
           }
-          if (confPwInput) confPwInput.focus();
+          confPwInput.focus();
           return;
         }
       }
@@ -8994,8 +9076,16 @@
       const e = document.getElementById('dashFilterEndDate');
       if (s) s.value = '';
       if (e) e.value = '';
+      syncFilterDatePlaceholderStates();
       updateDashboardView();
       updateEstimatorCards();
+    }
+
+    function syncFilterDatePlaceholderStates() {
+      document.querySelectorAll('.filter-date-input').forEach(function(inp) {
+        if (!inp) return;
+        inp.classList.toggle('has-date-val', Boolean(inp.value && inp.value.trim() !== ''));
+      });
     }
 
     // Helper Pencocokan Tanggal untuk Filter (Support Format YYYY-MM-DD, DD/MM/YYYY, dan Date String)
@@ -9060,6 +9150,7 @@
         salesEl.value = (currentUser && currentUser.role === 'sales') ? (currentUser.salesName || '') : '';
       }
       if (statEl) statEl.value = '';
+      syncFilterDatePlaceholderStates();
       applyRecentTableFilters();
     }
 
@@ -9072,6 +9163,7 @@
         salesEl.value = (currentUser && currentUser.role === 'sales') ? (currentUser.salesName || '') : '';
       }
       if (statEl) statEl.value = '';
+      syncFilterDatePlaceholderStates();
       renderAllTables();
     }
 
@@ -9086,6 +9178,7 @@
       }
       if (dateEl) dateEl.value = '';
       if (statEl) statEl.value = '';
+      syncFilterDatePlaceholderStates();
       renderAllTables();
     }
 
@@ -9102,6 +9195,7 @@
         }
       }
       if (dateEl) dateEl.value = '';
+      syncFilterDatePlaceholderStates();
       renderAllTables();
     }
 
@@ -12268,7 +12362,7 @@
       if (!gasUrl || !gasUrl.startsWith('http')) {
         console.warn('Google Script Web App URL belum dikonfigurasi di browser.');
         if (noticeText) {
-          noticeText.innerHTML = 'Tersimpan lokal. Atur URL Web App Google Script melalui tombol "Tarik dari Spreedsheet" / "Sync ke Spreedsheet" agar sinkron ke Google Drive Web Estimator 2.';
+          noticeText.innerHTML = 'Tersimpan lokal. Atur URL Web App Google Script melalui tombol "Sync ke Spreedsheet" agar sinkron ke Google Drive Web Estimator 2.';
         }
         return;
       }
@@ -12853,6 +12947,11 @@
       setupSidebarNavigation();
       setupFormChangeTracking();
       populateFilters();
+      syncFilterDatePlaceholderStates();
+      document.querySelectorAll('.filter-date-input').forEach(function(inp) {
+        inp.addEventListener('change', syncFilterDatePlaceholderStates);
+        inp.addEventListener('input', syncFilterDatePlaceholderStates);
+      });
       checkLoginSession();
       initPanAndZoomForTables();
       initGDriveApp();
