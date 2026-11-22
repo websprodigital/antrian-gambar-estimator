@@ -450,6 +450,12 @@
       font-size: 0.95rem !important;
       display: block;
     }
+    .btn.btn-upload-prominent.btn-login-upload-form {
+      width: 100% !important;
+      max-width: 100% !important;
+      padding: 0.82rem 1rem !important;
+      border-radius: var(--radius-md) !important;
+    }
 
     /* Periode Tanggal Card */
     .dash-period-card {
@@ -2153,14 +2159,14 @@
       bottom: 0;
       background: rgba(15, 23, 42, 0.75);
       backdrop-filter: blur(4px);
-      z-index: 1000;
+      z-index: 10020;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 1.5rem;
       opacity: 0;
       visibility: hidden;
-      transition: all 0.25s ease;
+      transition: opacity 0.22s ease, visibility 0.22s ease;
     }
 
     .modal-backdrop.open {
@@ -2168,7 +2174,13 @@
       visibility: visible;
     }
 
-    #modalGasSettings {
+    #modalGasSettings,
+    #modalSaveSuccess,
+    #modalProfileSaveSuccess,
+    #modalResetSuccess,
+    #modalEstimatorSaveSuccess,
+    #modalRosaSaveSuccess,
+    #modalDeleteConfirm {
       z-index: 10050;
     }
 
@@ -4696,6 +4708,19 @@
         </button>
       </form>
 
+      <div style="margin-top: 0.95rem;">
+        <button type="button" class="btn btn-primary btn-upload-prominent btn-login-upload-form" id="loginUploadSalesBtn" onclick="openSalesUploadModal()">
+          <span class="btn-upload-prominent-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </span>
+          <span class="btn-upload-prominent-title">ISI FORM GAMBAR PROYEK</span>
+        </button>
+      </div>
+
     </div>
   </div>
 
@@ -5463,12 +5488,6 @@
                 Reset Filter
               </button>
             </div>
-
-            <div class="scroll-hint-notice">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
-              <span>Gulir tabel ke kanan untuk melihat Revisi Penawaran (1) s/d (8), Penawaran Final/Selesai &amp; aksi kontrak</span>
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            </div>
           </div>
 
           <div class="table-scroll-wrapper">
@@ -5702,7 +5721,7 @@
 
             <div class="form-group">
               <label class="form-label">Kode Nomor Antrian</label>
-              <input type="text" class="form-control" id="salesInputQueue" readonly style="background-color: #f1f5f9; font-weight: 700;">
+              <input type="text" class="form-control" id="salesInputQueue" readonly placeholder="Otomatis setelah pilih Nama Sales" style="background-color: #f1f5f9; font-weight: 700;">
             </div>
 
             <div class="form-group">
@@ -11196,7 +11215,7 @@
       if (!editId) {
         const queueInput = document.getElementById('salesInputQueue');
         if (queueInput) {
-          queueInput.value = generateNextQueueCode(salesName);
+          queueInput.value = salesName ? generateNextQueueCode(salesName) : '';
         }
       }
     }
@@ -11511,15 +11530,34 @@
         salesSelect.style.backgroundColor = '#f1f5f9';
         salesSelect.style.cursor = 'not-allowed';
       } else {
-        salesSelect.value = currentDashboardSales || 'Priyo Utomo';
         salesSelect.disabled = false;
         salesSelect.style.backgroundColor = '';
-        salesSelect.style.cursor = 'default';
+        salesSelect.style.cursor = 'pointer';
+        if (!currentUser) {
+          salesSelect.value = '';
+        } else {
+          salesSelect.value = currentDashboardSales || 'Priyo Utomo';
+        }
       }
 
-      document.getElementById('salesInputQueue').value = generateNextQueueCode(salesSelect.value);
+      document.getElementById('salesInputQueue').value = salesSelect.value ? generateNextQueueCode(salesSelect.value) : '';
       document.getElementById('salesInputUploadTime').value = formatLiveDateTimeSpaced(new Date());
       updateLiveDateTimeDisplays();
+
+      if (!currentUser && typeof syncFromGoogleSpreadsheet === 'function') {
+        ensureCloudApiDetected().then(function() {
+          if (getGoogleScriptUrl()) {
+            return syncFromGoogleSpreadsheet(true);
+          }
+        }).then(function() {
+          const modalOpen = document.getElementById('modalSalesUpload')?.classList.contains('open');
+          const curEdit = document.getElementById('editSalesId')?.value || '';
+          const curSales = document.getElementById('salesInputSalesName')?.value || '';
+          if (modalOpen && !curEdit && curSales) {
+            document.getElementById('salesInputQueue').value = generateNextQueueCode(curSales);
+          }
+        }).catch(function() {});
+      }
 
       document.getElementById('salesInputCustomer').value = '';
       document.getElementById('salesInputProject').value = '';
@@ -11681,19 +11719,28 @@
       try {
         const editId = document.getElementById('editSalesId') ? document.getElementById('editSalesId').value : '';
         
-        // Pastikan salesName terkunci sesuai username sales jika role sales, atau pilihan dropdown jika estimator
+        // Pastikan salesName terkunci sesuai username sales jika role sales, atau pilih dari dropdown (Rini Eldiarty / Priyo Utomo / Samuel)
         const salesInput = document.getElementById('salesInputSalesName');
         let salesName = '';
         if (currentUser && currentUser.role === 'sales') {
           salesName = currentUser.salesName;
         } else {
-          salesName = (salesInput && salesInput.value.trim()) ? salesInput.value.trim() : (currentDashboardSales || 'Priyo Utomo');
+          salesName = salesInput ? salesInput.value.trim() : '';
+          if (!salesName) {
+            alert('Silakan pilih Nama Sales (Rini Eldiarty, Priyo Utomo, atau Samuel) terlebih dahulu!');
+            if (salesInput) salesInput.focus();
+            isSubmittingSalesForm = false;
+            return;
+          }
         }
 
         const queueInput = document.getElementById('salesInputQueue');
         let queueCode = editId ? (queueInput ? queueInput.value.trim() : '') : '';
-        if (!queueCode) {
-          queueCode = (queueInput && queueInput.value.trim()) ? queueInput.value.trim() : generateNextQueueCode(salesName);
+        const expectedPrefix = getSalesQueuePrefix(salesName);
+        if (!queueCode || (!editId && !queueCode.startsWith(expectedPrefix))) {
+          queueCode = (queueInput && queueInput.value.trim() && queueInput.value.trim().startsWith(expectedPrefix))
+            ? queueInput.value.trim()
+            : generateNextQueueCode(salesName);
         }
 
         const uploadTimeInput = document.getElementById('salesInputUploadTime');
@@ -11817,7 +11864,7 @@
 
         saveDatabase();
         populateFilters();
-        if (salesName) {
+        if (currentUser && salesName) {
           setDashboardSalesFilter(salesName);
         }
         renderAllTables();
@@ -11830,8 +11877,15 @@
         // Otomatis kirim data formulir sales ke Google Spreadsheet & Google Drive Customer Folder
         if (targetSavedRecord) {
           const filesToSend = Object.values(slotFilesData);
-          sendRecordToGoogleSpreadsheet(targetSavedRecord, false, filesToSend, [], [], { isNewInsert: !editId, updatedBy: 'sales' });
           slotFilesData = {};
+          const dispatchSaveToCloud = function() {
+            sendRecordToGoogleSpreadsheet(targetSavedRecord, false, filesToSend, [], [], { isNewInsert: !editId, updatedBy: 'sales' });
+          };
+          if (!getGoogleScriptUrl() && typeof shouldProbePhpCloudApi === 'function' && shouldProbePhpCloudApi() && typeof ensureCloudApiDetected === 'function') {
+            ensureCloudApiDetected().then(dispatchSaveToCloud).catch(dispatchSaveToCloud);
+          } else {
+            dispatchSaveToCloud();
+          }
         }
       } catch (err) {
         console.error('Error during handleSalesFormSubmit:', err);
