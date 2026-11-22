@@ -1866,15 +1866,15 @@
 
     /* Ukuran Kolom Bagan Admin Kontrak (18 Kolom) */
     .custom-table.table-contract th:nth-child(1),
-    .custom-table.table-contract td:nth-child(1) { min-width: 175px; } /* Tanggal & Waktu Upload */
+    .custom-table.table-contract td:nth-child(1):not([colspan]) { min-width: 132px; } /* Tanggal & Waktu Upload */
     .custom-table.table-contract th:nth-child(2),
-    .custom-table.table-contract td:nth-child(2) { min-width: 155px; text-align: center; } /* Kode Antrian */
+    .custom-table.table-contract td:nth-child(2):not([colspan]) { min-width: 115px; text-align: center; } /* Kode Antrian */
     .custom-table.table-contract th:nth-child(3),
-    .custom-table.table-contract td:nth-child(3) { min-width: 155px; } /* Nama Sales */
+    .custom-table.table-contract td:nth-child(3):not([colspan]) { min-width: 110px; } /* Nama Sales */
     .custom-table.table-contract th:nth-child(4),
-    .custom-table.table-contract td:nth-child(4) { min-width: 210px; } /* Customer */
+    .custom-table.table-contract td:nth-child(4):not([colspan]) { min-width: 138px; } /* Customer */
     .custom-table.table-contract th:nth-child(5),
-    .custom-table.table-contract td:nth-child(5) { min-width: 240px; } /* Proyek */
+    .custom-table.table-contract td:nth-child(5):not([colspan]) { min-width: 155px; } /* Proyek */
     .custom-table.table-contract th:nth-child(6),
     .custom-table.table-contract td:nth-child(6) { min-width: 205px; } /* Nomor SPH */
     .custom-table.table-contract th:nth-child(7),
@@ -1915,7 +1915,7 @@
       white-space: nowrap;
       position: sticky;
       top: 0;
-      z-index: 10;
+      z-index: 20;
     }
 
     .custom-table td {
@@ -1930,6 +1930,78 @@
 
     .custom-table tbody tr:hover td {
       background-color: #f8fafc;
+    }
+
+    /* Freeze Kolom 1 s/d 5 (Tanggal & Waktu Upload s/d NAMA PROYEK) */
+    .custom-table.table-freeze-proyek th:nth-child(1),
+    .custom-table.table-freeze-proyek td:nth-child(1):not([colspan]) {
+      min-width: 132px;
+      width: 132px;
+      max-width: 145px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .custom-table.table-freeze-proyek th:nth-child(2),
+    .custom-table.table-freeze-proyek td:nth-child(2):not([colspan]) {
+      min-width: 115px;
+      width: 115px;
+      max-width: 125px;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .custom-table.table-freeze-proyek th:nth-child(3),
+    .custom-table.table-freeze-proyek td:nth-child(3):not([colspan]) {
+      min-width: 110px;
+      width: 110px;
+      max-width: 125px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .custom-table.table-freeze-proyek th:nth-child(4),
+    .custom-table.table-freeze-proyek td:nth-child(4):not([colspan]) {
+      min-width: 138px;
+      width: 138px;
+      max-width: 155px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .custom-table.table-freeze-proyek th:nth-child(5),
+    .custom-table.table-freeze-proyek td:nth-child(5):not([colspan]) {
+      min-width: 155px;
+      width: 155px;
+      max-width: 175px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .custom-table.table-freeze-proyek th.freeze-col-active {
+      position: sticky !important;
+      top: 0;
+      z-index: 35 !important;
+      background-color: #20409a !important;
+    }
+    .custom-table.table-freeze-proyek td.freeze-col-active:not([colspan]) {
+      position: sticky !important;
+      z-index: 15 !important;
+      background-color: #ffffff;
+    }
+    .custom-table.table-freeze-proyek tbody tr:hover td.freeze-col-active:not([colspan]) {
+      background-color: #f8fafc !important;
+    }
+    .custom-table.table-freeze-proyek th.freeze-col-edge {
+      border-right: 2px solid #93c5fd !important;
+      box-shadow: 4px 0 8px -2px rgba(15, 23, 42, 0.24);
+    }
+    .custom-table.table-freeze-proyek td.freeze-col-edge:not([colspan]) {
+      border-right: 2px solid #93c5fd !important;
+      box-shadow: 4px 0 8px -2px rgba(15, 23, 42, 0.14);
+    }
+    .custom-table.table-freeze-proyek td[colspan] {
+      position: static !important;
+      left: auto !important;
+      z-index: auto !important;
+      max-width: none !important;
+      width: auto !important;
     }
 
     .badge-queue {
@@ -5037,7 +5109,7 @@
             </div>
             
             <div class="table-scroll-wrapper" style="margin-bottom: 0;">
-              <table class="custom-table table-dashboard-full" id="dashboardRecentTable">
+              <table class="custom-table table-dashboard-full table-freeze-proyek" id="dashboardRecentTable">
                 <thead>
                   <tr>
                     <th>Tanggal & Waktu Upload</th>
@@ -5153,7 +5225,7 @@
 
           <!-- TABEL DATA GAMBAR DARI SALES PROYEK -->
           <div class="table-scroll-wrapper">
-            <table class="custom-table" id="salesTable">
+            <table class="custom-table table-freeze-proyek" id="salesTable">
               <thead>
                 <tr>
                   <th>Tanggal & Waktu Upload</th>
@@ -5325,7 +5397,7 @@
           </div>
 
           <div class="table-scroll-wrapper">
-            <table class="custom-table table-estimator" id="estimatorTable">
+            <table class="custom-table table-estimator table-freeze-proyek" id="estimatorTable">
               <thead>
                 <tr>
                   <th>Tanggal & Waktu Upload</th>
@@ -5400,7 +5472,7 @@
           </div>
 
           <div class="table-scroll-wrapper">
-            <table class="custom-table table-contract" id="rosaTable">
+            <table class="custom-table table-contract table-freeze-proyek" id="rosaTable">
               <thead>
                 <tr>
                   <th>Tanggal &amp; Waktu Upload</th>
@@ -8172,6 +8244,12 @@
       });
       const activePane = document.getElementById(paneId);
       if (activePane) activePane.classList.add('active');
+      if (typeof applyFreezeColumnOffsets === 'function') {
+        applyFreezeColumnOffsets();
+        if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(applyFreezeColumnOffsets);
+        }
+      }
 
       const titleElem = document.getElementById('pageHeaderTitle');
       const subtitleElem = document.getElementById('pageHeaderSubtitle');
@@ -9367,6 +9445,57 @@
       }
     }
 
+    // ==========================================================================
+    // PEMBEKUAN KOLOM (FREEZE PANES) SAMPAI NAMA PROYEK SAAT GESER KIRI / KANAN
+    // ==========================================================================
+    function applyFreezeColumnOffsets() {
+      const tables = document.querySelectorAll('table.table-freeze-proyek');
+      tables.forEach(table => {
+        const wrapper = table.closest('.table-scroll-wrapper');
+        if (!wrapper) return;
+        const headerRow = table.querySelector('thead tr');
+        if (!headerRow) return;
+        const ths = Array.from(headerRow.children);
+        if (ths.length < 5) return;
+
+        // Lewati tab yang sedang tersembunyi (display: none -> clientWidth 0)
+        if (wrapper.offsetParent === null && wrapper.clientWidth === 0) return;
+
+        const zoomVal = (typeof wrapper._currentZoom === 'number' && wrapper._currentZoom > 0) ? wrapper._currentZoom : 1.0;
+        const effectiveWrapperW = wrapper.clientWidth / zoomVal;
+
+        const colWidths = [0, 1, 2, 3, 4].map(idx => (ths[idx] ? ths[idx].offsetWidth : 0));
+        const totalFreezeW = colWidths.reduce((a, b) => a + b, 0);
+        const canFreezeAllFive = totalFreezeW > 0 && effectiveWrapperW >= (totalFreezeW + 50);
+
+        const rows = Array.from(table.querySelectorAll('tr'));
+        rows.forEach(tr => {
+          const cells = Array.from(tr.children);
+          cells.forEach((cell, idx) => {
+            cell.classList.remove('freeze-col-active', 'freeze-col-edge');
+            cell.style.left = '';
+            if (cell.hasAttribute('colspan')) return;
+
+            if (canFreezeAllFive) {
+              if (idx >= 0 && idx <= 4) {
+                let leftAcc = 0;
+                for (let k = 0; k < idx; k++) leftAcc += colWidths[k];
+                cell.classList.add('freeze-col-active');
+                if (idx === 4) cell.classList.add('freeze-col-edge');
+                cell.style.left = leftAcc + 'px';
+              }
+            } else {
+              // Pada layar HP sempit saat zoom 100%, bekukan Nama Proyek (kolom ke-5) di left: 0
+              if (idx === 4) {
+                cell.classList.add('freeze-col-active', 'freeze-col-edge');
+                cell.style.left = '0px';
+              }
+            }
+          });
+        });
+      });
+    }
+
     // Render Tabel Aktivitas Proyek & Antrian Gambar Terkini (31 Kolom Lengkap)
     function renderDashboardRecentTable(dataList) {
       const tbody = document.getElementById('dashboardRecentTbody');
@@ -9374,6 +9503,7 @@
 
       if (dataList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="31" style="text-align:center; padding: 2rem; color: #94a3b8;">Belum ada aktivitas proyek pada antrian ini</td></tr>`;
+        applyFreezeColumnOffsets();
         return;
       }
 
@@ -9421,6 +9551,7 @@
           </tr>
         `;
       });
+      applyFreezeColumnOffsets();
     }
 
     // Render Tabel Rekapitulasi Performa untuk Sales yang Terpilih (Dengan Penambahan Kolom Sedang Edit)
@@ -9746,6 +9877,7 @@
       updateEstimatorCards();
       renderSpreadsheetTable();
       initPanAndZoomForTables();
+      applyFreezeColumnOffsets();
     }
 
     function renderDriveCustomerPill(row) {
@@ -10763,6 +10895,9 @@
         function setTableZoom(val) {
           wrapper._currentZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, val));
           table.style.zoom = wrapper._currentZoom;
+          if (typeof applyFreezeColumnOffsets === 'function') {
+            applyFreezeColumnOffsets();
+          }
         }
 
         // Terapkan zoom saat ini
@@ -13173,6 +13308,9 @@
         if (window.innerWidth > 768) {
           if (sb) sb.classList.remove('mobile-open');
           if (overlay) overlay.classList.remove('active');
+        }
+        if (typeof applyFreezeColumnOffsets === 'function') {
+          applyFreezeColumnOffsets();
         }
       });
     });
