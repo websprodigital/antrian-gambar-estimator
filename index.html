@@ -7356,7 +7356,7 @@
             refreshSidebarProfileDisplay();
             if (document.getElementById('pane-pengaturan')?.classList.contains('active') ||
                 document.getElementById('modalEmployeeProfile')?.classList.contains('open')) {
-              loadProfileForms();
+              loadProfileForms({ preserveInputs: true });
             }
           }
           if (Array.isArray(data.history)) {
@@ -8260,11 +8260,26 @@
       }
     }
 
-    function loadProfileForms() {
+    function loadProfileForms(options) {
       if (!currentUser) return;
+      var opts = (options && typeof options === 'object') ? options : {};
+      var preserveInputs = Boolean(opts.preserveInputs);
       var userKey = getProfileStorageKey(currentUser);
       var profile = getUserProfile(currentUser);
       var bestImg = profilePhotoObjectUrlCache[userKey] || profile.photoThumbDataUrl || '';
+
+      function syncProfileInputValue(el, nextVal) {
+        if (!el) return;
+        var valStr = nextVal || '';
+        if (preserveInputs) {
+          var isFocused = (document.activeElement === el);
+          var prevSynced = (typeof el.dataset.syncedVal === 'string') ? el.dataset.syncedVal : valStr;
+          var hasLocalEdit = (el.value !== prevSynced);
+          if (isFocused || hasLocalEdit) return;
+        }
+        el.value = valStr;
+        el.dataset.syncedVal = valStr;
+      }
 
       // 1. Hydrate Menu Pengaturan -> EDIT PROFIL
       var userDisplay = document.getElementById('settingsProfileUsernameDisplay');
@@ -8274,24 +8289,32 @@
       var sEmail = document.getElementById('settingsInputEmail');
       var sWa = document.getElementById('settingsInputWhatsapp');
       var sDiv = document.getElementById('settingsInputDivision');
-      if (sEmp) sEmp.value = profile.employeeId || '';
-      if (sEmail) sEmail.value = profile.email || '';
-      if (sWa) sWa.value = profile.whatsapp || '';
-      if (sDiv) sDiv.value = profile.division || '';
+      syncProfileInputValue(sEmp, profile.employeeId);
+      syncProfileInputValue(sEmail, profile.email);
+      syncProfileInputValue(sWa, profile.whatsapp);
+      syncProfileInputValue(sDiv, profile.division);
 
       var sOldPw = document.getElementById('settingsInputOldPassword');
       var sNewPw = document.getElementById('settingsInputNewPassword');
       var sConfPw = document.getElementById('settingsInputConfirmPassword');
-      if (sOldPw) { sOldPw.value = ''; resetPasswordInputVisibility(sOldPw); }
-      if (sNewPw) { sNewPw.value = ''; resetPasswordInputVisibility(sNewPw); }
-      if (sConfPw) { sConfPw.value = ''; resetPasswordInputVisibility(sConfPw); }
+      if (!preserveInputs) {
+        if (sOldPw) { sOldPw.value = ''; resetPasswordInputVisibility(sOldPw); }
+        if (sNewPw) { sNewPw.value = ''; resetPasswordInputVisibility(sNewPw); }
+        if (sConfPw) { sConfPw.value = ''; resetPasswordInputVisibility(sConfPw); }
+      }
 
-      var sPhotoIn = document.getElementById('settingsPhotoInput');
-      if (sPhotoIn) sPhotoIn.value = '';
-      renderAvatarIntoContainer(document.getElementById('settingsPhotoPreview'), bestImg, currentUser.name);
+      if (!preserveInputs) {
+        var sPhotoIn = document.getElementById('settingsPhotoInput');
+        if (sPhotoIn) sPhotoIn.value = '';
+      }
+      if (!pendingProfilePhotoUpload.settings) {
+        renderAvatarIntoContainer(document.getElementById('settingsPhotoPreview'), bestImg, currentUser.name);
+      }
 
-      var sErrEl = document.getElementById('settingsProfileFormError');
-      if (sErrEl) sErrEl.style.display = 'none';
+      if (!preserveInputs) {
+        var sErrEl = document.getElementById('settingsProfileFormError');
+        if (sErrEl) sErrEl.style.display = 'none';
+      }
 
       // 2. Hydrate Modal Lihat & Edit Profil Karyawan (Sidebar)
       var mSumName = document.getElementById('modalProfSummaryName');
@@ -8313,38 +8336,49 @@
       var mEmail = document.getElementById('modalProfInputEmail');
       var mWa = document.getElementById('modalProfInputWhatsapp');
       var mDiv = document.getElementById('modalProfInputDivision');
-      if (mEmp) mEmp.value = profile.employeeId || '';
-      if (mEmail) mEmail.value = profile.email || '';
-      if (mWa) mWa.value = profile.whatsapp || '';
-      if (mDiv) mDiv.value = profile.division || '';
+      syncProfileInputValue(mEmp, profile.employeeId);
+      syncProfileInputValue(mEmail, profile.email);
+      syncProfileInputValue(mWa, profile.whatsapp);
+      syncProfileInputValue(mDiv, profile.division);
 
       var mOldPw = document.getElementById('modalProfInputOldPassword');
       var mNewPw = document.getElementById('modalProfInputNewPassword');
       var mConfPw = document.getElementById('modalProfInputConfirmPassword');
-      if (mOldPw) { mOldPw.value = ''; resetPasswordInputVisibility(mOldPw); }
-      if (mNewPw) { mNewPw.value = ''; resetPasswordInputVisibility(mNewPw); }
-      if (mConfPw) { mConfPw.value = ''; resetPasswordInputVisibility(mConfPw); }
-
-      var mPhotoIn = document.getElementById('modalProfPhotoInput');
-      if (mPhotoIn) mPhotoIn.value = '';
-      renderAvatarIntoContainer(document.getElementById('modalProfPhotoPreview'), bestImg, currentUser.name);
-
-      var mPhotoStatus = document.getElementById('modalProfPhotoStatus');
-      if (mPhotoStatus) {
-        mPhotoStatus.textContent = profile.photoFileName
-          ? ('Foto tersimpan: ' + profile.photoFileName + (profile.photoFileSize ? ' (' + formatFileSizeLabel(profile.photoFileSize) + ')' : ''))
-          : 'Format gambar (JPG, PNG, WEBP, GIF, dll.)';
+      if (!preserveInputs) {
+        if (mOldPw) { mOldPw.value = ''; resetPasswordInputVisibility(mOldPw); }
+        if (mNewPw) { mNewPw.value = ''; resetPasswordInputVisibility(mNewPw); }
+        if (mConfPw) { mConfPw.value = ''; resetPasswordInputVisibility(mConfPw); }
       }
 
-      var mErrEl = document.getElementById('modalProfFormError');
-      if (mErrEl) mErrEl.style.display = 'none';
+      if (!preserveInputs) {
+        var mPhotoIn = document.getElementById('modalProfPhotoInput');
+        if (mPhotoIn) mPhotoIn.value = '';
+      }
+      if (!pendingProfilePhotoUpload.modal) {
+        renderAvatarIntoContainer(document.getElementById('modalProfPhotoPreview'), bestImg, currentUser.name);
+        var mPhotoStatus = document.getElementById('modalProfPhotoStatus');
+        if (mPhotoStatus) {
+          mPhotoStatus.textContent = profile.photoFileName
+            ? ('Foto tersimpan: ' + profile.photoFileName + (profile.photoFileSize ? ' (' + formatFileSizeLabel(profile.photoFileSize) + ')' : ''))
+            : 'Format gambar (JPG, PNG, WEBP, GIF, dll.)';
+        }
+      }
+
+      if (!preserveInputs) {
+        var mErrEl = document.getElementById('modalProfFormError');
+        if (mErrEl) mErrEl.style.display = 'none';
+      }
 
       // Muat ulang foto full resolution dari IndexedDB jika belum ter-cache di memori
       if (profile.hasIdbPhoto && !profilePhotoObjectUrlCache[userKey]) {
         hydrateUserPhotoUrl(userKey, function(objUrl) {
           if (!currentUser || getProfileStorageKey(currentUser) !== userKey) return;
-          renderAvatarIntoContainer(document.getElementById('settingsPhotoPreview'), objUrl, currentUser.name);
-          renderAvatarIntoContainer(document.getElementById('modalProfPhotoPreview'), objUrl, currentUser.name);
+          if (!pendingProfilePhotoUpload.settings) {
+            renderAvatarIntoContainer(document.getElementById('settingsPhotoPreview'), objUrl, currentUser.name);
+          }
+          if (!pendingProfilePhotoUpload.modal) {
+            renderAvatarIntoContainer(document.getElementById('modalProfPhotoPreview'), objUrl, currentUser.name);
+          }
           renderAvatarIntoContainer(document.getElementById('modalProfSummaryAvatar'), objUrl, currentUser.name);
         });
       }
@@ -12970,7 +13004,9 @@
       // Balance update & sinkronisasi akun online otomatis lintas HP dan Komputer
       setInterval(() => {
         const gUrl = getGoogleScriptUrl();
-        if (gUrl && currentUser && !document.querySelector('.modal-backdrop.open')) {
+        const activeEl = document.activeElement;
+        const editingProfileNow = activeEl && (activeEl.closest('#formSettingsProfile') || activeEl.closest('#modalEmployeeProfile'));
+        if (gUrl && currentUser && !document.querySelector('.modal-backdrop.open') && !editingProfileNow) {
           syncFromGoogleSpreadsheet(true);
         }
       }, 8000);
