@@ -33,12 +33,13 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/Antrian-Gambar-Estimator-v1.0.0-Android.apk
 
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Antrian-Gambar-Estimator-Android-APK
-          path: mobile-app/android/app/build/outputs/apk/release/*.apk
+          path: mobile-app/android/app/build/outputs/apk/release/Antrian-Gambar-Estimator-v1.0.0-Android.apk
 
   build-windows:
     name: Build Windows Desktop Installer & Portable EXE
@@ -79,4 +80,46 @@ jobs:
         run: |
           npm ci || npm install
           npm run sync:ios
-          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO build
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+
+  publish-release:
+    name: Publish GitHub Release v1.0.0
+    needs: [build-android, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Android & Windows Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Collect Release Files
+        run: |
+          mkdir -p release-files
+          find release-artifacts -type f \( -name '*.apk' -o -name '*.exe' \) -exec cp -v {} release-files/ \;
+          ls -lh release-files/
+
+      - name: Create or Update GitHub Release v1.0.0
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v1.0.0"
+          TITLE="Antrian Gambar Estimator v1.0.0 (Mobile & Windows)"
+          {
+            echo 'Rilis aplikasi native **Antrian Gambar Estimator & Admin Kontrak** (Offline-First + Auto-Sync ke Google Apps Script & Google Drive).'
+            echo ''
+            echo '### File Tersedia'
+            echo '- **Android** (`Antrian-Gambar-Estimator-v1.0.0-Android.apk`): Installer APK untuk perangkat Android.'
+            echo '- **Windows Installer** (`Antrian-Gambar-Estimator-Setup-1.0.0.exe`): Installer Windows x64 dengan shortcut Desktop, Start Menu, dan System Tray notifikasi real-time.'
+            echo '- **Windows Portable** (`Antrian-Gambar-Estimator-Portable-1.0.0.exe`): Versi portable Windows x64 yang langsung dijalankan tanpa instalasi.'
+            echo '- **iOS (Xcode Project)**: Source Capacitor iOS tersedia pada branch `apps` di folder `mobile-app/ios/App` untuk di-build menggunakan Xcode di macOS.'
+          } > release-notes.txt
+          if gh release view "$TAG" -R "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release upload "$TAG" release-files/* --clobber -R "${{ github.repository }}"
+            gh release edit "$TAG" --title "$TITLE" --notes-file release-notes.txt -R "${{ github.repository }}"
+          else
+            gh release create "$TAG" release-files/* --target "${{ github.ref_name }}" --title "$TITLE" --notes-file release-notes.txt -R "${{ github.repository }}"
+          fi
