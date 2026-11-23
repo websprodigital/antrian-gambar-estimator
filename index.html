@@ -2202,7 +2202,7 @@
       display: none;
       flex-direction: column;
       gap: 0.14rem;
-      margin-top: 0.1rem;
+      margin-top: 0;
     }
     .scope-extra-materials.expanded {
       display: flex;
@@ -2232,14 +2232,31 @@
       background: #eff6ff;
       box-shadow: 0 2px 8px rgba(32, 64, 154, 0.12);
     }
+    .notes-chat-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.12rem;
+      max-height: 50px;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+    .notes-chat-entry {
+      display: flex;
+      flex-direction: column;
+      gap: 0.04rem;
+      padding-bottom: 0.12rem;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+    .notes-chat-entry:last-child {
+      padding-bottom: 0;
+      border-bottom: none;
+    }
     .notes-history-text {
-      font-size: 0.64rem;
-      line-height: 1.24;
+      font-size: 0.63rem;
+      line-height: 1.22;
       color: #0f172a;
       white-space: pre-wrap;
       word-break: break-word;
-      max-height: 32px;
-      overflow-y: auto;
     }
     .notes-history-meta-bar {
       display: flex;
@@ -7899,7 +7916,7 @@
       const merged = [];
       const seenIds = new Set();
       const seenSigs = new Set();
-      const combined = [].concat(Array.isArray(listB) ? listB : [], Array.isArray(listA) ? listA : []);
+      const combined = [].concat(Array.isArray(listA) ? listA : [], Array.isArray(listB) ? listB : []);
       combined.forEach(function(item) {
         if (!item || typeof item !== 'object') return;
         const txt = String(item.text || '').trim();
@@ -7930,9 +7947,9 @@
         const ta = Number(a.createdAtMs || 0);
         const tb = Number(b.createdAtMs || 0);
         if (ta === tb) return 0;
-        return ta > tb ? -1 : 1;
+        return ta < tb ? -1 : 1;
       });
-      return merged.slice(0, 150);
+      return merged.length > 150 ? merged.slice(-150) : merged;
     }
 
     function appendNoteToHistoryClient(existingArr, noteText, authorName, extraMeta) {
@@ -7941,15 +7958,16 @@
       if (!cleanTxt || cleanTxt === '-') return base;
       const meta = extraMeta || {};
       const skipDedup = Boolean(meta.allowDuplicateConsecutive);
-      if (!skipDedup && base.length > 0 && base[0].text === cleanTxt && String(base[0].author || '') === String(authorName || '-').trim()) {
+      const lastMsg = base.length > 0 ? base[base.length - 1] : null;
+      if (!skipDedup && lastMsg && lastMsg.text === cleanTxt && String(lastMsg.author || '') === String(authorName || '-').trim()) {
         return base;
       }
+      const nowMs = Math.max(Date.now(), lastMsg ? (Number(lastMsg.createdAtMs || 0) + 1) : 0);
       const tsStr = (typeof formatLiveDateTimeSpaced === 'function')
-        ? formatLiveDateTimeSpaced(new Date())
-        : new Date().toLocaleString();
+        ? formatLiveDateTimeSpaced(new Date(nowMs))
+        : new Date(nowMs).toLocaleString();
       const roleMeta = getChatRoleMeta(meta.role || '');
-      const nowMs = Date.now();
-      base.unshift({
+      base.push({
         id: meta.id || ('MSG-' + nowMs + '-' + Math.random().toString(36).slice(2, 6)),
         createdAtMs: nowMs,
         timestamp: tsStr,
@@ -7959,7 +7977,7 @@
         sourceMenu: meta.sourceMenu || '',
         text: cleanTxt
       });
-      return base.slice(0, 150);
+      return base.length > 150 ? base.slice(-150) : base;
     }
 
     function getUnifiedChatForRecord(record) {
@@ -7975,10 +7993,11 @@
         { val: record.estimatorNotes, author: record.estimatorName || 'Estimator', role: 'admin', roleLabel: 'Estimator', sourceMenu: 'Catatan Desain Estimator', ts: record.estimateStartDate || record.uploadDateTime || '-' },
         { val: record.quoteNotes, author: 'Admin Kontrak', role: 'contract', roleLabel: 'Admin Kontrak', sourceMenu: 'Catatan Penawaran', ts: record.estimateEndDate || record.uploadDateTime || '-' }
       ];
+      const extraFallbacks = [];
       fallbacks.forEach(function(fb) {
         const clean = String(fb.val || '').trim();
         if (clean && clean !== '-' && !combined.some(m => m.text === clean)) {
-          combined.push({
+          extraFallbacks.push({
             timestamp: fb.ts,
             author: fb.author,
             role: fb.role,
@@ -7989,7 +8008,10 @@
           });
         }
       });
-      return combined.slice(0, 150);
+      if (extraFallbacks.length > 0) {
+        combined = mergeNotesHistoryClient(extraFallbacks, combined);
+      }
+      return combined.length > 150 ? combined.slice(-150) : combined;
     }
 
     function getNotesHistoryForRecord(record, type) {
@@ -10226,8 +10248,8 @@
         <td class="scope-material-cell">
           <div class="scope-material-stack">
             ${firstHtml}
-            <button type="button" class="btn-expand-materials" onclick="toggleExtraMaterialsCell(this)" data-extra-count="${items.length - limit}">(KLIK MATERIAL LAINNYA)</button>
             <div class="scope-extra-materials">${restHtml}</div>
+            <button type="button" class="btn-expand-materials" onclick="toggleExtraMaterialsCell(this)" data-extra-count="${items.length - limit}">(KLIK MATERIAL LAINNYA)</button>
           </div>
         </td>
       `;
@@ -10241,28 +10263,41 @@
       return `<td class="project-material-cell"><div class="scope-material-stack">${html}</div></td>`;
     }
 
+    function scrollNotesChatStacksToBottom() {
+      try {
+        document.querySelectorAll('.notes-chat-stack').forEach(function(el) {
+          el.scrollTop = el.scrollHeight;
+        });
+      } catch (e) {}
+    }
+
     function renderNotesHistoryCell(row, type) {
       const chatList = getUnifiedChatForRecord(row);
-      const latest = chatList[0] || null;
       const safeId = escapeHtml(row.id || row.queueCode || '');
       const labelTitle = (type === 'sales')
         ? 'Catatan Dari Sales (Chat Terhubung)'
         : (type === 'contract' ? 'Catatan Penawaran (Chat Terhubung)' : 'Catatan Desain Estimator (Chat Terhubung)');
-      let senderHeaderHtml = '';
-      if (latest) {
-        const roleMeta = getChatRoleMeta(latest.role || type);
-        senderHeaderHtml = `
-          <div class="chat-sender-line">
-            <span class="chat-role-pill ${roleMeta.cssClass}">${escapeHtml(latest.roleLabel || roleMeta.roleLabel)}</span>
-            <span>${escapeHtml(latest.author || '-')}</span>
-          </div>
-        `;
+      let chatBodyHtml = '';
+      if (chatList.length === 0) {
+        chatBodyHtml = `<div class="notes-history-text"><em style="color:#94a3b8">Belum ada catatan / chat</em></div>`;
+      } else {
+        chatBodyHtml = `<div class="notes-chat-stack">` + chatList.map(entry => {
+          const roleMeta = getChatRoleMeta(entry.role || type);
+          return `
+            <div class="notes-chat-entry">
+              <div class="chat-sender-line">
+                <span class="chat-role-pill ${roleMeta.cssClass}">${escapeHtml(entry.roleLabel || roleMeta.roleLabel)}</span>
+                <span>${escapeHtml(entry.author || '-')}</span>
+              </div>
+              <div class="notes-history-text">${escapeHtml(entry.text || '')}</div>
+            </div>
+          `;
+        }).join('') + `</div>`;
       }
       return `
         <td class="notes-history-td">
           <div class="notes-history-card" onclick="openNotesHistoryModal('${safeId}', '${type}')" title="Klik untuk melihat History &amp; membalas Chat ${labelTitle}">
-            ${senderHeaderHtml}
-            <div class="notes-history-text">${latest && latest.text ? escapeHtml(latest.text) : '<em style="color:#94a3b8">Belum ada catatan / chat</em>'}</div>
+            ${chatBodyHtml}
             <div class="notes-history-meta-bar">
               <span>🕒 History (${chatList.length})</span>
               <span>Klik Lihat / Balas Chat &rarr;</span>
@@ -10283,11 +10318,12 @@
       listEl.innerHTML = chatList.map((entry, idx) => {
         const rm = getChatRoleMeta(entry.role || '');
         const itemCls = rm.role === 'sales' ? 'role-sales' : (rm.role === 'admin' ? 'role-estimator' : (rm.role === 'contract' ? 'role-contract' : ''));
+        const isLatestBottom = (idx === chatList.length - 1);
         return `
           <div class="notes-timeline-item ${itemCls}">
             <div class="notes-timeline-header">
               <span style="display: inline-flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
-                ${idx === 0 ? '🟢 Catatan Terbaru' : '🕒 Riwayat #' + (chatList.length - idx)} • <strong>${escapeHtml(entry.author || '-')}</strong>
+                ${isLatestBottom ? '🟢 Catatan Terbaru' : '🕒 Riwayat #' + (idx + 1)} • <strong>${escapeHtml(entry.author || '-')}</strong>
                 <span class="chat-role-pill ${rm.cssClass}">${escapeHtml(entry.roleLabel || rm.roleLabel)}</span>
               </span>
               <span style="font-family: var(--font-mono); color: #475569;">${escapeHtml(entry.timestamp || '-')}</span>
@@ -10296,6 +10332,10 @@
           </div>
         `;
       }).join('');
+      setTimeout(function() {
+        const modalBody = listEl.closest('.modal-body');
+        if (modalBody) modalBody.scrollTop = modalBody.scrollHeight;
+      }, 20);
     }
 
     function openNotesHistoryModal(rowId, type) {
@@ -10405,7 +10445,9 @@
       const roleMeta = getChatRoleMeta(activeRole);
       const authorName = currentUser ? currentUser.name : (activeRole === 'sales' ? (item.salesName || 'Sales') : (activeRole === 'admin' ? (item.estimatorName || 'Estimator') : 'Admin Kontrak'));
       const sourceLabel = (srcCtx === 'estimator') ? 'Catatan Desain Estimator' : (srcCtx === 'contract' ? 'Catatan Penawaran' : 'Catatan Dari Sales');
-      const nowMs = Date.now();
+      const existingUnified = getUnifiedChatForRecord(item);
+      const maxExistingMs = existingUnified.reduce((mx, m) => Math.max(mx, Number(m && m.createdAtMs ? m.createdAtMs : 0)), 0);
+      const nowMs = Math.max(Date.now(), maxExistingMs + 1);
       const msgId = 'MSG-' + nowMs + '-' + Math.random().toString(36).slice(2, 6);
       const clientEventId = 'EVT-' + nowMs + '-' + Math.random().toString(36).slice(2, 7);
 
@@ -10522,6 +10564,7 @@
         `;
       });
       applyFreezeColumnOffsets();
+      if (typeof scrollNotesChatStacksToBottom === 'function') scrollNotesChatStacksToBottom();
     }
 
     // Status Badge Helper (Mendukung status baru + backward-compatible data lama)
@@ -10814,6 +10857,7 @@
       renderSpreadsheetTable();
       initPanAndZoomForTables();
       applyFreezeColumnOffsets();
+      if (typeof scrollNotesChatStacksToBottom === 'function') scrollNotesChatStacksToBottom();
     }
 
     function renderDriveCustomerPill(row) {

@@ -359,7 +359,7 @@ function mergeNotesHistoryGas(existingRaw, incomingRaw) {
   var seenIds = {};
   var seenSigs = {};
   var merged = [];
-  var combined = listB.concat(listA);
+  var combined = listA.concat(listB);
   for (var i = 0; i < combined.length; i++) {
     var item = combined[i];
     if (!item || typeof item !== "object") continue;
@@ -387,15 +387,14 @@ function mergeNotesHistoryGas(existingRaw, incomingRaw) {
     if (sourceMenu) obj.sourceMenu = sourceMenu;
     if (createdAtMs > 0) obj.createdAtMs = createdAtMs;
     merged.push(obj);
-    if (merged.length >= 150) break;
   }
   merged.sort(function(a, b) {
     var ta = Number(a.createdAtMs || 0);
     var tb = Number(b.createdAtMs || 0);
     if (ta === tb) return 0;
-    return ta > tb ? -1 : 1;
+    return ta < tb ? -1 : 1;
   });
-  return merged.slice(0, 150);
+  return merged.length > 150 ? merged.slice(-150) : merged;
 }
 
 function getOrCreateNotificationsSheet(ss) {

@@ -311,7 +311,7 @@ function mergeNotesHistoryArrays($existingHist, $incomingHist) {
     $seenIds = [];
     $seenSigs = [];
     $merged = [];
-    foreach (array_merge($listB, $listA) as $item) {
+    foreach (array_merge($listA, $listB) as $item) {
         if (!is_array($item)) continue;
         $txt = trim((string)($item['text'] ?? ''));
         if ($txt === '' || $txt === '-') continue;
@@ -337,15 +337,17 @@ function mergeNotesHistoryArrays($existingHist, $incomingHist) {
         if ($sourceMenu !== '') $entry['sourceMenu'] = $sourceMenu;
         if ($createdAtMs > 0) $entry['createdAtMs'] = $createdAtMs;
         $merged[] = $entry;
-        if (count($merged) >= 150) break;
     }
     usort($merged, function ($a, $b) {
         $ta = intval($a['createdAtMs'] ?? 0);
         $tb = intval($b['createdAtMs'] ?? 0);
         if ($ta === $tb) return 0;
-        return ($ta > $tb) ? -1 : 1;
+        return ($ta < $tb) ? -1 : 1;
     });
-    return array_slice($merged, 0, 150);
+    if (count($merged) > 150) {
+        return array_slice($merged, -150);
+    }
+    return $merged;
 }
 
 /**
