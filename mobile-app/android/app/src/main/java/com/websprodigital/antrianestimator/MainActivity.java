@@ -1,0 +1,265 @@
+package com.websprodigital.antrianestimator;
+
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Environment;
+import android.os.Message;
+import android.provider.MediaStore;
+import android.webkit.DownloadListener;
+import android.webkit.ValueCallback;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.Toast;
+import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.content.FileProvider;
+import com.getcapacitor.Bridge;
+import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.BridgeWebChromeClient;
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import org.json.JSONObject;
+
+public class MainActivity extends BridgeActivity {
+
+    private ValueCallback<Uri[]> pendingFileCallback;
+    private Uri pendingCameraImageUri;
+    private ActivityResultLauncher<Intent> customFilePickerLauncher;
+    private EstimatorAndroidBridge nativeBridge;
+    private long lastBackPressAt = 0L;
+
+    @SuppressLint("SetJavaScriptEnabled")
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        customFilePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (pendingFileCallback == null) {
+                    return;
+                }
+                Uri[] results = null;
+                try {
+                    Intent data = result.getData();
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        if (data != null && data.getClipData() != null) {
+                            int count = data.getClipData().getItemCount();
+                            results = new Uri[count];
+                            for (int i = 0; i < count; i++) {
+                                results[i] = data.getClipData().getItemAt(i).getUri();
+                            }
+                        } else if (data != null && data.getData() != null) {
+                            results = new Uri[] { data.getData() };
+                        } else if (pendingCameraImageUri != null) {
+                            results = new Uri[] { pendingCameraImageUri };
+                        }
+                    }
+                } catch (Exception ignored) {}
+
+                pendingFileCallback.onReceiveValue(results);
+                pendingFileCallback = null;
+                pendingCameraImageUri = null;
+            }
+        );
+
+        super.onCreate(savedInstanceState);
+
+        NotificationHelper.ensureChannels(this);
+        nativeBridge = new EstimatorAndroidBridge(this);
+
+        if (this.bridge != null && this.bridge.getWebView() != null) {
+            WebView webView = this.bridge.getWebView();
+            WebSettings settings = webView.getSettings();
+            settings.setSupportMultipleWindows(true);
+            settings.setJavaScriptCanOpenWindowsAutomatically(true);
+            settings.setMediaPlaybackRequiresUserGesture(false);
+            settings.setAllowFileAccess(true);
+            settings.setDomStorageEnabled(true);
+            settings.setDatabaseEnabled(true);
+
+            webView.addJavascriptInterface(nativeBridge, "EstimatorAndroid");
+            webView.setWebChromeClient(new EstimatorWebChromeClient(this.bridge));
+            webView.setDownloadListener(new DownloadListener() {
+                @Override
+                public void onDownloadStart(
+                    String url,
+                    String userAgent,
+                    String contentDisposition,
+                    String mimeType,
+                    long contentLength
+                ) {
+                    if (url == null) return;
+                    if (url.startsWith("data:")) {
+                        nativeBridge.saveBase64File(url, "Dokumen_Antrian_Estimator", mimeType);
+                    } else if (url.startsWith("http")) {
+                        nativeBridge.downloadUrl(url, "Dokumen_Antrian_Estimator");
+                    }
+                }
+            });
+        }
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (bridge != null && bridge.getWebView() != null) {
+                    bridge.getWebView().evaluateJavascript(
+                        "(function(){ return (typeof window.__estimatorHandleAndroidBack === 'function') ? window.__estimatorHandleAndroidBack() : 'exit_prompt'; })()",
+                        value -> {
+                            if (value != null && value.contains("handled")) {
+                                return;
+                            }
+                            long now = System.currentTimeMillis();
+                            if (now - lastBackPressAt < 2000L) {
+                                moveTaskToBack(true);
+                            } else {
+                                lastBackPressAt = now;
+                                Toast.makeText(
+                                    MainActivity.this,
+                                    "Tekan kembali sekali lagi untuk keluar",
+                                    Toast.LENGTH_SHORT
+                                ).show();
+                            }
+                        }
+                    );
+                } else {
+                    moveTaskToBack(true);
+                }
+            }
+        });
+
+        handleNotificationIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleNotificationIntent(intent);
+    }
+
+    private void handleNotificationIntent(Intent intent) {
+        if (intent == null || this.bridge == null || this.bridge.getWebView() == null) return;
+        String notifId = intent.getStringExtra("notif_id");
+        if (notifId == null || notifId.isEmpty()) return;
+
+        try {
+            JSONObject payload = new JSONObject();
+            payload.put("id", notifId);
+            payload.put("eventType", intent.getStringExtra("notif_event_type"));
+            payload.put("queueCode", intent.getStringExtra("notif_queue_code"));
+            payload.put("title", intent.getStringExtra("notif_title"));
+            payload.put("message", intent.getStringExtra("notif_message"));
+            final String jsCall = "if (typeof window.__estimatorOnNativeNotifClick === 'function') { window.__estimatorOnNativeNotifClick("
+                + payload.toString() + "); }";
+            this.bridge.getWebView().postDelayed(() -> {
+                if (this.bridge != null && this.bridge.getWebView() != null) {
+                    this.bridge.getWebView().evaluateJavascript(jsCall, null);
+                }
+            }, 450);
+        } catch (Exception ignored) {}
+    }
+
+    private Uri createCameraTempUri() throws IOException {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile("IMG_" + timeStamp + "_", ".jpg", storageDir);
+        return FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", image);
+    }
+
+    private class EstimatorWebChromeClient extends BridgeWebChromeClient {
+
+        public EstimatorWebChromeClient(Bridge bridge) {
+            super(bridge);
+        }
+
+        @Override
+        public boolean onShowFileChooser(
+            WebView webView,
+            ValueCallback<Uri[]> filePathCallback,
+            FileChooserParams fileChooserParams
+        ) {
+            if (pendingFileCallback != null) {
+                pendingFileCallback.onReceiveValue(null);
+            }
+            pendingFileCallback = filePathCallback;
+            pendingCameraImageUri = null;
+
+            String[] acceptTypes = fileChooserParams != null ? fileChooserParams.getAcceptTypes() : new String[0];
+            boolean onlyImages = true;
+            if (acceptTypes != null && acceptTypes.length > 0) {
+                for (String t : acceptTypes) {
+                    if (t != null && !t.trim().isEmpty() && !t.trim().startsWith("image/")) {
+                        onlyImages = false;
+                        break;
+                    }
+                }
+            } else {
+                onlyImages = false;
+            }
+
+            Intent contentIntent = new Intent(Intent.ACTION_GET_CONTENT);
+            contentIntent.addCategory(Intent.CATEGORY_OPENABLE);
+            // Allow all file types when CAD/archive extensions (.dwg, .dxf, .rar, .pdf) are accepted
+            contentIntent.setType(onlyImages ? "image/*" : "*/*");
+            if (fileChooserParams != null && fileChooserParams.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE) {
+                contentIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+            }
+
+            List<Intent> extraIntents = new ArrayList<>();
+            try {
+                Intent camIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                if (camIntent.resolveActivity(getPackageManager()) != null) {
+                    pendingCameraImageUri = createCameraTempUri();
+                    camIntent.putExtra(MediaStore.EXTRA_OUTPUT, pendingCameraImageUri);
+                    camIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    extraIntents.add(camIntent);
+                }
+            } catch (Exception ignored) {}
+
+            Intent chooser = Intent.createChooser(contentIntent, "Pilih Berkas / Foto Proyek");
+            if (!extraIntents.isEmpty()) {
+                chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, extraIntents.toArray(new Intent[0]));
+            }
+
+            try {
+                customFilePickerLauncher.launch(chooser);
+            } catch (ActivityNotFoundException e) {
+                pendingFileCallback.onReceiveValue(null);
+                pendingFileCallback = null;
+                Toast.makeText(MainActivity.this, "Tidak ada pemilih file ditemukan.", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+            WebView tempWebView = new WebView(view.getContext());
+            tempWebView.setWebViewClient(new WebViewClient() {
+                @Override
+                public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest request) {
+                    if (request != null && request.getUrl() != null) {
+                        nativeBridge.openExternal(request.getUrl().toString());
+                    }
+                    try { tempWebView.destroy(); } catch (Exception ignored) {}
+                    return true;
+                }
+            });
+            WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+            transport.setWebView(tempWebView);
+            resultMsg.sendToTarget();
+            return true;
+        }
+    }
+}

@@ -1,0 +1,64 @@
+{
+  "name": "antrian-gambar-estimator-desktop",
+  "version": "1.0.0",
+  "description": "Aplikasi Desktop Windows Antrian Gambar Estimator & Admin Kontrak dengan Sinkronisasi Real-Time & Notifikasi System Tray",
+  "author": "WebsProDigital",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "sync": "node ../shared-web/sync-assets.js",
+    "start": "npm run sync && electron .",
+    "pack": "npm run sync && electron-builder --win --dir",
+    "dist:win": "npm run sync && electron-builder --win",
+    "dist:installer": "npm run sync && electron-builder --win nsis",
+    "dist:portable": "npm run sync && electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.websprodigital.antrianestimator",
+    "productName": "Antrian Gambar Estimator",
+    "artifactName": "Antrian-Gambar-Estimator-${type}-${version}.${ext}",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "assets/**/*",
+      "www/**/*"
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Antrian Gambar Estimator",
+      "uninstallDisplayName": "Antrian Gambar Estimator",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "artifactName": "Antrian-Gambar-Estimator-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Antrian-Gambar-Estimator-Portable-${version}.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^26.0.0"
+  }
+}
