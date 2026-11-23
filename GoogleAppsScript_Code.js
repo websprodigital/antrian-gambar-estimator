@@ -1621,7 +1621,7 @@ function getNextFreeQueueCode(sheet, baseQueueCode) {
       var codeStr = colVals[i][0] ? colVals[i][0].toString().trim() : "";
       if (!codeStr || codeStr === "-") continue;
       usedCodes[codeStr] = true;
-      var numMatch = codeStr.match(/(\d+)$/);
+      var numMatch = codeStr.match(/^[A-Za-z]+-[A-Za-z]+20\d{2}(\d+)$/) || codeStr.match(/(\d+)$/);
       if (numMatch) {
         var nVal = parseInt(numMatch[1], 10);
         if (!isNaN(nVal) && nVal > maxNum) maxNum = nVal;
@@ -1629,7 +1629,7 @@ function getNextFreeQueueCode(sheet, baseQueueCode) {
     }
   }
 
-  var baseMatch = raw.match(/^(.*?)(\d+)$/);
+  var baseMatch = raw.match(/^([A-Za-z]+-[A-Za-z]+20\d{2})(\d+)$/) || raw.match(/^(.*?)(\d+)$/);
   if (baseMatch) {
     var prefix = baseMatch[1];
     var origNum = parseInt(baseMatch[2], 10) || 0;
@@ -1644,12 +1644,12 @@ function getNextFreeQueueCode(sheet, baseQueueCode) {
     }
   }
 
-  var fallbackPrefix = raw || "APS-GN";
+  var fallbackPrefix = raw || "APS-GN2027";
   var suffix = maxNum + 1;
   while (true) {
     var fbNum = String(suffix);
     while (fbNum.length < 4) fbNum = "0" + fbNum;
-    var fbCandidate = fallbackPrefix + "-" + fbNum;
+    var fbCandidate = fallbackPrefix + fbNum;
     if (!usedCodes[fbCandidate]) return fbCandidate;
     suffix++;
   }

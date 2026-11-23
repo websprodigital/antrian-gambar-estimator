@@ -462,13 +462,22 @@ function getNextFreeQueueCode($records, $baseQueueCode) {
         $codeStr = trim((string)($rec['queueCode'] ?? ''));
         if ($codeStr === '' || $codeStr === '-') continue;
         $used[$codeStr] = true;
-        if (preg_match('/(\d+)$/', $codeStr, $m)) {
+        if (preg_match('/^[A-Za-z]+-[A-Za-z]+20\d{2}(\d+)$/', $codeStr, $m)) {
+            $nVal = intval($m[1]);
+            if ($nVal > $maxNum) $maxNum = $nVal;
+        } elseif (preg_match('/(\d+)$/', $codeStr, $m)) {
             $nVal = intval($m[1]);
             if ($nVal > $maxNum) $maxNum = $nVal;
         }
     }
 
-    if (preg_match('/^(.*?)(\d+)$/', $raw, $bm)) {
+    $bm = null;
+    if (preg_match('/^([A-Za-z]+-[A-Za-z]+20\d{2})(\d+)$/', $raw, $mTagged)) {
+        $bm = $mTagged;
+    } elseif (preg_match('/^(.*?)(\d+)$/', $raw, $mLegacy)) {
+        $bm = $mLegacy;
+    }
+    if ($bm) {
         $prefix = $bm[1];
         $origNum = intval($bm[2]);
         $padLen = max(4, strlen($bm[2]));
@@ -482,10 +491,10 @@ function getNextFreeQueueCode($records, $baseQueueCode) {
         }
     }
 
-    $fbPrefix = $raw ?: 'APS-GN';
+    $fbPrefix = $raw ?: 'APS-GN2027';
     $suffix = $maxNum + 1;
     while (true) {
-        $candidate = $fbPrefix . '-' . str_pad((string)$suffix, 4, '0', STR_PAD_LEFT);
+        $candidate = $fbPrefix . str_pad((string)$suffix, 4, '0', STR_PAD_LEFT);
         if (!isset($used[$candidate])) {
             return $candidate;
         }

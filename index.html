@@ -1931,7 +1931,7 @@
     .custom-table.table-contract th:nth-child(1),
     .custom-table.table-contract td:nth-child(1):not([colspan]) { min-width: 132px; } /* Tanggal & Waktu Upload */
     .custom-table.table-contract th:nth-child(2),
-    .custom-table.table-contract td:nth-child(2):not([colspan]) { min-width: 115px; text-align: center; } /* Kode Antrian */
+    .custom-table.table-contract td:nth-child(2):not([colspan]) { min-width: 132px; text-align: center; } /* Kode Antrian */
     .custom-table.table-contract th:nth-child(3),
     .custom-table.table-contract td:nth-child(3):not([colspan]) { min-width: 110px; } /* Nama Sales */
     .custom-table.table-contract th:nth-child(4),
@@ -2026,9 +2026,9 @@
     }
     .custom-table.table-freeze-proyek th:nth-child(2),
     .custom-table.table-freeze-proyek td:nth-child(2):not([colspan]) {
-      min-width: 115px;
-      width: 115px;
-      max-width: 125px;
+      min-width: 132px;
+      width: 132px;
+      max-width: 145px;
       text-align: center;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -5478,37 +5478,6 @@
 
           </div>
 
-          <!-- Tabel Rekapitulasi Performa Masing-Masing Sales (MUNCUL KETIKA FILTER SALES TERPILIH, TIDAK TERPILIH TIDAK MUNCUL) -->
-          <div class="card-panel" id="salesSummaryCardPanel" style="display: none;">
-            <div class="card-panel-title-bar">
-              <h3>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                Rekapitulasi Performa Sales Terpilih
-              </h3>
-              <span style="font-size: 0.78rem; color: var(--text-muted);" id="salesSummarySubtitle">Rincian performa sales</span>
-            </div>
-
-            <div class="table-scroll-wrapper" style="margin-bottom: 0;">
-              <table class="custom-table" style="min-width: 100%;">
-                <thead>
-                  <tr>
-                    <th>Nama Sales</th>
-                    <th>Upload Sales</th>
-                    <th>Antrian Gambar</th>
-                    <th>Cek Kelengkapan Gambar</th>
-                    <th>Sedang Desain</th>
-                    <th>Revisi Desain</th>
-                    <th>Desain Selesai</th>
-                    <th>Admin Kontrak</th>
-                  </tr>
-                </thead>
-                <tbody id="salesSummaryTbody">
-                  <!-- Injected via JavaScript -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-
           <!-- Bagian Aktivitas Proyek & Antrian Gambar Terkini (33 KOLOM LENGKAP) -->
           <div class="card-panel">
             <div class="card-panel-title-bar">
@@ -8667,10 +8636,6 @@
         // Tampilkan filter sales pada dashboard agar data masing-masing sales bisa dilihat
         if (salesFilterCard) salesFilterCard.style.display = 'flex';
 
-        // Sembunyikan Rekapitulasi Performa Sales untuk dashboard sales
-        const summaryCardPanel = document.getElementById('salesSummaryCardPanel');
-        if (summaryCardPanel) summaryCardPanel.style.display = 'none';
-
         // Filter nama sales pada halaman username sales SISTEMNYA TERKUNCI (termasuk Bagan Estimator)
         if (recentSalesSelect) {
           recentSalesSelect.value = currentUser.salesName || '';
@@ -9990,17 +9955,6 @@
       // Render Tabel Aktivitas Terkini (Mengikuti Filter Periode Tanggal Dashboard, Sales & Status)
       applyRecentTableFilters();
 
-      // Render Rekapitulasi Performa Masing-Masing Sales
-      const summaryCardPanel = document.getElementById('salesSummaryCardPanel');
-      if (summaryCardPanel) {
-        if (!isSalesUser && currentDashboardSales && currentDashboardSales.trim() !== '') {
-          summaryCardPanel.style.display = 'block';
-          renderSalesSummaryTable(currentDashboardSales);
-        } else {
-          summaryCardPanel.style.display = 'none';
-        }
-      }
-
       // Update Badge di Sidebar (jika elemen tersedia)
       const bTotal = document.getElementById('navBadgeTotal');
       if (bTotal) bTotal.textContent = baseData.length;
@@ -10547,44 +10501,6 @@
         `;
       });
       applyFreezeColumnOffsets();
-    }
-
-    // Render Tabel Rekapitulasi Performa untuk Sales yang Terpilih
-    function renderSalesSummaryTable(selectedSalesName) {
-      const tbody = document.getElementById('salesSummaryTbody');
-      tbody.innerHTML = '';
-
-      const items = projectDatabase.filter(d => isSalesNameMatch(d.salesName, selectedSalesName));
-      const upCount = items.length;
-      const belumEditCount = items.filter(d => getStatusBucket(d.status) === 'antrian').length;
-      const cekKelengkapanCount = items.filter(d => getStatusBucket(d.status) === 'cek_kelengkapan').length;
-      const sedangEditCount = items.filter(d => getStatusBucket(d.status) === 'sedang_desain').length;
-      const revCount = items.filter(d => getStatusBucket(d.status) === 'revisi_desain').length;
-      const doneCount = items.filter(d => getStatusBucket(d.status) === 'desain_selesai').length;
-      // Data Admin Kontrak diambil dari Desain Selesai
-      const sphCount = doneCount;
-
-      document.getElementById('salesSummarySubtitle').textContent = `Menampilkan rincian metrik untuk sales: ${selectedSalesName}`;
-
-      tbody.innerHTML = `
-        <tr style="background-color: #f8fafc;">
-          <td>
-            <div style="display: flex; align-items: center; gap: 0.42rem;">
-              <div style="width: 24px; height: 24px; border-radius: 50%; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.64rem; font-weight: 800;">
-                ${selectedSalesName.slice(0, 2).toUpperCase()}
-              </div>
-              <strong style="font-size: 0.7rem;">${selectedSalesName}</strong>
-            </div>
-          </td>
-          <td><strong style="color: var(--primary); font-size: 0.72rem;">${upCount}</strong> Proyek</td>
-          <td><span class="badge-status status-belum-edit">${belumEditCount} Antrian</span></td>
-          <td><span class="badge-status status-cek-kelengkapan">${cekKelengkapanCount} Cek</span></td>
-          <td><span class="badge-status status-sedang-edit">${sedangEditCount} Desain</span></td>
-          <td><span class="badge-status status-revisi">${revCount} Revisi</span></td>
-          <td><span class="badge-status status-selesai">${doneCount} Selesai</span></td>
-          <td><strong style="color: var(--purple); font-size: 1rem;">${sphCount}</strong> Kontrak</td>
-        </tr>
-      `;
     }
 
     // Status Badge Helper (Mendukung status baru + backward-compatible data lama)
@@ -12161,15 +12077,31 @@
 
     // ==========================================================================
     // FORM SALES LOGIC & HELPER FUNCTIONS
-    // Format Kode Antrian: APS-RN0001 (Rini), APS-PU0001 (Priyo), APS-SM0001 (Samuel)
+    // Format Kode Antrian: APS-RN20270001 (Rini), APS-PU20270001 (Priyo), APS-SM20270001 (Samuel)
     // Sesuai siapa cepat mengisi formulir gambar
     // ==========================================================================
     function getSalesQueuePrefix(salesName) {
       const s = (salesName || '').trim().toLowerCase();
-      if (s.includes('rini')) return 'APS-RN';
-      if (s.includes('priyo')) return 'APS-PU';
-      if (s.includes('samuel')) return 'APS-SM';
-      return 'APS-SL';
+      if (s.includes('rini')) return 'APS-RN2027';
+      if (s.includes('priyo')) return 'APS-PU2027';
+      if (s.includes('samuel')) return 'APS-SM2027';
+      return 'APS-SL2027';
+    }
+
+    function extractQueueSeqNumber(codeStr) {
+      const str = String(codeStr || '').trim();
+      if (!str || str === '-') return 0;
+      const taggedMatch = str.match(/^[A-Za-z]+-[A-Za-z]+20\d{2}(\d+)$/);
+      if (taggedMatch) {
+        const num = parseInt(taggedMatch[1], 10);
+        return isNaN(num) ? 0 : num;
+      }
+      const legacyMatch = str.match(/(\d+)$/);
+      if (legacyMatch) {
+        const num = parseInt(legacyMatch[1], 10);
+        return isNaN(num) ? 0 : num;
+      }
+      return 0;
     }
 
     function getNextQueueNumber() {
@@ -12177,12 +12109,9 @@
       if (Array.isArray(projectDatabase)) {
         projectDatabase.forEach(p => {
           if (p && p.queueCode) {
-            const match = String(p.queueCode).match(/(\d+)$/);
-            if (match) {
-              const num = parseInt(match[1], 10);
-              if (!isNaN(num) && num > maxNum) {
-                maxNum = num;
-              }
+            const num = extractQueueSeqNumber(p.queueCode);
+            if (num > maxNum) {
+              maxNum = num;
             }
           }
         });
@@ -12193,8 +12122,16 @@
 
     function generateNextQueueCode(salesName) {
       const prefix = getSalesQueuePrefix(salesName);
-      const nextNum = getNextQueueNumber();
-      return `${prefix}${String(nextNum).padStart(4, '0')}`;
+      let nextNum = getNextQueueNumber();
+      let candidate = `${prefix}${String(nextNum).padStart(4, '0')}`;
+      if (Array.isArray(projectDatabase)) {
+        const usedSet = new Set(projectDatabase.map(p => String((p && p.queueCode) || '').trim()).filter(Boolean));
+        while (usedSet.has(candidate)) {
+          nextNum++;
+          candidate = `${prefix}${String(nextNum).padStart(4, '0')}`;
+        }
+      }
+      return candidate;
     }
 
     function handleSalesNameModalChange(salesName) {
