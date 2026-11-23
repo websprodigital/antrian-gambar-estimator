@@ -106,7 +106,8 @@ var HEADERS = [
   "Penawaran Final/Selesai",
   "Catatan Dari Sales",
   "History Catatan Sales",
-  "History Catatan Estimator"
+  "History Catatan Estimator",
+  "History Chat Terhubung"
 ];
 
 // Header Sheet Akun & Profil Karyawan Per Username (Users_Profiles)
@@ -355,7 +356,8 @@ function parseNotesHistoryJsonGas(rawVal) {
 function mergeNotesHistoryGas(existingRaw, incomingRaw) {
   var listA = parseNotesHistoryJsonGas(existingRaw);
   var listB = parseNotesHistoryJsonGas(incomingRaw);
-  var seen = {};
+  var seenIds = {};
+  var seenSigs = {};
   var merged = [];
   var combined = listB.concat(listA);
   for (var i = 0; i < combined.length; i++) {
@@ -363,19 +365,37 @@ function mergeNotesHistoryGas(existingRaw, incomingRaw) {
     if (!item || typeof item !== "object") continue;
     var txt = (item.text || "").toString().trim();
     if (!txt || txt === "-") continue;
+    var msgId = (item.id || "").toString().trim();
     var ts = (item.timestamp || "").toString().trim();
     var author = (item.author || "").toString().trim();
+    var role = (item.role || "").toString().trim();
+    var roleLabel = (item.roleLabel || "").toString().trim();
+    var sourceMenu = (item.sourceMenu || "").toString().trim();
+    var createdAtMs = Number(item.createdAtMs || 0);
     var sig = ts + "|" + author + "|" + txt;
-    if (seen[sig]) continue;
-    seen[sig] = true;
-    merged.push({
-      timestamp: ts || Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm:ss"),
+    if ((msgId && seenIds[msgId]) || seenSigs[sig]) continue;
+    if (msgId) seenIds[msgId] = true;
+    seenSigs[sig] = true;
+    var obj = {
+      timestamp: ts || Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH : mm : ss"),
       author: author || "-",
       text: txt
-    });
-    if (merged.length >= 100) break;
+    };
+    if (msgId) obj.id = msgId;
+    if (role) obj.role = role;
+    if (roleLabel) obj.roleLabel = roleLabel;
+    if (sourceMenu) obj.sourceMenu = sourceMenu;
+    if (createdAtMs > 0) obj.createdAtMs = createdAtMs;
+    merged.push(obj);
+    if (merged.length >= 150) break;
   }
-  return merged;
+  merged.sort(function(a, b) {
+    var ta = Number(a.createdAtMs || 0);
+    var tb = Number(b.createdAtMs || 0);
+    if (ta === tb) return 0;
+    return ta > tb ? -1 : 1;
+  });
+  return merged.slice(0, 150);
 }
 
 function getOrCreateNotificationsSheet(ss) {
@@ -883,6 +903,84 @@ function doPost(e) {
       return handleSaveCsvToDrive(data);
     }
 
+    // 3B. Aksi Kirim Balasan Chat Terhubung Lintas Divisi
+    if (action === "send_project_chat") {
+      var ssChat = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+      var sheetChat = getOrCreateSheet(ssChat);
+      setupHeadersIfEmpty(sheetChat);
+      var chatQ = (data.queueCode || data.noAntrian || "").toString().trim();
+      var chatRowIdx = findRowIndexByQueue(sheetChat, chatQ);
+      var msgIn = (data.chatMessage && typeof data.chatMessage === "object") ? data.chatMessage : {};
+      var chatTxt = (msgIn.text || data.text || "").toString().trim();
+      if (!chatTxt) {
+        return createJsonResponse({ status: "error", message: "Pesan chat kosong." });
+      }
+      var chatAuthor = (msgIn.author || actorUsername || "Tim Proyek").toString().trim();
+      var chatRole = (msgIn.role || "").toString().trim();
+      var chatRoleLabel = (msgIn.roleLabel || "Tim Proyek").toString().trim();
+      var normalizedChatMsg = {
+        id: (msgIn.id || ("MSG-" + new Date().getTime())).toString().trim(),
+        createdAtMs: Number(msgIn.createdAtMs || new Date().getTime()),
+        timestamp: (msgIn.timestamp || Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH : mm : ss")).toString().trim(),
+        author: chatAuthor,
+        role: chatRole,
+        roleLabel: chatRoleLabel,
+        sourceMenu: (msgIn.sourceMenu || "").toString().trim(),
+        text: chatTxt
+      };
+      var mergedChat = [normalizedChatMsg];
+      var cCust = (data.customerName || "-").toString();
+      var cProj = (data.projectName || "-").toString();
+      var cStat = (data.status || "Masih Antrian Gambar").toString();
+      if (chatRowIdx > 0) {
+        var curVals = sheetChat.getRange(chatRowIdx, 1, 1, HEADERS.length).getValues()[0];
+        mergedChat = mergeNotesHistoryGas(curVals[49], [normalizedChatMsg]);
+        sheetChat.getRange(chatRowIdx, 50).setValue(JSON.stringify(mergedChat));
+        if (chatRole === "sales") {
+          sheetChat.getRange(chatRowIdx, 47).setValue(chatTxt);
+          sheetChat.getRange(chatRowIdx, 48).setValue(JSON.stringify(mergeNotesHistoryGas(curVals[47], [normalizedChatMsg])));
+        } else if (chatRole === "admin") {
+          sheetChat.getRange(chatRowIdx, 33).setValue(chatTxt);
+          sheetChat.getRange(chatRowIdx, 49).setValue(JSON.stringify(mergeNotesHistoryGas(curVals[48], [normalizedChatMsg])));
+        } else if (chatRole === "contract") {
+          sheetChat.getRange(chatRowIdx, 36).setValue(chatTxt);
+        }
+        cCust = (curVals[4] || cCust).toString();
+        cProj = (curVals[5] || cProj).toString();
+        cStat = (curVals[20] || cStat).toString();
+      }
+      appendOnlineHistory(
+        ssChat,
+        chatAuthor,
+        actorKey,
+        deviceInfo,
+        "CHAT_PROYEK",
+        chatQ || "-",
+        cCust + " / " + cProj,
+        cStat,
+        "[" + chatRoleLabel + "] " + chatTxt
+      );
+      var gasChatNotif = appendRealtimeNotificationGas(
+        ssChat,
+        "project_chat",
+        "Pesan Chat Proyek (" + chatRoleLabel + ")",
+        chatAuthor + " (" + chatRoleLabel + ") membalas pada " + (chatQ || "-") + " - " + cProj + ": \"" + chatTxt + "\"",
+        chatAuthor,
+        chatQ || "-",
+        cCust,
+        cProj,
+        cStat,
+        (data.clientEventId || normalizedChatMsg.id).toString()
+      );
+      return createJsonResponse({
+        status: "success",
+        queueCode: chatQ,
+        unifiedChatHistory: mergedChat,
+        notification: gasChatNotif,
+        message: "Chat terhubung berhasil disimpan!"
+      });
+    }
+
     // 4. Aksi Batch Save (Sinkronisasi Massal)
     if (action === "batch_save" && data.records && Array.isArray(data.records)) {
       return handleBatchSave(data.records, actorUsername, actorKey, deviceInfo);
@@ -1109,7 +1207,8 @@ function doPost(e) {
       quoteDocMap["quoteFinalDoc"] || "",
       data.salesNotes || data.catatanSales || "",
       JSON.stringify(mergeNotesHistoryGas([], data.salesNotesHistory)),
-      JSON.stringify(mergeNotesHistoryGas([], data.estimatorNotesHistory))
+      JSON.stringify(mergeNotesHistoryGas([], data.estimatorNotesHistory)),
+      JSON.stringify(mergeNotesHistoryGas([], data.unifiedChatHistory))
     ];
 
     // BALANCE UPDATE: Cari apakah nomor antrian sudah ada di sheet
@@ -1176,6 +1275,7 @@ function doPost(e) {
       if (data.updatedBy === "estimator") {
         rowValues[48] = JSON.stringify(mergeNotesHistoryGas(existingRowData[48], data.estimatorNotesHistory));
       }
+      rowValues[49] = JSON.stringify(mergeNotesHistoryGas(existingRowData[49], data.unifiedChatHistory));
 
       for (var r = 1; r <= 8; r++) {
         var rCol = 23 + r;
@@ -1751,7 +1851,8 @@ function handleBatchSave(records, actorUsername, actorKey, deviceInfo) {
       item.quoteFinalDoc || "",
       item.salesNotes || "",
       JSON.stringify(mergeNotesHistoryGas([], item.salesNotesHistory)),
-      JSON.stringify(mergeNotesHistoryGas([], item.estimatorNotesHistory))
+      JSON.stringify(mergeNotesHistoryGas([], item.estimatorNotesHistory)),
+      JSON.stringify(mergeNotesHistoryGas([], item.unifiedChatHistory))
     ];
 
     if (existingIdx > 0) {
@@ -1850,7 +1951,8 @@ function getAllRowsAsJSON(sheet) {
       quoteFinalDoc: v[45] ? v[45].toString() : "",
       salesNotes: v[46] ? v[46].toString() : "",
       salesNotesHistory: parseNotesHistoryJsonGas(v[47]),
-      estimatorNotesHistory: parseNotesHistoryJsonGas(v[48])
+      estimatorNotesHistory: parseNotesHistoryJsonGas(v[48]),
+      unifiedChatHistory: parseNotesHistoryJsonGas(v[49])
     });
   }
   return records;

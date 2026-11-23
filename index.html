@@ -2186,8 +2186,31 @@
       font-weight: 700;
       color: #20409a;
     }
+    .chat-sender-line {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.2rem;
+      font-size: 0.71rem;
+      font-weight: 800;
+      color: #1e293b;
+    }
+    .chat-role-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.08rem 0.42rem;
+      border-radius: 999px;
+      font-size: 0.64rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+    .chat-role-sales { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+    .chat-role-estimator { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    .chat-role-contract { background: #ede9fe; color: #5b21b6; border: 1px solid #c4b5fd; }
+    .chat-role-system { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
 
-    /* Timeline di dalam Modal History Catatan */
+    /* Timeline di dalam Modal History Chat & Catatan */
     .notes-timeline-item {
       border-left: 3px solid #20409a;
       background: #f8fafc;
@@ -2198,6 +2221,9 @@
       border-right: 1px solid #e2e8f0;
       border-bottom: 1px solid #e2e8f0;
     }
+    .notes-timeline-item.role-sales { border-left-color: #2563eb; }
+    .notes-timeline-item.role-estimator { border-left-color: #059669; }
+    .notes-timeline-item.role-contract { border-left-color: #7c3aed; }
     .notes-timeline-header {
       display: flex;
       align-items: center;
@@ -5019,17 +5045,6 @@
         </button>
       </div>
 
-      <div class="rt-notif-control-bar" id="loginNotifControlBar">
-        <button type="button" class="btn-notif-pill" id="btnLoginToggleSound" onclick="toggleNotificationSoundSetting()" title="Aktifkan atau Bisukan Suara Notifikasi">
-          <span id="loginSoundIcon">🔊</span>
-          <span id="loginSoundLabel">Suara Notifikasi: Aktif</span>
-        </button>
-        <button type="button" class="btn-notif-pill" id="btnLoginRequestOsNotif" onclick="enableBrowserNotificationAndAudio()" title="Aktifkan Pop-Up Notifikasi meskipun sedang membuka Tab lain atau layar terkunci">
-          <span>🔔</span>
-          <span id="loginOsNotifLabel">Aktifkan Pop-Up Tab Lain</span>
-        </button>
-      </div>
-
     </div>
   </div>
 
@@ -5186,6 +5201,10 @@
           </div>
 
           <div class="header-actions" id="headerActionsWrap" style="display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;">
+            <button type="button" class="btn-notif-pill" id="btnHeaderRequestOsNotif" onclick="enableBrowserNotificationAndAudio()" title="Aktifkan Pop-Up Notifikasi meskipun sedang membuka Tab lain atau layar terkunci">
+              <span>🔔</span>
+              <span id="headerOsNotifText">Pop-Up Tab Lain Aktif</span>
+            </button>
             <button type="button" class="btn-notif-pill" id="btnHeaderSoundToggle" onclick="toggleNotificationSoundSetting()" title="Aktifkan / Bisukan Suara Notifikasi">
               <span id="headerSoundIcon">🔊</span>
               <span id="headerSoundText" class="hide-on-xs">Suara Aktif</span>
@@ -5781,6 +5800,8 @@
                   <th>Nama Sales</th>
                   <th>Nama Customer</th>
                   <th>Nama Proyek</th>
+                  <th>Skop Pengerjaan Material</th>
+                  <th>Project Material</th>
                   <th>Pilih Estimator</th>
                   <th>Tanggal Estimasi Pengerjaan</th>
                   <th>Tanggal Pengerjaan Selesai</th>
@@ -6848,9 +6869,14 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Catatan Penawaran</label>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.45rem; flex-wrap: wrap;">
+              <label class="form-label" for="rosaInputNotes" style="margin-bottom: 0;">Catatan Penawaran</label>
+              <button type="button" id="btnViewRosaNotesHistoryInForm" class="btn btn-secondary btn-sm" style="display: none; font-size: 0.72rem; padding: 0.2rem 0.55rem;" onclick="openNotesHistoryModal(document.getElementById('editRosaRowId').value, 'contract')">
+                🕒 Lihat History Chat
+              </button>
+            </div>
             <textarea class="form-control" id="rosaInputNotes" rows="3" placeholder="Catatan syarat pembayaran, diskon persetujuan direksi, negosiasi termin, atau status PO klien (opsional)..."></textarea>
-            <div class="form-help">Catatan penawaran bersifat opsional dan tampil pada Bagan Admin Kontrak</div>
+            <div class="form-help">Catatan penawaran tersambung otomatis dengan History Chat Sales &amp; Estimator dan tampil pada Bagan Admin Kontrak.</div>
           </div>
 
         </div>
@@ -7190,24 +7216,39 @@
     </div>
   </div>
 
-  <!-- MODAL HISTORY CATATAN (CATATAN DARI SALES & CATATAN DESAIN ESTIMATOR) -->
+  <!-- MODAL HISTORY CHAT & CATATAN TERHUBUNG (SALES • ESTIMATOR • ADMIN KONTRAK) -->
   <div class="modal-backdrop" id="modalNotesHistory">
-    <div class="modal-dialog" style="max-width: 680px;">
+    <div class="modal-dialog" style="max-width: 700px;">
       <div class="modal-header" style="background: linear-gradient(135deg, #20409a 0%, #172b6b 100%); color: #ffffff; border-bottom: none;">
         <h3 style="color: #ffffff; margin: 0; font-size: 1.05rem;">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ffffff" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-          <span id="notesHistoryModalTitle" style="color:#ffffff;">History Catatan Proyek</span>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ffffff" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <span id="notesHistoryModalTitle" style="color:#ffffff;">History Chat &amp; Catatan Proyek</span>
         </h3>
         <button type="button" class="modal-close-btn" onclick="closeModal('modalNotesHistory')" style="color: #ffffff; background: rgba(255,255,255,0.2);">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
-      <div class="modal-body" style="padding: 1.35rem; max-height: 70vh; overflow-y: auto;">
-        <div id="notesHistoryProjectMeta" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.82rem; font-weight: 700; color: #1e3a8a;">-</div>
+      <div class="modal-body" style="padding: 1.25rem 1.35rem; max-height: 50vh; overflow-y: auto;">
+        <input type="hidden" id="notesHistoryRowId">
+        <input type="hidden" id="notesHistorySourceContext">
+        <div id="notesHistoryProjectMeta" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.72rem 0.95rem; margin-bottom: 0.95rem; font-size: 0.82rem; font-weight: 700; color: #1e3a8a;">-</div>
         <div id="notesHistoryTimelineList"></div>
       </div>
-      <div class="modal-footer" style="background: #f8fafc;">
-        <button type="button" class="btn btn-primary" onclick="closeModal('modalNotesHistory')">Tutup</button>
+      <div style="padding: 0.85rem 1.35rem; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem; flex-wrap: wrap;">
+          <label for="notesHistoryChatInput" style="font-size: 0.78rem; font-weight: 800; color: #1e3a8a; margin: 0;">
+            💬 Balas Chat Terhubung (<span id="chatSenderIdentityBadge">Tim Proyek</span>)
+          </label>
+          <span id="chatSendFeedback" style="font-size: 0.72rem; font-weight: 800; color: #059669; display: none;">✓ Chat terkirim!</span>
+        </div>
+        <textarea class="form-control" id="notesHistoryChatInput" rows="2" placeholder="Ketik balasan chat di sini... Pesan akan tersambung otomatis di Sales, Estimator & Admin Kontrak." style="resize: vertical; font-size: 0.84rem;"></textarea>
+      </div>
+      <div class="modal-footer" style="background: #f8fafc; justify-content: flex-end; gap: 0.65rem;">
+        <button type="button" class="btn btn-secondary" id="btnCloseNotesHistoryModal" onclick="closeModal('modalNotesHistory')">Tutup</button>
+        <button type="button" class="btn btn-primary" id="btnSendNotesChat" onclick="submitConnectedChatReply()">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          Kirim Chat
+        </button>
       </div>
     </div>
   </div>
@@ -7800,59 +7841,119 @@
       return 'Masih Antrian Gambar';
     }
 
-    function mergeNotesHistoryClient(listA, listB) {
+    function getChatRoleMeta(roleOrType) {
+      const r = String(roleOrType || '').trim().toLowerCase();
+      if (r === 'sales' || r === 'sales_new') {
+        return { role: 'sales', roleLabel: 'Sales', cssClass: 'chat-role-sales' };
+      }
+      if (r === 'admin' || r === 'estimator') {
+        return { role: 'admin', roleLabel: 'Estimator', cssClass: 'chat-role-estimator' };
+      }
+      if (r === 'contract' || r === 'rosa' || r === 'admin kontrak') {
+        return { role: 'contract', roleLabel: 'Admin Kontrak', cssClass: 'chat-role-contract' };
+      }
+      return { role: 'system', roleLabel: 'Tim Proyek', cssClass: 'chat-role-system' };
+    }
+
+    function mergeNotesHistoryClient(listA, listB, defaultMeta) {
       const merged = [];
-      const seen = new Set();
+      const seenIds = new Set();
+      const seenSigs = new Set();
       const combined = [].concat(Array.isArray(listB) ? listB : [], Array.isArray(listA) ? listA : []);
       combined.forEach(function(item) {
         if (!item || typeof item !== 'object') return;
         const txt = String(item.text || '').trim();
         if (!txt || txt === '-') return;
+        const msgId = String(item.id || '').trim();
         const ts = String(item.timestamp || '').trim();
         const author = String(item.author || '-').trim();
         const sig = ts + '|' + author + '|' + txt;
-        if (seen.has(sig)) return;
-        seen.add(sig);
-        merged.push({
+        if ((msgId && seenIds.has(msgId)) || seenSigs.has(sig)) return;
+        if (msgId) seenIds.add(msgId);
+        seenSigs.add(sig);
+        const roleMeta = getChatRoleMeta(item.role || (defaultMeta && defaultMeta.role) || '');
+        const resolvedRole = String(item.role || (defaultMeta && defaultMeta.role) || roleMeta.role || '').trim();
+        const resolvedLabel = String(item.roleLabel || (defaultMeta && defaultMeta.roleLabel) || roleMeta.roleLabel || 'Tim Proyek').trim();
+        const obj = {
           timestamp: ts || (typeof formatLiveDateTimeSpaced === 'function' ? formatLiveDateTimeSpaced(new Date()) : new Date().toLocaleString()),
           author: author || '-',
+          role: resolvedRole,
+          roleLabel: resolvedLabel,
+          sourceMenu: String(item.sourceMenu || (defaultMeta && defaultMeta.sourceMenu) || '').trim(),
+          createdAtMs: Number(item.createdAtMs || 0),
           text: txt
-        });
+        };
+        if (msgId) obj.id = msgId;
+        merged.push(obj);
       });
-      return merged.slice(0, 100);
+      merged.sort(function(a, b) {
+        const ta = Number(a.createdAtMs || 0);
+        const tb = Number(b.createdAtMs || 0);
+        if (ta === tb) return 0;
+        return ta > tb ? -1 : 1;
+      });
+      return merged.slice(0, 150);
     }
 
-    function appendNoteToHistoryClient(existingArr, noteText, authorName) {
+    function appendNoteToHistoryClient(existingArr, noteText, authorName, extraMeta) {
       const base = mergeNotesHistoryClient(existingArr, []);
       const cleanTxt = String(noteText || '').trim();
       if (!cleanTxt || cleanTxt === '-') return base;
-      if (base.length > 0 && base[0].text === cleanTxt) return base;
+      const meta = extraMeta || {};
+      const skipDedup = Boolean(meta.allowDuplicateConsecutive);
+      if (!skipDedup && base.length > 0 && base[0].text === cleanTxt && String(base[0].author || '') === String(authorName || '-').trim()) {
+        return base;
+      }
       const tsStr = (typeof formatLiveDateTimeSpaced === 'function')
         ? formatLiveDateTimeSpaced(new Date())
         : new Date().toLocaleString();
+      const roleMeta = getChatRoleMeta(meta.role || '');
+      const nowMs = Date.now();
       base.unshift({
+        id: meta.id || ('MSG-' + nowMs + '-' + Math.random().toString(36).slice(2, 6)),
+        createdAtMs: nowMs,
         timestamp: tsStr,
         author: String(authorName || '-').trim() || '-',
+        role: meta.role || roleMeta.role,
+        roleLabel: meta.roleLabel || roleMeta.roleLabel,
+        sourceMenu: meta.sourceMenu || '',
         text: cleanTxt
       });
-      return base.slice(0, 100);
+      return base.slice(0, 150);
+    }
+
+    function getUnifiedChatForRecord(record) {
+      if (!record) return [];
+      const uList = mergeNotesHistoryClient(record.unifiedChatHistory, []);
+      const sList = mergeNotesHistoryClient(record.salesNotesHistory, [], { role: 'sales', roleLabel: 'Sales', sourceMenu: 'Catatan Dari Sales' });
+      const eList = mergeNotesHistoryClient(record.estimatorNotesHistory, [], { role: 'admin', roleLabel: 'Estimator', sourceMenu: 'Catatan Desain Estimator' });
+      const cList = mergeNotesHistoryClient(record.quoteNotesHistory, [], { role: 'contract', roleLabel: 'Admin Kontrak', sourceMenu: 'Catatan Penawaran' });
+      let combined = mergeNotesHistoryClient(sList.concat(eList, cList), uList);
+
+      const fallbacks = [
+        { val: record.salesNotes, author: record.salesName || 'Sales', role: 'sales', roleLabel: 'Sales', sourceMenu: 'Catatan Dari Sales', ts: record.uploadDateTime || '-' },
+        { val: record.estimatorNotes, author: record.estimatorName || 'Estimator', role: 'admin', roleLabel: 'Estimator', sourceMenu: 'Catatan Desain Estimator', ts: record.estimateStartDate || record.uploadDateTime || '-' },
+        { val: record.quoteNotes, author: 'Admin Kontrak', role: 'contract', roleLabel: 'Admin Kontrak', sourceMenu: 'Catatan Penawaran', ts: record.estimateEndDate || record.uploadDateTime || '-' }
+      ];
+      fallbacks.forEach(function(fb) {
+        const clean = String(fb.val || '').trim();
+        if (clean && clean !== '-' && !combined.some(m => m.text === clean)) {
+          combined.push({
+            timestamp: fb.ts,
+            author: fb.author,
+            role: fb.role,
+            roleLabel: fb.roleLabel,
+            sourceMenu: fb.sourceMenu,
+            createdAtMs: 0,
+            text: clean
+          });
+        }
+      });
+      return combined.slice(0, 150);
     }
 
     function getNotesHistoryForRecord(record, type) {
-      if (!record) return [];
-      const arrKey = (type === 'sales') ? 'salesNotesHistory' : 'estimatorNotesHistory';
-      const strKey = (type === 'sales') ? 'salesNotes' : 'estimatorNotes';
-      let hist = mergeNotesHistoryClient(record[arrKey], []);
-      const rawTxt = String(record[strKey] || '').trim();
-      if (rawTxt && rawTxt !== '-' && !hist.some(h => h.text === rawTxt)) {
-        const fallbackAuthor = (type === 'sales') ? (record.salesName || 'Sales') : (record.estimatorName || 'Estimator');
-        hist.unshift({
-          timestamp: record.uploadDateTime || '-',
-          author: fallbackAuthor,
-          text: rawTxt
-        });
-      }
-      return hist;
+      return getUnifiedChatForRecord(record);
     }
 
     function applyRemoteRecordsToDatabase(remoteRecords) {
@@ -7907,7 +8008,7 @@
           if (remoteItem.sourceDesc && remoteItem.sourceDesc !== '-') target.sourceDesc = remoteItem.sourceDesc;
           if (remoteItem.salesNotes !== undefined && remoteItem.salesNotes !== '-') target.salesNotes = remoteItem.salesNotes;
           if (Array.isArray(remoteItem.salesNotesHistory)) {
-            target.salesNotesHistory = mergeNotesHistoryClient(target.salesNotesHistory, remoteItem.salesNotesHistory);
+            target.salesNotesHistory = mergeNotesHistoryClient(target.salesNotesHistory, remoteItem.salesNotesHistory, { role: 'sales', roleLabel: 'Sales', sourceMenu: 'Catatan Dari Sales' });
           }
           if (remoteDeadline) target.requestDeadline = remoteDeadline;
           if (remoteItem.customerFolderUrl && remoteItem.customerFolderUrl !== '-') target.customerFolderUrl = remoteItem.customerFolderUrl;
@@ -7920,11 +8021,17 @@
           }
           if (remoteItem.estimatorNotes && remoteItem.estimatorNotes !== '-') target.estimatorNotes = remoteItem.estimatorNotes;
           if (Array.isArray(remoteItem.estimatorNotesHistory)) {
-            target.estimatorNotesHistory = mergeNotesHistoryClient(target.estimatorNotesHistory, remoteItem.estimatorNotesHistory);
+            target.estimatorNotesHistory = mergeNotesHistoryClient(target.estimatorNotesHistory, remoteItem.estimatorNotesHistory, { role: 'admin', roleLabel: 'Estimator', sourceMenu: 'Catatan Desain Estimator' });
           }
           if (remoteItem.quoteNumber && remoteItem.quoteNumber !== '-') target.quoteNumber = remoteItem.quoteNumber;
           if (remoteItem.quoteStatus) target.quoteStatus = remoteItem.quoteStatus;
           if (remoteItem.quoteNotes && remoteItem.quoteNotes !== '-') target.quoteNotes = remoteItem.quoteNotes;
+          if (Array.isArray(remoteItem.quoteNotesHistory)) {
+            target.quoteNotesHistory = mergeNotesHistoryClient(target.quoteNotesHistory, remoteItem.quoteNotesHistory, { role: 'contract', roleLabel: 'Admin Kontrak', sourceMenu: 'Catatan Penawaran' });
+          }
+          if (Array.isArray(remoteItem.unifiedChatHistory)) {
+            target.unifiedChatHistory = mergeNotesHistoryClient(target.unifiedChatHistory, remoteItem.unifiedChatHistory);
+          }
           for (var qp = 1; qp <= 8; qp++) {
             if (remoteItem['quoteRev' + qp]) target['quoteRev' + qp] = remoteItem['quoteRev' + qp];
           }
@@ -7949,7 +8056,7 @@
             requestDeadline: remoteDeadline,
             sourceDesc: remoteItem.sourceDesc || '',
             salesNotes: (remoteItem.salesNotes && remoteItem.salesNotes !== '-') ? remoteItem.salesNotes : '',
-            salesNotesHistory: mergeNotesHistoryClient([], remoteItem.salesNotesHistory),
+            salesNotesHistory: mergeNotesHistoryClient([], remoteItem.salesNotesHistory, { role: 'sales', roleLabel: 'Sales', sourceMenu: 'Catatan Dari Sales' }),
             customerFolderUrl: remoteItem.customerFolderUrl || '',
             driveLink: remoteItem.docsText || '',
             imageFile: generateBlueprintSVG(rQ, remoteItem.projectName, remoteItem.scopeOfWork),
@@ -7973,11 +8080,13 @@
             revGambar7: remoteItem.revGambar7 || '',
             revGambar8: remoteItem.revGambar8 || '',
             estimatorNotes: remoteItem.estimatorNotes || '',
-            estimatorNotesHistory: mergeNotesHistoryClient([], remoteItem.estimatorNotesHistory),
+            estimatorNotesHistory: mergeNotesHistoryClient([], remoteItem.estimatorNotesHistory, { role: 'admin', roleLabel: 'Estimator', sourceMenu: 'Catatan Desain Estimator' }),
             status: remoteItem.status || 'Masih Antrian Gambar',
             quoteNumber: (remoteItem.quoteNumber && remoteItem.quoteNumber !== '-') ? remoteItem.quoteNumber : '',
             quoteStatus: remoteItem.quoteStatus || 'Draft',
             quoteNotes: remoteItem.quoteNotes || '',
+            quoteNotesHistory: mergeNotesHistoryClient([], remoteItem.quoteNotesHistory, { role: 'contract', roleLabel: 'Admin Kontrak', sourceMenu: 'Catatan Penawaran' }),
+            unifiedChatHistory: mergeNotesHistoryClient([], remoteItem.unifiedChatHistory),
             quoteRev1: remoteItem.quoteRev1 || '',
             quoteRev2: remoteItem.quoteRev2 || '',
             quoteRev3: remoteItem.quoteRev3 || '',
@@ -10055,22 +10164,23 @@
       }
     }
 
-    function renderScopeMaterialCell(scopeStr, rowId) {
+    function renderScopeMaterialCell(scopeStr, rowId, maxVisible = 1) {
       const items = parseScopeMaterials(scopeStr);
       if (items.length === 0) {
         return `<td class="scope-material-cell"><span style="color:#94a3b8;">-</span></td>`;
       }
-      if (items.length <= 3) {
+      const limit = Math.max(1, Number(maxVisible) || 1);
+      if (items.length <= limit) {
         const listHtml = items.map(it => `<div class="scope-material-item">${escapeHtml(it)}</div>`).join('');
         return `<td class="scope-material-cell"><div class="scope-material-stack">${listHtml}</div></td>`;
       }
-      const firstHtml = items.slice(0, 3).map(it => `<div class="scope-material-item">${escapeHtml(it)}</div>`).join('');
-      const restHtml = items.slice(3).map(it => `<div class="scope-material-item">${escapeHtml(it)}</div>`).join('');
+      const firstHtml = items.slice(0, limit).map(it => `<div class="scope-material-item">${escapeHtml(it)}</div>`).join('');
+      const restHtml = items.slice(limit).map(it => `<div class="scope-material-item">${escapeHtml(it)}</div>`).join('');
       return `
         <td class="scope-material-cell">
           <div class="scope-material-stack">
             ${firstHtml}
-            <button type="button" class="btn-expand-materials" onclick="toggleExtraMaterialsCell(this)" data-extra-count="${items.length - 3}">(KLIK MATERIAL LAINNYA)</button>
+            <button type="button" class="btn-expand-materials" onclick="toggleExtraMaterialsCell(this)" data-extra-count="${items.length - limit}">(KLIK MATERIAL LAINNYA)</button>
             <div class="scope-extra-materials">${restHtml}</div>
           </div>
         </td>
@@ -10086,59 +10196,228 @@
     }
 
     function renderNotesHistoryCell(row, type) {
-      const hist = getNotesHistoryForRecord(row, type);
-      const currentRaw = String(type === 'sales' ? (row.salesNotes || '') : (row.estimatorNotes || '')).trim();
-      const displayTxt = (currentRaw && currentRaw !== '-') ? currentRaw : (hist[0] ? hist[0].text : '');
+      const chatList = getUnifiedChatForRecord(row);
+      const latest = chatList[0] || null;
       const safeId = escapeHtml(row.id || row.queueCode || '');
-      const labelTitle = (type === 'sales') ? 'Catatan Dari Sales' : 'Catatan Desain Estimator';
+      const labelTitle = (type === 'sales')
+        ? 'Catatan Dari Sales (Chat Terhubung)'
+        : (type === 'contract' ? 'Catatan Penawaran (Chat Terhubung)' : 'Catatan Desain Estimator (Chat Terhubung)');
+      let senderHeaderHtml = '';
+      if (latest) {
+        const roleMeta = getChatRoleMeta(latest.role || type);
+        senderHeaderHtml = `
+          <div class="chat-sender-line">
+            <span class="chat-role-pill ${roleMeta.cssClass}">${escapeHtml(latest.roleLabel || roleMeta.roleLabel)}</span>
+            <span>${escapeHtml(latest.author || '-')}</span>
+          </div>
+        `;
+      }
       return `
         <td class="notes-history-td">
-          <div class="notes-history-card" onclick="openNotesHistoryModal('${safeId}', '${type}')" title="Klik untuk melihat History lengkap ${labelTitle}">
-            <div class="notes-history-text">${displayTxt ? escapeHtml(displayTxt) : '<em style="color:#94a3b8">Tidak ada catatan</em>'}</div>
+          <div class="notes-history-card" onclick="openNotesHistoryModal('${safeId}', '${type}')" title="Klik untuk melihat History &amp; membalas Chat ${labelTitle}">
+            ${senderHeaderHtml}
+            <div class="notes-history-text">${latest && latest.text ? escapeHtml(latest.text) : '<em style="color:#94a3b8">Belum ada catatan / chat</em>'}</div>
             <div class="notes-history-meta-bar">
-              <span>🕒 History (${hist.length})</span>
-              <span>Klik Lihat History &rarr;</span>
+              <span>🕒 History (${chatList.length})</span>
+              <span>Klik Lihat / Balas Chat &rarr;</span>
             </div>
           </div>
         </td>
       `;
     }
 
+    function renderNotesHistoryModalTimeline(item) {
+      const listEl = document.getElementById('notesHistoryTimelineList');
+      if (!listEl || !item) return;
+      const chatList = getUnifiedChatForRecord(item);
+      if (chatList.length === 0) {
+        listEl.innerHTML = `<div style="text-align:center; padding: 1.75rem; color: #64748b; font-style: italic;">Belum ada percakapan chat atau catatan pada proyek ini. Ketik pesan di bawah untuk memulai chat!</div>`;
+        return;
+      }
+      listEl.innerHTML = chatList.map((entry, idx) => {
+        const rm = getChatRoleMeta(entry.role || '');
+        const itemCls = rm.role === 'sales' ? 'role-sales' : (rm.role === 'admin' ? 'role-estimator' : (rm.role === 'contract' ? 'role-contract' : ''));
+        return `
+          <div class="notes-timeline-item ${itemCls}">
+            <div class="notes-timeline-header">
+              <span style="display: inline-flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                ${idx === 0 ? '🟢 Catatan Terbaru' : '🕒 Riwayat #' + (chatList.length - idx)} • <strong>${escapeHtml(entry.author || '-')}</strong>
+                <span class="chat-role-pill ${rm.cssClass}">${escapeHtml(entry.roleLabel || rm.roleLabel)}</span>
+              </span>
+              <span style="font-family: var(--font-mono); color: #475569;">${escapeHtml(entry.timestamp || '-')}</span>
+            </div>
+            <div class="notes-timeline-body">${escapeHtml(entry.text || '-')}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
     function openNotesHistoryModal(rowId, type) {
       let item = projectDatabase.find(x => x.id === rowId || x.queueCode === rowId);
       if (!item) {
-        alert('Simpan data formulir terlebih dahulu untuk melihat daftar History Catatan.');
+        alert('Simpan data formulir terlebih dahulu untuk membuka History Chat & Catatan.');
         return;
       }
-      const isSalesNote = (type === 'sales');
       const titleEl = document.getElementById('notesHistoryModalTitle');
       const metaEl = document.getElementById('notesHistoryProjectMeta');
-      const listEl = document.getElementById('notesHistoryTimelineList');
+      const rowIdInput = document.getElementById('notesHistoryRowId');
+      const srcInput = document.getElementById('notesHistorySourceContext');
+      const chatInput = document.getElementById('notesHistoryChatInput');
+      const senderBadge = document.getElementById('chatSenderIdentityBadge');
+      const feedbackEl = document.getElementById('chatSendFeedback');
+
+      if (rowIdInput) rowIdInput.value = item.id || item.queueCode || '';
+      if (srcInput) srcInput.value = type || 'sales';
+      if (chatInput) chatInput.value = '';
+      if (feedbackEl) feedbackEl.style.display = 'none';
 
       if (titleEl) {
-        titleEl.textContent = isSalesNote ? 'History Catatan Dari Sales' : 'History Catatan Desain Estimator';
+        titleEl.textContent = (type === 'estimator')
+          ? 'History Chat & Catatan Desain Estimator (Terhubung)'
+          : (type === 'contract' ? 'History Chat & Catatan Penawaran (Terhubung)' : 'History Chat & Catatan Dari Sales (Terhubung)');
       }
       if (metaEl) {
-        metaEl.textContent = `${item.queueCode || '-'} • ${item.customerName || '-'} — ${item.projectName || '-'} (Sales: ${item.salesName || '-'})`;
+        metaEl.textContent = `${item.queueCode || '-'} • ${item.customerName || '-'} — ${item.projectName || '-'} (Sales: ${item.salesName || '-'}${item.estimatorName ? ' | Estimator: ' + item.estimatorName : ''})`;
       }
-
-      const hist = getNotesHistoryForRecord(item, isSalesNote ? 'sales' : 'estimator');
-      if (listEl) {
-        if (hist.length === 0) {
-          listEl.innerHTML = `<div style="text-align:center; padding: 2rem; color: #64748b; font-style: italic;">Belum ada riwayat catatan tersimpan pada proyek ini.</div>`;
+      if (senderBadge) {
+        if (currentUser) {
+          const rm = getChatRoleMeta(currentUser.role);
+          senderBadge.textContent = `${currentUser.name} (${rm.roleLabel})`;
         } else {
-          listEl.innerHTML = hist.map((entry, idx) => `
-            <div class="notes-timeline-item">
-              <div class="notes-timeline-header">
-                <span>${idx === 0 ? '🟢 Catatan Terbaru' : '🕒 Riwayat #' + (hist.length - idx)} • ${escapeHtml(entry.author || '-')}</span>
-                <span style="font-family: var(--font-mono); color: #475569;">${escapeHtml(entry.timestamp || '-')}</span>
-              </div>
-              <div class="notes-timeline-body">${escapeHtml(entry.text || '-')}</div>
-            </div>
-          `).join('');
+          senderBadge.textContent = 'Tim Proyek';
         }
       }
+
+      renderNotesHistoryModalTimeline(item);
       openModal('modalNotesHistory');
+    }
+
+    async function sendProjectChatToCloud(record, chatMsg, clientEventId) {
+      let gasUrl = (typeof getGoogleScriptUrl === 'function') ? getGoogleScriptUrl() : '';
+      if (!gasUrl && typeof shouldProbePhpCloudApi === 'function' && shouldProbePhpCloudApi() && typeof ensureCloudApiDetected === 'function') {
+        try { gasUrl = await ensureCloudApiDetected(); } catch (e) {}
+      }
+      if (!gasUrl || !gasUrl.startsWith('http')) return;
+      try {
+        const res = await fetch(gasUrl, {
+          method: 'POST',
+          redirect: 'follow',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'send_project_chat',
+            queueCode: record.queueCode || '-',
+            recordId: record.id || '',
+            salesName: record.salesName || 'Sales',
+            customerName: record.customerName || 'Customer',
+            projectName: record.projectName || 'Proyek',
+            status: record.status || 'Masih Antrian Gambar',
+            actorUsername: chatMsg.author || (currentUser ? currentUser.name : 'Tim Proyek'),
+            actorUserKey: currentUser ? getProfileStorageKey(currentUser) : getProfileStorageKey(chatMsg.author || ''),
+            device: (typeof getDeviceSummary === 'function') ? getDeviceSummary() : '-',
+            clientEventId: clientEventId || chatMsg.id,
+            chatMessage: chatMsg
+          })
+        });
+        if (res && res.type !== 'opaque') {
+          const txt = await res.text();
+          if (txt && txt.trim().startsWith('{')) {
+            const parsed = JSON.parse(txt);
+            if (parsed && parsed.notification && typeof markRealtimeNotificationSeen === 'function') {
+              markRealtimeNotificationSeen(parsed.notification);
+            }
+            if (parsed && Array.isArray(parsed.unifiedChatHistory)) {
+              record.unifiedChatHistory = mergeNotesHistoryClient(record.unifiedChatHistory, parsed.unifiedChatHistory);
+              record._dirtyOnline = false;
+              record._syncedToSheet = true;
+              saveDatabase();
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Gagal kirim chat terhubung ke cloud:', err);
+      }
+    }
+
+    function submitConnectedChatReply() {
+      const rowId = document.getElementById('notesHistoryRowId')?.value || '';
+      const srcCtx = document.getElementById('notesHistorySourceContext')?.value || 'sales';
+      const inputEl = document.getElementById('notesHistoryChatInput');
+      const feedbackEl = document.getElementById('chatSendFeedback');
+      const txt = inputEl ? inputEl.value.trim() : '';
+      if (!txt) {
+        alert('Silakan ketik isi chat terlebih dahulu sebelum menekan Kirim Chat!');
+        if (inputEl) inputEl.focus();
+        return;
+      }
+      const idx = projectDatabase.findIndex(x => x.id === rowId || x.queueCode === rowId);
+      if (idx === -1) {
+        alert('Data proyek tidak ditemukan.');
+        return;
+      }
+      const item = projectDatabase[idx];
+      const activeRole = currentUser ? currentUser.role : (srcCtx === 'estimator' ? 'admin' : (srcCtx === 'contract' ? 'contract' : 'sales'));
+      const roleMeta = getChatRoleMeta(activeRole);
+      const authorName = currentUser ? currentUser.name : (activeRole === 'sales' ? (item.salesName || 'Sales') : (activeRole === 'admin' ? (item.estimatorName || 'Estimator') : 'Admin Kontrak'));
+      const sourceLabel = (srcCtx === 'estimator') ? 'Catatan Desain Estimator' : (srcCtx === 'contract' ? 'Catatan Penawaran' : 'Catatan Dari Sales');
+      const nowMs = Date.now();
+      const msgId = 'MSG-' + nowMs + '-' + Math.random().toString(36).slice(2, 6);
+      const clientEventId = 'EVT-' + nowMs + '-' + Math.random().toString(36).slice(2, 7);
+
+      const newChatMsg = {
+        id: msgId,
+        createdAtMs: nowMs,
+        timestamp: formatLiveDateTimeSpaced(new Date(nowMs)),
+        author: authorName,
+        role: roleMeta.role,
+        roleLabel: roleMeta.roleLabel,
+        sourceMenu: sourceLabel,
+        text: txt
+      };
+
+      item.unifiedChatHistory = mergeNotesHistoryClient(item.unifiedChatHistory, [newChatMsg]);
+      if (roleMeta.role === 'sales') {
+        item.salesNotes = txt;
+        item.salesNotesHistory = mergeNotesHistoryClient(item.salesNotesHistory, [newChatMsg], roleMeta);
+      } else if (roleMeta.role === 'admin') {
+        item.estimatorNotes = txt;
+        item.estimatorNotesHistory = mergeNotesHistoryClient(item.estimatorNotesHistory, [newChatMsg], roleMeta);
+      } else if (roleMeta.role === 'contract') {
+        item.quoteNotes = txt;
+        item.quoteNotesHistory = mergeNotesHistoryClient(item.quoteNotesHistory, [newChatMsg], roleMeta);
+      }
+      item._dirtyOnline = true;
+      item._syncedToSheet = false;
+
+      saveDatabase();
+      renderNotesHistoryModalTimeline(item);
+      if (inputEl) {
+        inputEl.value = '';
+        inputEl.focus();
+      }
+      if (feedbackEl) {
+        feedbackEl.style.display = 'inline';
+        setTimeout(() => { if (feedbackEl) feedbackEl.style.display = 'none'; }, 2800);
+      }
+
+      renderAllTables();
+      updateDashboardView();
+      applyRecentTableFilters();
+
+      if (typeof emitRealtimeNotification === 'function') {
+        emitRealtimeNotification({
+          id: clientEventId,
+          eventType: 'project_chat',
+          title: `Pesan Chat Proyek (${roleMeta.roleLabel})`,
+          message: `${authorName} (${roleMeta.roleLabel}) membalas pada ${item.queueCode} - ${item.projectName}: "${txt}"`,
+          actor: authorName,
+          queueCode: item.queueCode,
+          customerName: item.customerName,
+          projectName: item.projectName,
+          status: item.status || 'Masih Antrian Gambar'
+        }, { fromLocalAction: true });
+      }
+
+      sendProjectChatToCloud(item, newChatMsg, clientEventId);
     }
 
     // Render Tabel Aktivitas Proyek & Antrian Gambar Terkini (33 Kolom Lengkap)
@@ -10441,11 +10720,11 @@
         });
       }
 
-      // 2. Render Tabel BAGAN ESTIMATOR (Dengan History Catatan Desain Estimator)
+      // 2. Render Tabel BAGAN ESTIMATOR (Dengan Skop Pengerjaan Material, Project Material & Chat Terhubung)
       const estTbody = document.getElementById('estimatorTableTbody');
       estTbody.innerHTML = '';
       if (estimatorList.length === 0) {
-        estTbody.innerHTML = `<tr><td colspan="${canManageEstimator ? 19 : 18}" style="text-align:center; padding: 2.5rem; color: #94a3b8; font-weight:600;">Belum ada data antrian pada bagan estimator</td></tr>`;
+        estTbody.innerHTML = `<tr><td colspan="${canManageEstimator ? 21 : 20}" style="text-align:center; padding: 2.5rem; color: #94a3b8; font-weight:600;">Belum ada data antrian pada bagan estimator</td></tr>`;
       } else {
         estimatorList.forEach(row => {
           estTbody.innerHTML += `
@@ -10455,6 +10734,8 @@
             <td><strong>${row.salesName}</strong></td>
             <td>${row.customerName}</td>
             <td><strong>${row.projectName}</strong></td>
+            ${renderScopeMaterialCell(row.scopeOfWork, row.id)}
+            ${renderProjectMaterialCell(row.projectMaterial)}
             <td>${row.estimatorName ? `<strong>${row.estimatorName}</strong>` : ''}</td>
             <td>${formatDateDMY(row.estimateStartDate, '-')}</td>
             <td>${row.estimateEndDate ? formatDateDMY(row.estimateEndDate) : '<em style="color:#94a3b8">Proses...</em>'}</td>
@@ -10481,7 +10762,7 @@
         });
       }
 
-      // 3. Render Tabel BAGAN ADMIN KONTRAK (18 Kolom: Hanya Desain Selesai)
+      // 3. Render Tabel BAGAN ADMIN KONTRAK (18 Kolom: Hanya Desain Selesai + Catatan Penawaran Chat Terhubung)
       const rosaTbody = document.getElementById('rosaTableTbody');
       rosaTbody.innerHTML = '';
       if (rosaList.length === 0) {
@@ -10505,9 +10786,7 @@
               <td style="text-align:center;">${renderRevisionBadge(row.quoteRev7, 7, row.id, 'quoteRev')}</td>
               <td style="text-align:center;">${renderRevisionBadge(row.quoteRev8, 8, row.id, 'quoteRev')}</td>
               <td style="text-align:center;">${renderFinalQuoteBadge(row.quoteFinalDoc, row.id)}</td>
-              <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis;" title="${row.quoteNotes || '-'}">
-                ${row.quoteNotes || '<em style="color:#94a3b8">Tidak ada catatan penawaran</em>'}
-              </td>
+              ${renderNotesHistoryCell(row, 'contract')}
               <td style="text-align:center;">${getRosaStatusBadgeHTML(row.quoteStatus)}</td>
               ${canManageContract ? `
                 <td style="text-align:center;">
@@ -12444,7 +12723,12 @@
         if (editId) {
           const idx = projectDatabase.findIndex(x => x.id === editId);
           if (idx !== -1) {
-            const nextSalesHist = appendNoteToHistoryClient(projectDatabase[idx].salesNotesHistory, salesNotes, salesAuthorName);
+            const prevSalesNote = String(projectDatabase[idx].salesNotes || '').trim();
+            const nextSalesHist = appendNoteToHistoryClient(projectDatabase[idx].salesNotesHistory, salesNotes, salesAuthorName, { role: 'sales', roleLabel: 'Sales', sourceMenu: 'Catatan Dari Sales' });
+            let nextUnifiedChat = mergeNotesHistoryClient(projectDatabase[idx].unifiedChatHistory, []);
+            if (salesNotes && salesNotes !== '-' && salesNotes !== prevSalesNote) {
+              nextUnifiedChat = appendNoteToHistoryClient(nextUnifiedChat, salesNotes, salesAuthorName, { role: 'sales', roleLabel: 'Sales', sourceMenu: 'Catatan Dari Sales' });
+            }
             projectDatabase[idx] = {
               ...projectDatabase[idx],
               salesName,
@@ -12466,12 +12750,14 @@
               projectMaterial: document.getElementById('salesInputProjectMaterial') ? document.getElementById('salesInputProjectMaterial').value : '',
               salesNotes,
               salesNotesHistory: nextSalesHist,
+              unifiedChatHistory: nextUnifiedChat,
               status: projectDatabase[idx].status || 'Masih Antrian Gambar'
             };
             targetSavedRecord = projectDatabase[idx];
           }
         } else {
-          const initSalesHist = appendNoteToHistoryClient([], salesNotes, salesAuthorName);
+          const initSalesHist = appendNoteToHistoryClient([], salesNotes, salesAuthorName, { role: 'sales', roleLabel: 'Sales', sourceMenu: 'Catatan Dari Sales' });
+          const initUnifiedChat = mergeNotesHistoryClient([], initSalesHist);
           const newRecord = {
             id: 'REC-' + Date.now(),
             queueCode,
@@ -12507,6 +12793,7 @@
             revGambar8: '',
             estimatorNotes: '',
             estimatorNotesHistory: [],
+            unifiedChatHistory: initUnifiedChat,
             status: 'Masih Antrian Gambar',
             quoteNumber: '',
             quoteRev1: '',
@@ -12519,6 +12806,7 @@
             quoteRev8: '',
             quoteFinalDoc: '',
             quoteNotes: '',
+            quoteNotesHistory: [],
             quoteStatus: 'Draft'
           };
           projectDatabase.unshift(newRecord);
@@ -12766,10 +13054,14 @@
           projectDatabase[idx]['revGambar' + i] = revEl.value || '';
         }
       }
+      const prevEstNote = String(projectDatabase[idx].estimatorNotes || '').trim();
       const estNoteVal = (document.getElementById('estInputNotes')?.value || '').trim() || '-';
       const estAuthor = (currentUser && currentUser.name) ? currentUser.name : (projectDatabase[idx].estimatorName || 'Estimator');
       projectDatabase[idx].estimatorNotes = estNoteVal;
-      projectDatabase[idx].estimatorNotesHistory = appendNoteToHistoryClient(projectDatabase[idx].estimatorNotesHistory, estNoteVal, estAuthor);
+      projectDatabase[idx].estimatorNotesHistory = appendNoteToHistoryClient(projectDatabase[idx].estimatorNotesHistory, estNoteVal, estAuthor, { role: 'admin', roleLabel: 'Estimator', sourceMenu: 'Catatan Desain Estimator' });
+      if (estNoteVal && estNoteVal !== '-' && estNoteVal !== prevEstNote) {
+        projectDatabase[idx].unifiedChatHistory = appendNoteToHistoryClient(projectDatabase[idx].unifiedChatHistory, estNoteVal, estAuthor, { role: 'admin', roleLabel: 'Estimator', sourceMenu: 'Catatan Desain Estimator' });
+      }
       
       // Update status pengerjaan desain: Masih Antrian Gambar, Cek Kelengkapan Desain, Sedang Desain, Revisi Desain, atau Desain Selesai
       projectDatabase[idx].status = normalizeEstimatorStatusValue(document.getElementById('estInputStatus')?.value || 'Masih Antrian Gambar');
@@ -12876,6 +13168,17 @@
 
       document.getElementById('rosaInputNotes').value = (item.quoteNotes && item.quoteNotes !== '-') ? item.quoteNotes : '';
 
+      const btnRosaHist = document.getElementById('btnViewRosaNotesHistoryInForm');
+      if (btnRosaHist) {
+        const rosaHist = getNotesHistoryForRecord(item, 'contract');
+        if (rosaHist.length > 0) {
+          btnRosaHist.style.display = 'inline-flex';
+          btnRosaHist.textContent = `🕒 History Chat (${rosaHist.length})`;
+        } else {
+          btnRosaHist.style.display = 'none';
+        }
+      }
+
       openModal('modalRosaEdit');
     }
 
@@ -12919,8 +13222,16 @@
         projectDatabase[idx]['quoteRev' + i] = document.getElementById('rosaInputRev' + i)?.value?.trim() || '';
       }
       projectDatabase[idx].quoteFinalDoc = document.getElementById('rosaInputFinalDoc')?.value?.trim() || '';
+      const prevQuoteNote = String(projectDatabase[idx].quoteNotes || '').trim();
       const notesRaw = document.getElementById('rosaInputNotes')?.value?.trim() || '';
+      const rosaAuthor = (currentUser && currentUser.name) ? currentUser.name : 'Rosa';
       projectDatabase[idx].quoteNotes = notesRaw || '-';
+      if (notesRaw && notesRaw !== '-') {
+        projectDatabase[idx].quoteNotesHistory = appendNoteToHistoryClient(projectDatabase[idx].quoteNotesHistory, notesRaw, rosaAuthor, { role: 'contract', roleLabel: 'Admin Kontrak', sourceMenu: 'Catatan Penawaran' });
+        if (notesRaw !== prevQuoteNote) {
+          projectDatabase[idx].unifiedChatHistory = appendNoteToHistoryClient(projectDatabase[idx].unifiedChatHistory, notesRaw, rosaAuthor, { role: 'contract', roleLabel: 'Admin Kontrak', sourceMenu: 'Catatan Penawaran' });
+        }
+      }
       projectDatabase[idx]._dirtyOnline = true;
       projectDatabase[idx]._syncedToSheet = false;
 
@@ -13503,6 +13814,8 @@
         salesNotesHistory: Array.isArray(record.salesNotesHistory) ? record.salesNotesHistory : [],
         estimatorNotes: record.estimatorNotes || '-',
         estimatorNotesHistory: Array.isArray(record.estimatorNotesHistory) ? record.estimatorNotesHistory : [],
+        quoteNotesHistory: Array.isArray(record.quoteNotesHistory) ? record.quoteNotesHistory : [],
+        unifiedChatHistory: getUnifiedChatForRecord(record),
         clientEventId: (extraMeta && extraMeta.clientEventId) ? extraMeta.clientEventId : '',
         notifyEventType: (extraMeta && extraMeta.notifyEventType) ? extraMeta.notifyEventType : '',
         extraImg1: record.extraImg1 || '',
@@ -13748,7 +14061,8 @@
           quoteFinalDoc: col(45) || '',
           salesNotes: col(46) || '',
           salesNotesHistory: (function() { try { const v = col(47); return v ? JSON.parse(v) : []; } catch (e) { return []; } })(),
-          estimatorNotesHistory: (function() { try { const v = col(48); return v ? JSON.parse(v) : []; } catch (e) { return []; } })()
+          estimatorNotesHistory: (function() { try { const v = col(48); return v ? JSON.parse(v) : []; } catch (e) { return []; } })(),
+          unifiedChatHistory: (function() { try { const v = col(49); return v ? JSON.parse(v) : []; } catch (e) { return []; } })()
         });
       }
       return parsed;
@@ -13856,6 +14170,14 @@
           if (typeof updateEstimatorCards === 'function') updateEstimatorCards();
           if (typeof renderSpreadsheetTable === 'function') renderSpreadsheetTable();
           if (typeof renderOnlineHistoryContainers === 'function') renderOnlineHistoryContainers();
+          const openChatModal = document.getElementById('modalNotesHistory');
+          if (openChatModal && openChatModal.classList.contains('open')) {
+            const openRowId = document.getElementById('notesHistoryRowId')?.value || '';
+            const openItem = projectDatabase.find(x => x.id === openRowId || x.queueCode === openRowId);
+            if (openItem && typeof renderNotesHistoryModalTimeline === 'function') {
+              renderNotesHistoryModalTimeline(openItem);
+            }
+          }
           if (currentUser && typeof syncOnlineProfileAndHistory === 'function') {
             try { await syncOnlineProfileAndHistory(true); } catch (histErr) {}
           }
@@ -13950,7 +14272,9 @@
           salesNotes: record.salesNotes || '',
           salesNotesHistory: Array.isArray(record.salesNotesHistory) ? record.salesNotesHistory : [],
           estimatorNotes: record.estimatorNotes || '-',
-          estimatorNotesHistory: Array.isArray(record.estimatorNotesHistory) ? record.estimatorNotesHistory : []
+          estimatorNotesHistory: Array.isArray(record.estimatorNotesHistory) ? record.estimatorNotesHistory : [],
+          quoteNotesHistory: Array.isArray(record.quoteNotesHistory) ? record.quoteNotesHistory : [],
+          unifiedChatHistory: getUnifiedChatForRecord(record)
         };
       });
 
@@ -14139,13 +14463,6 @@
       const muted = isNotificationSoundMuted();
       const perm = (typeof Notification !== 'undefined' && Notification.permission) ? Notification.permission : 'default';
 
-      const loginSoundBtn = document.getElementById('btnLoginToggleSound');
-      const loginSoundIcon = document.getElementById('loginSoundIcon');
-      const loginSoundLabel = document.getElementById('loginSoundLabel');
-      if (loginSoundBtn) loginSoundBtn.classList.toggle('muted', muted);
-      if (loginSoundIcon) loginSoundIcon.textContent = muted ? '🔇' : '🔊';
-      if (loginSoundLabel) loginSoundLabel.textContent = muted ? 'Suara Notifikasi: Mati' : 'Suara Notifikasi: Aktif';
-
       const headerSoundBtn = document.getElementById('btnHeaderSoundToggle');
       const headerSoundIcon = document.getElementById('headerSoundIcon');
       const headerSoundText = document.getElementById('headerSoundText');
@@ -14153,26 +14470,26 @@
       if (headerSoundIcon) headerSoundIcon.textContent = muted ? '🔇' : '🔊';
       if (headerSoundText) headerSoundText.textContent = muted ? 'Suara Mati' : 'Suara Aktif';
 
-      const loginOsBtn = document.getElementById('btnLoginRequestOsNotif');
-      const loginOsLabel = document.getElementById('loginOsNotifLabel');
+      const headerOsBtn = document.getElementById('btnHeaderRequestOsNotif');
+      const headerOsText = document.getElementById('headerOsNotifText');
       const modalOsBtn = document.getElementById('btnModalRequestOsNotif');
       if (perm === 'granted') {
-        if (loginOsBtn) loginOsBtn.classList.add('granted');
-        if (loginOsLabel) loginOsLabel.textContent = 'Pop-Up Tab Lain Aktif';
+        if (headerOsBtn) headerOsBtn.classList.add('granted');
+        if (headerOsText) headerOsText.textContent = 'Pop-Up Tab Lain Aktif';
         if (modalOsBtn) {
           modalOsBtn.classList.add('granted');
           modalOsBtn.textContent = '✅ Pop-Up Tab Lain Aktif';
         }
       } else if (perm === 'denied') {
-        if (loginOsBtn) loginOsBtn.classList.remove('granted');
-        if (loginOsLabel) loginOsLabel.textContent = 'Pop-Up Diblokir Browser';
+        if (headerOsBtn) headerOsBtn.classList.remove('granted');
+        if (headerOsText) headerOsText.textContent = 'Pop-Up Diblokir Browser';
         if (modalOsBtn) {
           modalOsBtn.classList.remove('granted');
           modalOsBtn.textContent = '⚠️ Izin Notifikasi Diblokir';
         }
       } else {
-        if (loginOsBtn) loginOsBtn.classList.remove('granted');
-        if (loginOsLabel) loginOsLabel.textContent = 'Aktifkan Pop-Up Tab Lain';
+        if (headerOsBtn) headerOsBtn.classList.remove('granted');
+        if (headerOsText) headerOsText.textContent = 'Aktifkan Pop-Up Tab Lain';
         if (modalOsBtn) {
           modalOsBtn.classList.remove('granted');
           modalOsBtn.textContent = '🔔 Aktifkan Pop-Up Tab Lain';
@@ -14234,7 +14551,9 @@
           const now = notifAudioContext.currentTime;
           const chord = (eventType === 'estimator_edit')
             ? [659.25, 987.77, 1318.51]
-            : (eventType === 'sales_form_edit' ? [587.33, 880, 1174.66] : [523.25, 659.25, 1046.5]);
+            : (eventType === 'project_chat'
+              ? [587.33, 783.99, 1046.5]
+              : (eventType === 'sales_form_edit' ? [587.33, 880, 1174.66] : [523.25, 659.25, 1046.5]));
 
           chord.forEach((freq, idx) => {
             const osc = notifAudioContext.createOscillator();
@@ -14364,10 +14683,14 @@
       if (eventType === 'sales_form_new') return 'Form Gambar Proyek';
       if (eventType === 'sales_form_edit') return 'Edit Perubahan Sales';
       if (eventType === 'estimator_edit') return 'Kelola Estimasi';
+      if (eventType === 'project_chat') return 'Chat Terhubung';
       return 'Aktivitas Proyek';
     }
 
     function getNotifIconSvg(eventType) {
+      if (eventType === 'project_chat') {
+        return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+      }
       if (eventType === 'estimator_edit') {
         return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>';
       }
@@ -14721,7 +15044,9 @@
         const gUrl = getGoogleScriptUrl();
         const activeEl = document.activeElement;
         const editingProfileNow = activeEl && (activeEl.closest('#formSettingsProfile') || activeEl.closest('#modalEmployeeProfile'));
-        if (gUrl && currentUser && !document.querySelector('.modal-backdrop.open') && !editingProfileNow) {
+        const openModals = document.querySelectorAll('.modal-backdrop.open');
+        const blockingModalOpen = Array.from(openModals).some(m => m.id !== 'modalNotesHistory');
+        if (gUrl && currentUser && !blockingModalOpen && !editingProfileNow) {
           syncFromGoogleSpreadsheet(true);
         }
       }, 8000);

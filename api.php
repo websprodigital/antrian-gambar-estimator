@@ -273,25 +273,44 @@ function isInitialQueueStatus($status) {
 function mergeNotesHistoryArrays($existingHist, $incomingHist) {
     $listA = is_array($existingHist) ? $existingHist : [];
     $listB = is_array($incomingHist) ? $incomingHist : [];
-    $seen = [];
+    $seenIds = [];
+    $seenSigs = [];
     $merged = [];
     foreach (array_merge($listB, $listA) as $item) {
         if (!is_array($item)) continue;
         $txt = trim((string)($item['text'] ?? ''));
         if ($txt === '' || $txt === '-') continue;
+        $msgId = trim((string)($item['id'] ?? ''));
         $ts = trim((string)($item['timestamp'] ?? ''));
         $author = trim((string)($item['author'] ?? ''));
+        $role = trim((string)($item['role'] ?? ''));
+        $roleLabel = trim((string)($item['roleLabel'] ?? ''));
+        $sourceMenu = trim((string)($item['sourceMenu'] ?? ''));
+        $createdAtMs = intval($item['createdAtMs'] ?? 0);
         $sig = $ts . '|' . $author . '|' . $txt;
-        if (isset($seen[$sig])) continue;
-        $seen[$sig] = true;
-        $merged[] = [
-            'timestamp' => $ts ?: date('d/m/Y H:i:s'),
+        if (($msgId !== '' && isset($seenIds[$msgId])) || isset($seenSigs[$sig])) continue;
+        if ($msgId !== '') $seenIds[$msgId] = true;
+        $seenSigs[$sig] = true;
+        $entry = [
+            'timestamp' => $ts ?: date('d/m/Y H : i : s'),
             'author' => $author ?: '-',
             'text' => $txt
         ];
-        if (count($merged) >= 100) break;
+        if ($msgId !== '') $entry['id'] = $msgId;
+        if ($role !== '') $entry['role'] = $role;
+        if ($roleLabel !== '') $entry['roleLabel'] = $roleLabel;
+        if ($sourceMenu !== '') $entry['sourceMenu'] = $sourceMenu;
+        if ($createdAtMs > 0) $entry['createdAtMs'] = $createdAtMs;
+        $merged[] = $entry;
+        if (count($merged) >= 150) break;
     }
-    return $merged;
+    usort($merged, function ($a, $b) {
+        $ta = intval($a['createdAtMs'] ?? 0);
+        $tb = intval($b['createdAtMs'] ?? 0);
+        if ($ta === $tb) return 0;
+        return ($ta > $tb) ? -1 : 1;
+    });
+    return array_slice($merged, 0, 150);
 }
 
 /**
@@ -976,6 +995,113 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJsonResponse($res, isset($res['error']) ? 500 : 200);
     }
 
+    // --- D2. SEND_PROJECT_CHAT (Balasan chat terhubung lintas Sales, Estimator & Admin Kontrak) ---
+    if ($postAction === 'send_project_chat') {
+        $res = withDatabaseStore(function (&$store, &$shouldSave) use ($data, $actorUsername, $actorKey, $deviceInfo) {
+            $queueCode = trim((string)($data['queueCode'] ?? $data['noAntrian'] ?? ''));
+            $chatMsg = is_array($data['chatMessage'] ?? null) ? $data['chatMessage'] : [];
+            $chatText = trim((string)($chatMsg['text'] ?? ($data['text'] ?? '')));
+            if ($chatText === '') {
+                return ['success' => false, 'status' => 'error', 'message' => 'Pesan chat kosong.'];
+            }
+            $existingIdx = findRecordIndexByQueue($store['records'], $queueCode);
+            if ($existingIdx < 0) {
+                $store['records'][] = [
+                    'id' => (string)($data['recordId'] ?? ('REC-' . time())),
+                    'queueCode' => $queueCode ?: '-',
+                    'uploadDateTime' => date('d/m/Y H:i'),
+                    'salesName' => trim((string)($data['salesName'] ?? 'Sales')),
+                    'customerName' => trim((string)($data['customerName'] ?? 'Customer')),
+                    'projectName' => trim((string)($data['projectName'] ?? 'Proyek')),
+                    'scopeOfWork' => '-',
+                    'projectMaterial' => '-',
+                    'requestDeadline' => '-',
+                    'sourceDesc' => '-',
+                    'salesNotes' => '',
+                    'salesNotesHistory' => [],
+                    'customerFolderUrl' => '',
+                    'docsText' => '-',
+                    'status' => trim((string)($data['status'] ?? 'Masih Antrian Gambar')),
+                    'estimatorName' => '(Belum dipilih)',
+                    'estimateStartDate' => '-',
+                    'estimateEndDate' => '-',
+                    'estimatorNotes' => '-',
+                    'estimatorNotesHistory' => [],
+                    'quoteNumber' => '-',
+                    'quoteStatus' => 'Draft',
+                    'quoteNotes' => '-',
+                    'quoteNotesHistory' => [],
+                    'unifiedChatHistory' => []
+                ];
+                $existingIdx = count($store['records']) - 1;
+            }
+            $rec = &$store['records'][$existingIdx];
+            $msgId = trim((string)($chatMsg['id'] ?? ('MSG-' . (int)round(microtime(true) * 1000))));
+            $msgAuthor = trim((string)($chatMsg['author'] ?? $actorUsername ?: 'Tim Proyek'));
+            $msgRole = trim((string)($chatMsg['role'] ?? ''));
+            $msgRoleLabel = trim((string)($chatMsg['roleLabel'] ?? 'Tim Proyek'));
+            $normalizedMsg = [
+                'id' => $msgId,
+                'createdAtMs' => intval($chatMsg['createdAtMs'] ?? (int)round(microtime(true) * 1000)),
+                'timestamp' => trim((string)($chatMsg['timestamp'] ?? date('d/m/Y H : i : s'))),
+                'author' => $msgAuthor,
+                'role' => $msgRole,
+                'roleLabel' => $msgRoleLabel,
+                'sourceMenu' => trim((string)($chatMsg['sourceMenu'] ?? '')),
+                'text' => $chatText
+            ];
+            $rec['unifiedChatHistory'] = mergeNotesHistoryArrays($rec['unifiedChatHistory'] ?? [], [$normalizedMsg]);
+            if ($msgRole === 'sales') {
+                $rec['salesNotes'] = $chatText;
+                $rec['salesNotesHistory'] = mergeNotesHistoryArrays($rec['salesNotesHistory'] ?? [], [$normalizedMsg]);
+            } elseif ($msgRole === 'admin') {
+                $rec['estimatorNotes'] = $chatText;
+                $rec['estimatorNotesHistory'] = mergeNotesHistoryArrays($rec['estimatorNotesHistory'] ?? [], [$normalizedMsg]);
+            } elseif ($msgRole === 'contract') {
+                $rec['quoteNotes'] = $chatText;
+                $rec['quoteNotesHistory'] = mergeNotesHistoryArrays($rec['quoteNotesHistory'] ?? [], [$normalizedMsg]);
+            }
+
+            appendOnlineHistory(
+                $store,
+                $msgAuthor,
+                $actorKey,
+                $deviceInfo,
+                'CHAT_PROYEK',
+                $rec['queueCode'] ?? $queueCode,
+                ($rec['customerName'] ?? '-') . ' / ' . ($rec['projectName'] ?? '-'),
+                $rec['status'] ?? '-',
+                '[' . $msgRoleLabel . '] ' . $chatText
+            );
+
+            $clientEventId = trim((string)($data['clientEventId'] ?? $msgId));
+            $createdNotif = appendRealtimeNotification(
+                $store,
+                'project_chat',
+                'Pesan Chat Proyek (' . $msgRoleLabel . ')',
+                $msgAuthor . ' (' . $msgRoleLabel . ') membalas pada ' . ($rec['queueCode'] ?? $queueCode) . ' - ' . ($rec['projectName'] ?? '-') . ': "' . $chatText . '"',
+                $msgAuthor,
+                $rec['queueCode'] ?? $queueCode,
+                $rec['customerName'] ?? '-',
+                $rec['projectName'] ?? '-',
+                $rec['status'] ?? '-',
+                $clientEventId
+            );
+            $shouldSave = true;
+
+            return [
+                'success' => true,
+                'status' => 'success',
+                'queueCode' => $rec['queueCode'] ?? $queueCode,
+                'unifiedChatHistory' => $rec['unifiedChatHistory'],
+                'notification' => $createdNotif,
+                'message' => 'Chat berhasil disimpan & diteruskan ke seluruh divisi!'
+            ];
+        }, true);
+
+        sendJsonResponse($res, isset($res['error']) ? 500 : 200);
+    }
+
     // --- E. SAVE_ROW (Simpan / Update 1 Proyek + File Upload ke uploads_estimator/) ---
     if ($postAction === 'save_row') {
         $res = withDatabaseStore(function (&$store, &$shouldSave) use ($data, $uploadDir, $actorUsername, $actorKey, $deviceInfo) {
@@ -1040,6 +1166,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $isSalesSide = ($updatedBy === 'sales' || $updatedBy === 'sales_new');
             $incomingSalesNotesHist = is_array($data['salesNotesHistory'] ?? null) ? $data['salesNotesHistory'] : [];
             $incomingEstNotesHist = is_array($data['estimatorNotesHistory'] ?? null) ? $data['estimatorNotesHistory'] : [];
+            $incomingQuoteNotesHist = is_array($data['quoteNotesHistory'] ?? null) ? $data['quoteNotesHistory'] : [];
+            $incomingUnifiedChat = is_array($data['unifiedChatHistory'] ?? null) ? $data['unifiedChatHistory'] : [];
 
             $record = [
                 'id' => (string)($existing['id'] ?? ('REC-' . time() . '-' . substr(md5($queueCode), 0, 5))),
@@ -1064,7 +1192,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'estimatorNotesHistory' => mergeNotesHistoryArrays($existing['estimatorNotesHistory'] ?? [], $incomingEstNotesHist),
                 'quoteNumber' => trim((string)($data['quoteNumber'] ?? ($existing['quoteNumber'] ?? '-'))),
                 'quoteStatus' => trim((string)($data['quoteStatus'] ?? ($existing['quoteStatus'] ?? 'Draft'))),
-                'quoteNotes' => trim((string)($data['quoteNotes'] ?? ($existing['quoteNotes'] ?? '-')))
+                'quoteNotes' => trim((string)($data['quoteNotes'] ?? ($existing['quoteNotes'] ?? '-'))),
+                'quoteNotesHistory' => mergeNotesHistoryArrays($existing['quoteNotesHistory'] ?? [], $incomingQuoteNotesHist),
+                'unifiedChatHistory' => mergeNotesHistoryArrays($existing['unifiedChatHistory'] ?? [], $incomingUnifiedChat)
             ];
 
             for ($s = 1; $s <= 8; $s++) {
