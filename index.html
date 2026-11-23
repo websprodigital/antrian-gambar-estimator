@@ -749,40 +749,43 @@
     .spreadsheet-table {
       border-collapse: collapse;
       width: 100%;
-      font-size: 0.8rem;
+      font-size: 0.66rem;
+      line-height: 1.25;
     }
     .sheets-col-letters-row th {
       background: #f1f5f9 !important;
       color: #64748b !important;
       font-weight: 800 !important;
-      font-size: 0.7rem !important;
+      font-size: 0.6rem !important;
       text-align: center !important;
       border: 1px solid #cbd5e1 !important;
-      padding: 0.2rem 0.4rem !important;
-      line-height: 1.2 !important;
+      padding: 0.16rem 0.35rem !important;
+      line-height: 1.15 !important;
     }
     .sheets-headers-row th {
       background: #e2e8f0 !important;
       color: #1e293b !important;
       font-weight: 800 !important;
-      font-size: 0.76rem !important;
+      font-size: 0.63rem !important;
       text-align: left !important;
       border: 1px solid #cbd5e1 !important;
-      padding: 0.45rem 0.65rem !important;
+      padding: 0.32rem 0.48rem !important;
       white-space: nowrap !important;
+      line-height: 1.2 !important;
     }
     .sheets-headers-row th.col-num-header,
     .sheets-col-letters-row th.col-corner {
-      width: 42px !important;
-      min-width: 42px !important;
+      width: 36px !important;
+      min-width: 36px !important;
       text-align: center !important;
     }
     .spreadsheet-table td {
       border: 1px solid #e2e8f0 !important;
-      padding: 0.4rem 0.65rem !important;
+      padding: 0.28rem 0.48rem !important;
       color: #1e293b;
       white-space: nowrap;
-      font-size: 0.78rem;
+      font-size: 0.66rem !important;
+      line-height: 1.25;
     }
     .spreadsheet-table td.sheet-row-num {
       background: #f8fafc;
@@ -790,7 +793,7 @@
       font-weight: 800;
       text-align: center;
       border-right: 2px solid #cbd5e1 !important;
-      font-size: 0.72rem;
+      font-size: 0.62rem;
       user-select: none;
     }
     .spreadsheet-table tbody tr:hover td {
@@ -1897,28 +1900,31 @@
       border-collapse: separate;
       border-spacing: 0;
       text-align: left;
-      font-size: 0.83rem;
+      font-size: 0.67rem;
+      line-height: 1.25;
     }
 
     .custom-table.table-dashboard-full {
-      min-width: 3300px; /* Lebar untuk 31 kolom lengkap */
+      min-width: 3100px; /* Lebar untuk 33 kolom lengkap */
     }
 
     .custom-table.table-estimator {
-      min-width: 2100px; /* Lebar untuk Revisi Gambar 1-8 */
+      min-width: 2050px; /* Lebar untuk Revisi Gambar 1-8 */
     }
 
     .custom-table.table-contract {
-      min-width: 2750px;
+      min-width: 2350px;
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
       table-layout: auto;
     }
 
-    .custom-table.table-contract th,
+    .custom-table.table-contract th {
+      padding: 0.44rem 0.55rem;
+    }
     .custom-table.table-contract td {
-      padding: 0.95rem 1.25rem;
+      padding: 0.34rem 0.55rem;
     }
 
     /* Ukuran Kolom Bagan Admin Kontrak (18 Kolom) */
@@ -1933,7 +1939,7 @@
     .custom-table.table-contract th:nth-child(5),
     .custom-table.table-contract td:nth-child(5):not([colspan]) { min-width: 155px; } /* Proyek */
     .custom-table.table-contract th:nth-child(6),
-    .custom-table.table-contract td:nth-child(6) { min-width: 205px; } /* Nomor SPH */
+    .custom-table.table-contract td:nth-child(6) { min-width: 165px; } /* Nomor SPH */
     .custom-table.table-contract th:nth-child(7),
     .custom-table.table-contract td:nth-child(7),
     .custom-table.table-contract th:nth-child(8),
@@ -1949,24 +1955,25 @@
     .custom-table.table-contract th:nth-child(13),
     .custom-table.table-contract td:nth-child(13),
     .custom-table.table-contract th:nth-child(14),
-    .custom-table.table-contract td:nth-child(14) { min-width: 175px; text-align: center; } /* Revisi Penawaran (1)-(8) */
+    .custom-table.table-contract td:nth-child(14) { min-width: 128px; text-align: center; } /* Revisi Penawaran (1)-(8) */
     .custom-table.table-contract th:nth-child(15),
-    .custom-table.table-contract td:nth-child(15) { min-width: 210px; text-align: center; } /* Penawaran Final/Selesai */
+    .custom-table.table-contract td:nth-child(15) { min-width: 165px; text-align: center; } /* Penawaran Final/Selesai */
     .custom-table.table-contract th:nth-child(16),
-    .custom-table.table-contract td:nth-child(16) { min-width: 260px; } /* Catatan Penawaran */
+    .custom-table.table-contract td:nth-child(16) { min-width: 230px; } /* Catatan Penawaran */
     .custom-table.table-contract th:nth-child(17),
-    .custom-table.table-contract td:nth-child(17) { min-width: 175px; text-align: center; } /* Status Penawaran */
+    .custom-table.table-contract td:nth-child(17) { min-width: 140px; text-align: center; } /* Status Penawaran */
     .custom-table.table-contract th:nth-child(18),
-    .custom-table.table-contract td:nth-child(18) { min-width: 165px; text-align: center; } /* Aksi Kontrak */
+    .custom-table.table-contract td:nth-child(18) { min-width: 135px; text-align: center; } /* Aksi Kontrak */
 
     .custom-table th {
       background-color: #20409a !important;
       color: #ffffff !important;
-      font-size: 0.74rem;
+      font-size: 0.62rem;
       font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      padding: 0.95rem 1rem;
+      letter-spacing: 0.03em;
+      line-height: 1.2;
+      padding: 0.44rem 0.55rem;
       border-bottom: 2px solid #172b6b;
       border-right: 1px solid rgba(255, 255, 255, 0.22);
       white-space: nowrap;
@@ -1976,13 +1983,32 @@
     }
 
     .custom-table td {
-      padding: 0.9rem 1rem;
+      padding: 0.34rem 0.55rem;
+      font-size: 0.67rem;
+      line-height: 1.25;
       border-bottom: 1px solid var(--border-color);
       border-right: 1px solid #f1f5f9;
       vertical-align: middle;
       color: var(--text-main);
       background-color: #ffffff;
       white-space: nowrap;
+    }
+
+    .custom-table .btn-sm,
+    .spreadsheet-table .btn-sm {
+      padding: 0.18rem 0.46rem;
+      font-size: 0.63rem;
+      line-height: 1.2;
+      gap: 0.24rem;
+    }
+
+    .custom-table .btn-sm svg,
+    .spreadsheet-table .btn-sm svg,
+    .custom-table .btn-view-image svg,
+    .custom-table .extra-img-pill svg,
+    .spreadsheet-table .extra-img-pill svg {
+      width: 11px;
+      height: 11px;
     }
 
     .custom-table tbody tr:hover td {
@@ -2064,10 +2090,11 @@
     .badge-queue {
       font-family: var(--font-mono);
       font-weight: 700;
-      font-size: 0.75rem;
+      font-size: 0.63rem;
+      line-height: 1.2;
       background: #e0f2fe;
       color: #0369a1;
-      padding: 0.25rem 0.55rem;
+      padding: 0.14rem 0.4rem;
       border-radius: var(--radius-sm);
       border: 1px solid #bae6fd;
       display: inline-block;
@@ -2076,10 +2103,11 @@
     .badge-status {
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
-      padding: 0.25rem 0.65rem;
+      gap: 0.25rem;
+      padding: 0.14rem 0.46rem;
       border-radius: var(--radius-full);
-      font-size: 0.72rem;
+      font-size: 0.62rem;
+      line-height: 1.2;
       font-weight: 700;
       white-space: nowrap;
     }
@@ -2118,42 +2146,50 @@
     /* Multi-material stacked cell & expand toggle */
     .custom-table td.scope-material-cell {
       white-space: normal !important;
-      min-width: 265px;
-      max-width: 340px;
-      vertical-align: top;
-      padding: 0.65rem 0.85rem;
+      min-width: 215px;
+      max-width: 295px;
+      vertical-align: middle;
+      padding: 0.26rem 0.48rem;
+    }
+    .custom-table td.project-material-cell {
+      white-space: normal !important;
+      min-width: 120px;
+      max-width: 165px;
+      vertical-align: middle;
+      padding: 0.26rem 0.48rem;
     }
     .scope-material-stack {
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 0.14rem;
     }
     .scope-material-item {
-      font-size: 0.78rem;
-      line-height: 1.38;
+      font-size: 0.64rem;
+      line-height: 1.22;
       color: #0f172a;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      border-radius: 5px;
-      padding: 0.24rem 0.5rem;
+      border-radius: 4px;
+      padding: 0.11rem 0.36rem;
       font-weight: 600;
       word-break: break-word;
     }
     .btn-expand-materials {
-      margin-top: 0.2rem;
+      margin-top: 0;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.3rem;
+      gap: 0.2rem;
       width: 100%;
-      padding: 0.28rem 0.5rem;
+      padding: 0.11rem 0.34rem;
       background: #eff6ff;
       color: #20409a;
       border: 1px dashed #93c5fd;
-      border-radius: 5px;
-      font-size: 0.72rem;
+      border-radius: 4px;
+      font-size: 0.59rem;
+      line-height: 1.2;
       font-weight: 800;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.01em;
       cursor: pointer;
       transition: all 0.15s ease;
     }
@@ -2165,8 +2201,8 @@
     .scope-extra-materials {
       display: none;
       flex-direction: column;
-      gap: 0.25rem;
-      margin-top: 0.15rem;
+      gap: 0.14rem;
+      margin-top: 0.1rem;
     }
     .scope-extra-materials.expanded {
       display: flex;
@@ -2175,21 +2211,21 @@
     /* Kolom Catatan Panjang + History Klik */
     .custom-table td.notes-history-td {
       white-space: normal !important;
-      min-width: 290px;
-      max-width: 420px;
-      vertical-align: top;
-      padding: 0.65rem 0.85rem;
+      min-width: 230px;
+      max-width: 315px;
+      vertical-align: middle;
+      padding: 0.26rem 0.48rem;
     }
     .notes-history-card {
       background: #f8fafc;
       border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      padding: 0.5rem 0.65rem;
+      border-radius: 6px;
+      padding: 0.24rem 0.42rem;
       cursor: pointer;
       transition: all 0.16s ease;
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
+      gap: 0.14rem;
     }
     .notes-history-card:hover {
       border-color: #20409a;
@@ -2197,43 +2233,53 @@
       box-shadow: 0 2px 8px rgba(32, 64, 154, 0.12);
     }
     .notes-history-text {
-      font-size: 0.8rem;
-      line-height: 1.48;
+      font-size: 0.64rem;
+      line-height: 1.24;
       color: #0f172a;
       white-space: pre-wrap;
       word-break: break-word;
-      max-height: 135px;
+      max-height: 32px;
       overflow-y: auto;
     }
     .notes-history-meta-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.4rem;
+      gap: 0.25rem;
       border-top: 1px dashed #cbd5e1;
-      padding-top: 0.3rem;
-      font-size: 0.7rem;
+      padding-top: 0.14rem;
+      font-size: 0.59rem;
+      line-height: 1.15;
       font-weight: 700;
       color: #20409a;
     }
     .chat-sender-line {
       display: flex;
       align-items: center;
-      gap: 0.35rem;
-      flex-wrap: wrap;
-      margin-bottom: 0.2rem;
-      font-size: 0.71rem;
+      gap: 0.22rem;
+      flex-wrap: nowrap;
+      overflow: hidden;
+      margin-bottom: 0;
+      font-size: 0.6rem;
+      line-height: 1.15;
       font-weight: 800;
       color: #1e293b;
+    }
+    .chat-sender-line > span:last-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .chat-role-pill {
       display: inline-flex;
       align-items: center;
-      padding: 0.08rem 0.42rem;
+      padding: 0.03rem 0.3rem;
       border-radius: 999px;
-      font-size: 0.64rem;
+      font-size: 0.55rem;
+      line-height: 1.2;
       font-weight: 800;
       letter-spacing: 0.01em;
+      flex-shrink: 0;
     }
     .chat-role-sales { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
     .chat-role-estimator { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
@@ -2413,13 +2459,14 @@
       background: #f1f5f9;
       color: var(--primary);
       border: 1px solid var(--primary-border);
-      padding: 0.32rem 0.65rem;
+      padding: 0.18rem 0.46rem;
       border-radius: var(--radius-sm);
-      font-size: 0.76rem;
+      font-size: 0.63rem;
+      line-height: 1.2;
       font-weight: 700;
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
+      gap: 0.25rem;
       cursor: pointer;
       text-decoration: none;
       transition: var(--transition);
@@ -2431,16 +2478,17 @@
     }
 
     .extra-img-pill {
-      font-size: 0.72rem;
+      font-size: 0.62rem;
+      line-height: 1.2;
       font-weight: 600;
-      padding: 0.22rem 0.5rem;
+      padding: 0.13rem 0.38rem;
       border-radius: var(--radius-sm);
       background: #f1f5f9;
       color: var(--text-muted);
       border: 1px solid var(--border-color);
       display: inline-flex;
       align-items: center;
-      gap: 0.3rem;
+      gap: 0.22rem;
       cursor: pointer;
       transition: var(--transition);
     }
@@ -10215,7 +10263,7 @@
       if (!clean || clean === '-') return `<td><span style="color:#94a3b8;">-</span></td>`;
       const parts = clean.split(/\s*[;,]\s*/).map(s => s.trim()).filter(Boolean);
       const html = parts.map(p => `<div class="scope-material-item" style="background:#eff6ff; border-color:#bfdbfe; color:#1e3a8a;">${escapeHtml(p)}</div>`).join('');
-      return `<td style="white-space: normal; min-width: 155px; vertical-align: top;"><div class="scope-material-stack">${html}</div></td>`;
+      return `<td class="project-material-cell"><div class="scope-material-stack">${html}</div></td>`;
     }
 
     function renderNotesHistoryCell(row, type) {
@@ -10521,14 +10569,14 @@
       tbody.innerHTML = `
         <tr style="background-color: #f8fafc;">
           <td>
-            <div style="display: flex; align-items: center; gap: 0.6rem;">
-              <div style="width: 32px; height: 32px; border-radius: 50%; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800;">
+            <div style="display: flex; align-items: center; gap: 0.42rem;">
+              <div style="width: 24px; height: 24px; border-radius: 50%; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.64rem; font-weight: 800;">
                 ${selectedSalesName.slice(0, 2).toUpperCase()}
               </div>
-              <strong style="font-size: 0.95rem;">${selectedSalesName}</strong>
+              <strong style="font-size: 0.7rem;">${selectedSalesName}</strong>
             </div>
           </td>
-          <td><strong style="color: var(--primary); font-size: 1rem;">${upCount}</strong> Proyek</td>
+          <td><strong style="color: var(--primary); font-size: 0.72rem;">${upCount}</strong> Proyek</td>
           <td><span class="badge-status status-belum-edit">${belumEditCount} Antrian</span></td>
           <td><span class="badge-status status-cek-kelengkapan">${cekKelengkapanCount} Cek</span></td>
           <td><span class="badge-status status-sedang-edit">${sedangEditCount} Desain</span></td>
@@ -10799,7 +10847,7 @@
               <td><strong>${row.salesName}</strong></td>
               <td>${row.customerName}</td>
               <td><strong>${row.projectName}</strong></td>
-              <td><strong style="color:var(--primary); font-family:var(--font-mono); font-size: 0.88rem;">${row.quoteNumber || '<em style="color:#94a3b8; font-weight:400;">Belum Terbit</em>'}</strong></td>
+              <td><strong style="color:var(--primary); font-family:var(--font-mono); font-size: 0.66rem;">${row.quoteNumber || '<em style="color:#94a3b8; font-weight:400;">Belum Terbit</em>'}</strong></td>
               <td style="text-align:center;">${renderRevisionBadge(row.quoteRev1, 1, row.id, 'quoteRev')}</td>
               <td style="text-align:center;">${renderRevisionBadge(row.quoteRev2, 2, row.id, 'quoteRev')}</td>
               <td style="text-align:center;">${renderRevisionBadge(row.quoteRev3, 3, row.id, 'quoteRev')}</td>
@@ -10843,12 +10891,12 @@
       if (url && url !== '-') {
         const isSubfolder = !!(row.customerFolderUrl && row.customerFolderUrl !== '-');
         const label = isSubfolder ? (row.customerName || 'Folder Klien') : 'Folder Sales';
-        return `<a href="${url}" target="_blank" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:5px; font-weight:700; color:#047857; text-decoration:none; background:#ecfdf5; border:1px solid #a7f3d0; padding:3px 8px; border-radius:6px; font-size:0.75rem;" title="${isSubfolder ? 'Buka Folder Customer / Klien di Google Drive' : 'Buka Folder Utama Sales di Google Drive'}">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="#0f9d58"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
-          <span style="max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">📁 ${label}</span>
+        return `<a href="${url}" target="_blank" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:4px; font-weight:700; color:#047857; text-decoration:none; background:#ecfdf5; border:1px solid #a7f3d0; padding:2px 6px; border-radius:5px; font-size:0.63rem;" title="${isSubfolder ? 'Buka Folder Customer / Klien di Google Drive' : 'Buka Folder Utama Sales di Google Drive'}">
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="#0f9d58"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+          <span style="max-width:115px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">📁 ${label}</span>
         </a>`;
       }
-      return '<span style="color:#94a3b8; font-size:0.75rem;">(Otomatis Drive)</span>';
+      return '<span style="color:#94a3b8; font-size:0.64rem;">(Otomatis Drive)</span>';
     }
 
     function renderExtraImgPill(val, idx, rowId) {
@@ -10955,7 +11003,7 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td class="sheet-row-num">${rowNum}</td>
-          <td style="font-family: monospace; font-size: 0.78rem; color: #047857;">${formatDateTimeDMY(row.uploadDateTime, '-')}</td>
+          <td style="font-family: monospace; font-size: 0.66rem; color: #047857;">${formatDateTimeDMY(row.uploadDateTime, '-')}</td>
           <td><strong style="color: #1e3a8a; font-family: monospace;">${row.queueCode || '-'}</strong></td>
           <td>${formatDateTimeDMY(row.uploadDateTime, '-')}</td>
           <td><strong>${row.salesName || '-'}</strong></td>
