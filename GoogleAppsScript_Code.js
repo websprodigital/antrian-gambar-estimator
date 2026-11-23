@@ -1373,6 +1373,20 @@ function doPost(e) {
         rowValues[20] || "Masih Antrian Gambar",
         gasClientEventId
       );
+    } else if (gasNotifyType === "contract_edit" || data.updatedBy === "contract") {
+      var gasContractActor = actorUsername || "Admin Kontrak";
+      createdGasNotif = appendRealtimeNotificationGas(
+        ss,
+        "contract_edit",
+        "Pembaruan Penawaran Admin Kontrak",
+        gasContractActor + " memperbarui Admin Kontrak (" + rowValues[20] + "): " + queueCode + " - " + rowValues[4] + " (" + rowValues[5] + ")",
+        gasContractActor,
+        queueCode || "-",
+        rowValues[4] || "-",
+        rowValues[5] || "-",
+        rowValues[20] || "Masih Antrian Gambar",
+        gasClientEventId
+      );
     }
 
     return createJsonResponse({

@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#20409a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Estimator">
+  <link rel="manifest" href="manifest.webmanifest" id="pwaManifestLink">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='28' fill='%2320409a'/%3E%3Cpath d='M64 26c-16 0-28 12-28 28v22l-8 10v6h72v-6l-8-10V54c0-16-12-28-28-28zm0 78c6.6 0 12-5.4 12-12H52c0 6.6 5.4 12 12 12z' fill='%23ffffff'/%3E%3C/svg%3E">
   <title>ANTRIAN GAMBAR ESTIMATOR | Portal Operasional Proyek</title>
   
   <!-- Font Modern Google Fonts -->
@@ -7351,13 +7358,19 @@
         </button>
       </div>
       <div class="modal-body" style="padding: 1.25rem; max-height: 68vh; overflow-y: auto;">
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.75rem 0.9rem;">
-          <div style="font-size: 0.78rem; color: #1e3a8a; font-weight: 600;">
-            Suara &amp; Pop-up aktif saat login username, membuka tab lain, maupun di layar login PC/HP.
+        <div style="display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 1rem; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.75rem 0.9rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="font-size: 0.78rem; color: #1e3a8a; font-weight: 600;">
+              Suara MP3 &amp; pop-up aktif saat tab dibuka/pindah tab; Web Push &amp; Notifikasi OS tetap muncul meski tab ditutup di PC/HP.
+            </div>
+            <div style="display: flex; gap: 0.45rem; flex-wrap: wrap;">
+              <button type="button" class="btn-notif-pill" id="btnModalRequestOsNotif" onclick="enableBrowserNotificationAndAudio()">🔔 Aktifkan Pop-Up Tab Lain</button>
+              <button type="button" class="btn-notif-pill" onclick="testNotificationAndSound()" title="Uji Suara & Pop-Up">🎵 Tes Suara &amp; Pop-Up</button>
+              <button type="button" class="btn-notif-pill" id="btnModalInstallPwa" onclick="triggerInstallPwaApp()" style="display: inline-flex;">📲 Pasang Aplikasi (HP/PC)</button>
+            </div>
           </div>
-          <div style="display: flex; gap: 0.45rem; flex-wrap: wrap;">
-            <button type="button" class="btn-notif-pill" id="btnModalRequestOsNotif" onclick="enableBrowserNotificationAndAudio()">🔔 Aktifkan Pop-Up Tab Lain</button>
-            <button type="button" class="btn-notif-pill" onclick="testNotificationAndSound()" title="Uji Suara & Pop-Up">🎵 Tes Suara &amp; Pop-Up</button>
+          <div id="notifBgStatusPill" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.65rem; border-radius: 6px; border: 1px solid #fcd34d; background: #fef3c7; color: #92400e; font-size: 0.72rem; font-weight: 700;">
+            <span id="notifBgStatusText">🟡 Klik "Aktifkan Pop-Up Tab Lain" agar tetap muncul saat tab ditutup</span>
           </div>
         </div>
         <div id="modalNotificationFeedList" style="display: flex; flex-direction: column; gap: 0.6rem;">
@@ -8542,6 +8555,9 @@
 
       const userKey = getProfileStorageKey(userDef);
       const inputHash = computeAccountPasswordHash(userKey, p);
+      if (typeof autoActivateBackgroundNotifOnGesture === 'function') {
+        autoActivateBackgroundNotifOnGesture();
+      }
       if (typeof shouldProbePhpCloudApi === 'function' && shouldProbePhpCloudApi() && typeof ensureCloudApiDetected === 'function') {
         await ensureCloudApiDetected();
       }
@@ -13375,8 +13391,29 @@
       closeModal('modalRosaEdit');
       openModal('modalRosaSaveSuccess');
 
+      const contractRec = projectDatabase[idx];
+      const contractActor = currentUser ? currentUser.name : 'Admin Kontrak';
+      const contractEventId = 'CTR-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+      if (typeof emitRealtimeNotification === 'function') {
+        emitRealtimeNotification({
+          id: contractEventId,
+          eventType: 'contract_edit',
+          title: 'Pembaruan Penawaran Admin Kontrak',
+          message: `${contractActor} memperbarui Admin Kontrak (${contractRec.status || '-'}): ${contractRec.queueCode || '-'} - ${contractRec.customerName || '-'} (${contractRec.projectName || '-'})`,
+          actor: contractActor,
+          queueCode: contractRec.queueCode || '-',
+          customerName: contractRec.customerName || '-',
+          projectName: contractRec.projectName || '-',
+          status: contractRec.status || '-'
+        }, { fromLocalAction: true });
+      }
+
       // Sinkronkan pembaruan Admin Kontrak ke Google Spreadsheet & Google Drive
-      sendRecordToGoogleSpreadsheet(projectDatabase[idx], false, [], [], quoteFilesToSend, { updatedBy: 'contract' });
+      sendRecordToGoogleSpreadsheet(contractRec, false, [], [], quoteFilesToSend, {
+        updatedBy: 'contract',
+        clientEventId: contractEventId,
+        notifyEventType: 'contract_edit'
+      });
     }
 
     // ==========================================================================
@@ -13601,7 +13638,6 @@
     const pendingDeleteQueues = new Map();
     let isSyncingWithSheet = false;
     const OLD_FAILED_GAS_URLS = [
-      'https://script.google.com/macros/s/AKfycbz04rjocmX1JWktaN-AztkJWFF3Id3kf2l59NrLHCdHOZVYQSVnmSEVI6a0pwAemu-e2A/exec',
       'https://script.google.com/macros/s/AKfycbzUMuY2O5MV25llaEVQEqOxMQQwJ1PAvL5ywjuAuFp73d1HpLuhnSPVpBvV_eK_scuwJA/exec',
       'https://script.google.com/macros/s/AKfycby2ayqeIZHCRxfPxGhc_RQ4IBORl7veNO_ERqB2K1hG54C9lgDrGF-aYbQOwHVCqB-A/exec',
       'https://script.google.com/macros/s/AKfycbyXPBlAjTZuSaQBlBJsz_wVgO0I2MVSUoiXo5_Y458cEcZf2jRH9EBQQSjktlXffLbc/exec'
@@ -13610,6 +13646,9 @@
     let detectedPhpApiUrl = '';
     let phpApiProbeFinished = false;
     let phpApiProbePromise = null;
+    let detectedPushRelayUrl = '';
+    let pushRelayProbeFinished = false;
+    let pushRelayProbePromise = null;
 
     function shouldProbePhpCloudApi() {
       if (detectedPhpApiUrl || phpApiProbeFinished) return false;
@@ -13654,6 +13693,7 @@
           const json = await res.json();
           if (json && (json.success === true || json.status === 'active')) {
             detectedPhpApiUrl = candidateUrl;
+            detectedPushRelayUrl = candidateUrl;
             updateSpreadsheetSyncStatusUI();
             if (typeof renderOnlineHistoryContainers === 'function') renderOnlineHistoryContainers();
             return detectedPhpApiUrl;
@@ -13665,6 +13705,42 @@
         return '';
       })();
       return phpApiProbePromise;
+    }
+
+    function detectPushRelayServerUrl() {
+      if (detectedPhpApiUrl) {
+        detectedPushRelayUrl = detectedPhpApiUrl;
+        return Promise.resolve(detectedPushRelayUrl);
+      }
+      if (detectedPushRelayUrl) return Promise.resolve(detectedPushRelayUrl);
+      if (pushRelayProbeFinished) return Promise.resolve('');
+      if (pushRelayProbePromise) return pushRelayProbePromise;
+      pushRelayProbePromise = (async function() {
+        try {
+          const proto = (typeof window !== 'undefined' && window.location) ? window.location.protocol : '';
+          const host = (typeof window !== 'undefined' && window.location) ? window.location.hostname : '';
+          if ((proto !== 'http:' && proto !== 'https:') || host.endsWith('.github.io')) {
+            return '';
+          }
+          const candidateUrl = new URL('api.php', window.location.href).href;
+          const sep = candidateUrl.includes('?') ? '&' : '?';
+          const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+          const timer = controller ? setTimeout(function() { controller.abort(); }, 2200) : null;
+          const res = await fetch(candidateUrl + sep + 'action=get_vapid_key&t=' + Date.now(), controller ? { signal: controller.signal } : undefined);
+          if (timer) clearTimeout(timer);
+          if (!res || !res.ok) return '';
+          const json = await res.json();
+          if (json && json.publicKey) {
+            detectedPushRelayUrl = candidateUrl;
+            return detectedPushRelayUrl;
+          }
+        } catch (e) {
+        } finally {
+          pushRelayProbeFinished = true;
+        }
+        return '';
+      })();
+      return pushRelayProbePromise;
     }
 
     function getGoogleScriptUrl() {
@@ -14572,6 +14648,9 @@
       if (!notifSeenIdSet.has(id)) {
         notifSeenIdSet.add(id);
         persistSeenNotificationIds();
+        if (typeof syncConfigToServiceWorker === 'function') {
+          syncConfigToServiceWorker(false);
+        }
       }
     }
 
@@ -14617,6 +14696,44 @@
         if (modalOsBtn) {
           modalOsBtn.classList.remove('granted');
           modalOsBtn.textContent = '🔔 Aktifkan Pop-Up Tab Lain';
+        }
+      }
+
+      const bgStatusText = document.getElementById('notifBgStatusText');
+      const bgStatusPill = document.getElementById('notifBgStatusPill');
+      if (bgStatusText && bgStatusPill) {
+        const pushSt = window.__pushSubscriptionStatus || '';
+        if (perm === 'granted' && pushSt === 'active') {
+          bgStatusPill.style.background = '#dcfce7';
+          bgStatusPill.style.color = '#166534';
+          bgStatusPill.style.borderColor = '#86efac';
+          bgStatusText.textContent = '🟢 Web Push + Background SW & Suara Tab Tertutup Aktif';
+        } else if (perm === 'granted') {
+          bgStatusPill.style.background = '#dbeafe';
+          bgStatusPill.style.color = '#1e40af';
+          bgStatusPill.style.borderColor = '#93c5fd';
+          bgStatusText.textContent = '🔵 Background Worker & Service Worker OS Notif Aktif';
+        } else if (perm === 'denied') {
+          bgStatusPill.style.background = '#fee2e2';
+          bgStatusPill.style.color = '#991b1b';
+          bgStatusPill.style.borderColor = '#fca5a5';
+          bgStatusText.textContent = '🔴 Izin Notifikasi Browser Diblokir (Aktifkan di Setelan Situs)';
+        } else {
+          bgStatusPill.style.background = '#fef3c7';
+          bgStatusPill.style.color = '#92400e';
+          bgStatusPill.style.borderColor = '#fcd34d';
+          bgStatusText.textContent = '🟡 Klik "Aktifkan Pop-Up Tab Lain" agar tetap muncul saat tab ditutup';
+        }
+      }
+
+      const installBtn = document.getElementById('btnModalInstallPwa');
+      if (installBtn) {
+        const isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || Boolean(window.navigator && window.navigator.standalone);
+        if (isStandalone) {
+          installBtn.style.display = 'none';
+        } else {
+          installBtn.style.display = 'inline-flex';
+          installBtn.textContent = window.__deferredPwaPrompt ? '📲 Pasang Aplikasi (HP/PC)' : '📲 Info Aplikasi Latar Belakang';
         }
       }
 
@@ -14724,6 +14841,7 @@
       try {
         localStorage.setItem(NOTIF_SOUND_MUTED_KEY, nextMuted ? '1' : '0');
       } catch (e) {}
+      if (typeof syncConfigToServiceWorker === 'function') syncConfigToServiceWorker(false);
       updateNotificationControlButtons();
       if (!nextMuted) {
         unlockNotificationAudio();
@@ -14734,11 +14852,33 @@
       }
     }
 
+    async function autoActivateBackgroundNotifOnGesture() {
+      try { unlockNotificationAudio(); } catch (e) {}
+      try {
+        if (typeof Notification === 'undefined') return;
+        let perm = Notification.permission;
+        if (perm === 'default') {
+          let alreadyPrompted = '';
+          try { alreadyPrompted = localStorage.getItem('ESTIMATOR_NOTIF_AUTO_PROMPTED_V1') || ''; } catch (e) {}
+          if (!alreadyPrompted) {
+            try { localStorage.setItem('ESTIMATOR_NOTIF_AUTO_PROMPTED_V1', '1'); } catch (e) {}
+            perm = await Notification.requestPermission();
+          }
+        }
+        updateNotificationControlButtons();
+        if (perm === 'granted' && typeof ensureWebPushSubscribed === 'function') {
+          ensureWebPushSubscribed(false);
+        }
+      } catch (e) {}
+    }
+
     async function enableBrowserNotificationAndAudio() {
       try {
         localStorage.setItem(NOTIF_SOUND_MUTED_KEY, '0');
+        localStorage.setItem('ESTIMATOR_NOTIF_AUTO_PROMPTED_V1', '1');
       } catch (e) {}
       unlockNotificationAudio();
+      if (typeof syncConfigToServiceWorker === 'function') syncConfigToServiceWorker(false);
 
       if (typeof Notification === 'undefined') {
         updateNotificationControlButtons();
@@ -14755,14 +14895,22 @@
         updateNotificationControlButtons();
         if (perm === 'granted') {
           playNotificationSound('estimator_edit');
+          let pushOk = false;
+          if (typeof ensureWebPushSubscribed === 'function') {
+            pushOk = await ensureWebPushSubscribed(false);
+          }
           dispatchBrowserOsNotification({
             id: 'TEST-PERM-' + Date.now(),
             eventType: 'sales_form_new',
-            title: 'Notifikasi Real-Time Aktif',
-            message: 'Pop-up & suara kini muncul di halaman login, saat membuka tab lain, maupun di HP/Komputer.',
+            title: pushOk ? 'Notifikasi & Push Tab Tertutup Aktif' : 'Notifikasi Real-Time & Tab Lain Aktif',
+            message: pushOk
+              ? 'Pop-up OS, Web Push, & suara tetap muncul saat pindah tab maupun ketika tab ditutup di PC/HP.'
+              : 'Pop-up & suara kini muncul di halaman login, saat membuka tab lain, maupun di HP/Komputer.',
             queueCode: 'SYSTEM'
           });
-          showSpreadsheetSyncToast('Izin Pop-Up Tab Lain & Suara Notifikasi Aktif!');
+          showSpreadsheetSyncToast(pushOk
+            ? 'Pop-Up Tab Tertutup, Web Push & Suara Notifikasi Aktif!'
+            : 'Izin Pop-Up Tab Lain & Suara Notifikasi Aktif!');
         } else {
           playNotificationSound('sales_form_new');
           showSpreadsheetSyncToast('Pop-up & suara dalam halaman tetap aktif!');
@@ -14776,12 +14924,16 @@
       if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
       const title = notif.title || 'Notifikasi Antrian Gambar Estimator';
       const body = notif.message || 'Ada pembaruan data baru.';
+      const muted = isNotificationSoundMuted();
       const opts = {
         body: body,
+        icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='28' fill='%2320409a'/%3E%3Cpath d='M64 26c-16 0-28 12-28 28v22l-8 10v6h72v-6l-8-10V54c0-16-12-28-28-28zm0 78c6.6 0 12-5.4 12-12H52c0 6.6 5.4 12 12 12z' fill='%23ffffff'/%3E%3C/svg%3E",
         tag: notif.id || ('NTF-' + Date.now()),
         renotify: true,
-        silent: false,
-        data: { url: window.location.href }
+        silent: Boolean(muted),
+        vibrate: muted ? undefined : [250, 100, 250, 100, 250],
+        requireInteraction: true,
+        data: { url: window.location.href, notif: notif }
       };
       try {
         if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistration) {
@@ -14808,6 +14960,7 @@
       if (eventType === 'sales_form_new') return 'Form Gambar Proyek';
       if (eventType === 'sales_form_edit') return 'Edit Perubahan Sales';
       if (eventType === 'estimator_edit') return 'Kelola Estimasi';
+      if (eventType === 'contract_edit') return 'Penawaran Admin Kontrak';
       if (eventType === 'project_chat') return 'Chat Terhubung';
       return 'Aktivitas Proyek';
     }
@@ -14818,6 +14971,9 @@
       }
       if (eventType === 'estimator_edit') {
         return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>';
+      }
+      if (eventType === 'contract_edit') {
+        return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
       }
       if (eventType === 'sales_form_edit') {
         return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
@@ -14835,8 +14991,9 @@
       }
       listEl.innerHTML = items.map(function(nt) {
         const typeCls = nt.eventType || 'sales_form_new';
+        const borderCol = typeCls === 'estimator_edit' ? '#059669' : (typeCls === 'contract_edit' ? '#d97706' : (typeCls === 'sales_form_edit' ? '#0284c7' : '#20409a'));
         return `
-          <div class="notes-timeline-item" style="border-left: 4px solid ${typeCls === 'estimator_edit' ? '#059669' : (typeCls === 'sales_form_edit' ? '#0284c7' : '#20409a')};">
+          <div class="notes-timeline-item" style="border-left: 4px solid ${borderCol};">
             <div class="notes-timeline-header">
               <span>🔔 ${escapeHtml(getNotifBadgeLabel(typeCls))} • ${escapeHtml(nt.queueCode || '-')}</span>
               <span style="font-family: var(--font-mono);">${escapeHtml(nt.timestamp || '-')}</span>
@@ -14972,6 +15129,215 @@
       } catch (e) {}
     }
 
+    function getEffectivePushApiUrl() {
+      if (typeof detectedPhpApiUrl !== 'undefined' && detectedPhpApiUrl && detectedPhpApiUrl.startsWith('http')) {
+        return detectedPhpApiUrl;
+      }
+      if (typeof detectedPushRelayUrl !== 'undefined' && detectedPushRelayUrl && detectedPushRelayUrl.startsWith('http')) {
+        return detectedPushRelayUrl;
+      }
+      const gUrl = (typeof getGoogleScriptUrl === 'function') ? getGoogleScriptUrl() : '';
+      if (gUrl && gUrl.toLowerCase().includes('api.php')) {
+        return gUrl;
+      }
+      return '';
+    }
+
+    function getEffectiveCloudNotifUrl() {
+      const gUrl = (typeof getGoogleScriptUrl === 'function') ? getGoogleScriptUrl() : '';
+      if (gUrl && gUrl.startsWith('http')) return gUrl;
+      return getEffectivePushApiUrl();
+    }
+
+    async function relayPushNotificationToCompanionIfNeeded(notif) {
+      try {
+        const pushUrl = getEffectivePushApiUrl();
+        const primaryUrl = (typeof getGoogleScriptUrl === 'function') ? getGoogleScriptUrl() : '';
+        // Jika memakai mode GAS namun server memiliki companion api.php untuk VAPID Push, teruskan ke Push Server
+        if (!pushUrl || !pushUrl.startsWith('http') || pushUrl === primaryUrl) return;
+        await fetch(pushUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'relay_push',
+            notification: notif,
+            actorUsername: notif.actor || (currentUser ? currentUser.name : 'Sistem')
+          })
+        });
+      } catch (e) {}
+    }
+
+    function syncConfigToServiceWorker(pollNow) {
+      try {
+        if (!('serviceWorker' in navigator)) return;
+        const cfgPayload = {
+          kind: 'SW_SYNC_CONFIG',
+          apiUrl: getEffectiveCloudNotifUrl(),
+          baselineMs: notifBaselineMs || (Date.now() - 120000),
+          soundMuted: isNotificationSoundMuted(),
+          seenIds: Array.from(notifSeenIdSet).slice(-300),
+          pollNow: Boolean(pollNow)
+        };
+        if (navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage(cfgPayload);
+        }
+        if (navigator.serviceWorker.ready) {
+          navigator.serviceWorker.ready.then(function(reg) {
+            const target = (reg && (reg.active || reg.waiting || reg.installing)) || null;
+            if (target) target.postMessage(cfgPayload);
+          }).catch(function() {});
+        }
+      } catch (e) {}
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const rawData = atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; i++) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
+
+    async function registerSwPeriodicAndBackgroundSync(reg) {
+      if (!reg) return;
+      try {
+        if ('periodicSync' in reg && reg.periodicSync && typeof reg.periodicSync.register === 'function') {
+          let pStatus = 'granted';
+          if (navigator.permissions && typeof navigator.permissions.query === 'function') {
+            try {
+              const permRes = await navigator.permissions.query({ name: 'periodic-background-sync' });
+              pStatus = permRes ? permRes.state : 'granted';
+            } catch (pe) {}
+          }
+          if (pStatus === 'granted') {
+            await reg.periodicSync.register('estimator-notif-poll', { minInterval: 15 * 60 * 1000 });
+          }
+        }
+      } catch (e) {}
+      try {
+        if ('sync' in reg && reg.sync && typeof reg.sync.register === 'function') {
+          await reg.sync.register('estimator-notif-sync');
+        }
+      } catch (e) {}
+    }
+
+    async function ensureWebPushSubscribed(forceTestNotice) {
+      try {
+        if (!('serviceWorker' in navigator)) {
+          window.__pushSubscriptionStatus = 'unsupported';
+          updateNotificationControlButtons();
+          return false;
+        }
+        const perm = (typeof Notification !== 'undefined' && Notification.permission) ? Notification.permission : 'default';
+        if (perm !== 'granted') {
+          window.__pushSubscriptionStatus = (perm === 'denied') ? 'denied' : 'permission_needed';
+          updateNotificationControlButtons();
+          return false;
+        }
+
+        const reg = await navigator.serviceWorker.ready;
+        syncConfigToServiceWorker(false);
+        await registerSwPeriodicAndBackgroundSync(reg);
+
+        if (typeof detectPushRelayServerUrl === 'function') {
+          await detectPushRelayServerUrl();
+        }
+        const pushApiUrl = getEffectivePushApiUrl();
+        if (!pushApiUrl || !('PushManager' in window) || !reg.pushManager) {
+          window.__pushSubscriptionStatus = 'sw_background_sync';
+          updateNotificationControlButtons();
+          return true;
+        }
+
+        const sep = pushApiUrl.includes('?') ? '&' : '?';
+        const vkRes = await fetch(pushApiUrl + sep + 'action=get_vapid_key&t=' + Date.now());
+        if (!vkRes || !vkRes.ok) {
+          window.__pushSubscriptionStatus = 'sw_background_sync';
+          updateNotificationControlButtons();
+          return false;
+        }
+        const vkData = await vkRes.json();
+        const publicKey = (vkData && vkData.publicKey) ? String(vkData.publicKey).trim() : '';
+        if (!publicKey) {
+          window.__pushSubscriptionStatus = 'sw_background_sync';
+          updateNotificationControlButtons();
+          return false;
+        }
+
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicKey)
+          });
+        }
+        if (sub) {
+          const saveRes = await fetch(pushApiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'save_push_subscription',
+              subscription: typeof sub.toJSON === 'function' ? sub.toJSON() : sub,
+              username: currentUser ? currentUser.name : 'Tamu Login',
+              role: currentUser ? (currentUser.role || 'guest') : 'guest',
+              deviceLabel: typeof getDeviceSummary === 'function' ? getDeviceSummary() : navigator.userAgent.slice(0, 60)
+            })
+          });
+          if (saveRes && saveRes.ok) {
+            window.__pushSubscriptionStatus = 'active';
+            window.__pushEndpoint = sub.endpoint || '';
+            updateNotificationControlButtons();
+            if (forceTestNotice) {
+              showSpreadsheetSyncToast('Web Push & Notifikasi Tab Tertutup PC/HP Aktif!');
+            }
+            return true;
+          }
+        }
+      } catch (err) {
+        window.__pushSubscriptionStatus = (typeof Notification !== 'undefined' && Notification.permission === 'granted')
+          ? 'sw_background_sync'
+          : 'error';
+      }
+      updateNotificationControlButtons();
+      return false;
+    }
+
+    async function triggerInstallPwaApp() {
+      const promptEv = window.__deferredPwaPrompt;
+      if (!promptEv) {
+        showSpreadsheetSyncToast('Untuk HP/PC: buka menu browser ⋮ lalu pilih "Install App / Tambahkan ke Layar Utama".');
+        return;
+      }
+      try {
+        promptEv.prompt();
+        const choice = await promptEv.userChoice;
+        window.__deferredPwaPrompt = null;
+        updateNotificationControlButtons();
+        if (choice && choice.outcome === 'accepted') {
+          showSpreadsheetSyncToast('Aplikasi terpasang! Notifikasi latar belakang tetap aktif saat tab/layar ditutup.');
+        }
+      } catch (e) {}
+    }
+
+    function startBackgroundWorkerPoller() {
+      if (window.__notifWorker || typeof Worker === 'undefined' || typeof Blob === 'undefined') return;
+      try {
+        const workerSrc = 'var t=setInterval(function(){self.postMessage("tick");},4000);self.onmessage=function(e){if(e.data==="stop")clearInterval(t);};';
+        const blobUrl = URL.createObjectURL(new Blob([workerSrc], { type: 'application/javascript' }));
+        const wk = new Worker(blobUrl);
+        wk.onmessage = function(ev) {
+          if (ev && ev.data === 'tick') {
+            pollCloudNotifications();
+          }
+        };
+        window.__notifWorker = wk;
+        window.__notifWorkerBlobUrl = blobUrl;
+      } catch (e) {}
+    }
+
     function emitRealtimeNotification(rawNotif, opts) {
       const options = opts || {};
       const notif = normalizeNotificationEntry(rawNotif);
@@ -14989,12 +15355,15 @@
       updateNotificationControlButtons();
 
       // Dispatch browser/SW OS notification for cross-tab/cross-device/background visibility
-      if (!options.fromLocalAction || document.hidden) {
+      if (!options.skipOsNotif && (!options.fromLocalAction || document.hidden)) {
         dispatchBrowserOsNotification(notif);
       }
 
       if (options.fromLocalAction) {
         broadcastNotificationAcrossTabs(notif);
+        if (notif.queueCode !== 'TEST-OK') {
+          relayPushNotificationToCompanionIfNeeded(notif);
+        }
       }
     }
 
@@ -15002,10 +15371,12 @@
       if (!Array.isArray(list) || list.length === 0) return;
       const ordered = list.slice().sort((a, b) => Number(a.createdAtMs || 0) - Number(b.createdAtMs || 0));
       let newlyAlertedCount = 0;
+      let maxSeenMs = notifBaselineMs || 0;
 
       ordered.forEach(function(raw) {
         const nt = normalizeNotificationEntry(raw);
         if (!nt) return;
+        if (nt.createdAtMs > maxSeenMs) maxSeenMs = nt.createdAtMs;
         addNotificationToFeed(nt);
 
         if (notifSeenIdSet.has(nt.id)) return;
@@ -15021,6 +15392,12 @@
         }
       });
 
+      if (maxSeenMs > notifBaselineMs) {
+        try { localStorage.setItem(NOTIF_BASELINE_STORAGE_KEY, String(maxSeenMs)); } catch (e) {}
+      }
+      if (newlyAlertedCount > 0) {
+        syncConfigToServiceWorker(false);
+      }
       updateNotificationControlButtons();
 
       if (newlyAlertedCount > 0 && currentUser && typeof syncFromGoogleSpreadsheet === 'function' && (Date.now() - lastOnlineSyncAt > 2500)) {
@@ -15029,7 +15406,7 @@
     }
 
     async function pollCloudNotifications() {
-      const gUrl = (typeof getGoogleScriptUrl === 'function') ? getGoogleScriptUrl() : '';
+      const gUrl = getEffectiveCloudNotifUrl();
       if (!gUrl || !gUrl.startsWith('http')) return;
       if (isPollingCloudNotifs) return;
       isPollingCloudNotifs = true;
@@ -15050,7 +15427,14 @@
 
     function initRealtimeNotificationSystem() {
       loadSeenNotificationIds();
-      notifBaselineMs = Date.now() - 4000;
+      let savedBaseline = 0;
+      try { savedBaseline = Number(localStorage.getItem(NOTIF_BASELINE_STORAGE_KEY) || '0') || 0; } catch (e) {}
+      // Toleransi clock-skew & jeda singkat saat tab ditutup agar notifikasi terbaru tidak terlewat
+      notifBaselineMs = savedBaseline > 0
+        ? Math.max(savedBaseline - 30000, Date.now() - 1800000)
+        : (Date.now() - 120000);
+      try { localStorage.setItem(NOTIF_BASELINE_STORAGE_KEY, String(Date.now())); } catch (e) {}
+
       try {
         const audioEl = document.getElementById('notifFallbackAudio');
         if (audioEl && !audioEl.src) {
@@ -15058,10 +15442,45 @@
         }
       } catch (e) {}
 
-      // Registrasi Service Worker agar pop-up OS bekerja saat membuka tab lain maupun di HP Android/Desktop
+      window.addEventListener('beforeinstallprompt', function(ev) {
+        try { ev.preventDefault(); } catch (e) {}
+        window.__deferredPwaPrompt = ev;
+        updateNotificationControlButtons();
+      });
+      window.addEventListener('appinstalled', function() {
+        window.__deferredPwaPrompt = null;
+        updateNotificationControlButtons();
+        ensureWebPushSubscribed(false);
+      });
+
+      // Registrasi Service Worker agar pop-up OS & Web Push bekerja saat membuka tab lain maupun saat tab ditutup di PC/HP
       try {
         if ('serviceWorker' in navigator && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
-          navigator.serviceWorker.register('sw.js').catch(() => {});
+          navigator.serviceWorker.register('sw.js').then(function(reg) {
+            syncConfigToServiceWorker(false);
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+              ensureWebPushSubscribed(false);
+            } else {
+              registerSwPeriodicAndBackgroundSync(reg);
+            }
+          }).catch(() => {});
+
+          navigator.serviceWorker.addEventListener('message', function(ev) {
+            const msg = ev ? ev.data : null;
+            if (!msg || typeof msg !== 'object') return;
+            if (msg.kind === 'SW_PUSH_NOTIFICATION' && msg.notif) {
+              emitRealtimeNotification(msg.notif, { fromLocalAction: false, skipOsNotif: true });
+              if (currentUser && typeof syncFromGoogleSpreadsheet === 'function') {
+                setTimeout(() => { syncFromGoogleSpreadsheet(true); }, 350);
+              }
+            } else if (msg.kind === 'SW_NOTIF_CLICKED') {
+              clearUnreadNotificationBadge();
+              openNotificationFeedModal();
+              if (currentUser && typeof syncFromGoogleSpreadsheet === 'function') {
+                syncFromGoogleSpreadsheet(true);
+              }
+            }
+          });
         }
       } catch (swErr) {}
 
@@ -15099,15 +15518,24 @@
             }
           } catch (e) {}
         } else if (ev.key === NOTIF_SOUND_MUTED_KEY) {
+          syncConfigToServiceWorker(false);
           updateNotificationControlButtons();
         }
       });
 
       document.addEventListener('visibilitychange', function() {
+        syncConfigToServiceWorker(document.hidden);
         updateNotificationControlButtons();
         if (!document.hidden) {
           pollCloudNotifications();
         }
+      });
+
+      window.addEventListener('pagehide', function() {
+        syncConfigToServiceWorker(true);
+      });
+      window.addEventListener('beforeunload', function() {
+        syncConfigToServiceWorker(true);
       });
 
       window.addEventListener('focus', function() {
@@ -15117,6 +15545,8 @@
 
       updateNotificationControlButtons();
       renderNotificationFeedModalList();
+      syncConfigToServiceWorker(false);
+      startBackgroundWorkerPoller();
 
       if (notifPollTimerId) clearInterval(notifPollTimerId);
       notifPollTimerId = setInterval(pollCloudNotifications, 4000);
@@ -15155,7 +15585,16 @@
           syncFromGoogleSpreadsheet(true);
         }
         if (phpUrl || getGoogleScriptUrl()) {
+          syncConfigToServiceWorker(false);
           pollCloudNotifications();
+        }
+        if (typeof detectPushRelayServerUrl === 'function') {
+          detectPushRelayServerUrl().then(function() {
+            syncConfigToServiceWorker(false);
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+              ensureWebPushSubscribed(false);
+            }
+          });
         }
       });
       if (currentUser) {

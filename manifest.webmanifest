@@ -1,0 +1,25 @@
+{
+  "name": "Antrian Gambar Estimator & Admin Kontrak",
+  "short_name": "Antrian Estimator",
+  "description": "Portal operasional terintegrasi Sales, Estimator & Admin Kontrak dengan notifikasi real-time lintas perangkat dan tab latar belakang.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#20409a",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%2320409a'/%3E%3Crect x='24' y='24' width='144' height='144' rx='26' fill='%23172b6b' stroke='%2393c5fd' stroke-width='4'/%3E%3Cpath d='M56 122V64h80v58H56zm14-14h52V78H70v30z' fill='%23ffffff'/%3E%3Ccircle cx='144' cy='50' r='16' fill='%2310b981'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='108' fill='%2320409a'/%3E%3Crect x='64' y='64' width='384' height='384' rx='68' fill='%23172b6b' stroke='%2393c5fd' stroke-width='10'/%3E%3Cpath d='M148 326V170h216v156H148zm36-36h144V206H184v84z' fill='%23ffffff'/%3E%3Ccircle cx='384' cy='132' r='42' fill='%2310b981'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -88,7 +88,9 @@ function createDefaultStore() {
         'records' => [],
         'usersProfiles' => [],
         'history' => [],
-        'notifications' => []
+        'notifications' => [],
+        'vapidKeys' => [],
+        'pushSubscriptions' => []
     ];
 }
 
@@ -144,6 +146,12 @@ function withDatabaseStore(callable $callback, $writeMode = true) {
     }
     if (!isset($store['notifications']) || !is_array($store['notifications'])) {
         $store['notifications'] = [];
+    }
+    if (!isset($store['vapidKeys']) || !is_array($store['vapidKeys'])) {
+        $store['vapidKeys'] = [];
+    }
+    if (!isset($store['pushSubscriptions']) || !is_array($store['pushSubscriptions'])) {
+        $store['pushSubscriptions'] = [];
     }
 
     $migratedQueue = false;
@@ -389,6 +397,317 @@ function appendRealtimeNotification(&$store, $eventType, $title, $message, $acto
         $store['notifications'] = array_slice($store['notifications'], 0, 150);
     }
     return $entry;
+}
+
+/**
+ * Base64URL encode tanpa padding (=) sesuai RFC 7515 / RFC 8291 / RFC 8292
+ */
+function pushBase64UrlEncode($data) {
+    return rtrim(strtr(base64_encode((string)$data), '+/', '-_'), '=');
+}
+
+/**
+ * Base64URL decode aman
+ */
+function pushBase64UrlDecode($data) {
+    $b64 = strtr(trim((string)$data), '-_', '+/');
+    $pad = strlen($b64) % 4;
+    if ($pad > 0) {
+        $b64 .= str_repeat('=', 4 - $pad);
+    }
+    $decoded = base64_decode($b64, true);
+    return $decoded === false ? '' : $decoded;
+}
+
+/**
+ * Pastikan pasangan kunci VAPID P-256 (EC prime256v1) tersimpan dan valid di store
+ */
+function ensureVapidKeys(&$store, &$shouldSave) {
+    $vk = is_array($store['vapidKeys'] ?? null) ? $store['vapidKeys'] : [];
+    $pub = trim((string)($vk['publicKeyB64'] ?? ''));
+    $privPem = (string)($vk['privatePem'] ?? '');
+    if ($pub !== '' && $privPem !== '') {
+        $privRes = @openssl_pkey_get_private($privPem);
+        $rawPub = pushBase64UrlDecode($pub);
+        if ($privRes !== false && strlen($rawPub) === 65 && ord($rawPub[0]) === 0x04) {
+            return ['publicKeyB64' => $pub, 'privatePem' => $privPem];
+        }
+    }
+
+    $ecKey = openssl_pkey_new([
+        'curve_name' => 'prime256v1',
+        'private_key_type' => OPENSSL_KEYTYPE_EC
+    ]);
+    if ($ecKey === false) {
+        return ['publicKeyB64' => '', 'privatePem' => ''];
+    }
+    $exportedPem = '';
+    openssl_pkey_export($ecKey, $exportedPem);
+    $details = openssl_pkey_get_details($ecKey);
+    $x = str_pad((string)($details['ec']['x'] ?? ''), 32, "\x00", STR_PAD_LEFT);
+    $y = str_pad((string)($details['ec']['y'] ?? ''), 32, "\x00", STR_PAD_LEFT);
+    $uncompressed = "\x04" . substr($x, -32) . substr($y, -32);
+    $pubB64 = pushBase64UrlEncode($uncompressed);
+
+    $store['vapidKeys'] = [
+        'publicKeyB64' => $pubB64,
+        'privatePem' => $exportedPem,
+        'createdAt' => time()
+    ];
+    $shouldSave = true;
+    return ['publicKeyB64' => $pubB64, 'privatePem' => $exportedPem];
+}
+
+/**
+ * Konversi tanda tangan ECDSA ASN.1 DER menjadi IEEE P1363 raw 64-byte (R || S)
+ */
+function derToRawEcdsa64($der) {
+    $len = strlen($der);
+    if ($len < 8 || ord($der[0]) !== 0x30) {
+        return false;
+    }
+    $offset = 2;
+    if ((ord($der[1]) & 0x80) !== 0) {
+        $lenBytes = ord($der[1]) & 0x7f;
+        $offset = 2 + $lenBytes;
+    }
+    if ($offset >= $len || ord($der[$offset]) !== 0x02) {
+        return false;
+    }
+    $rLen = ord($der[$offset + 1]);
+    $r = substr($der, $offset + 2, $rLen);
+    $offset = $offset + 2 + $rLen;
+    if ($offset >= $len || ord($der[$offset]) !== 0x02) {
+        return false;
+    }
+    $sLen = ord($der[$offset + 1]);
+    $s = substr($der, $offset + 2, $sLen);
+
+    $rClean = ltrim($r, "\x00");
+    $sClean = ltrim($s, "\x00");
+    $r32 = str_pad(substr($rClean, -32), 32, "\x00", STR_PAD_LEFT);
+    $s32 = str_pad(substr($sClean, -32), 32, "\x00", STR_PAD_LEFT);
+    return $r32 . $s32;
+}
+
+/**
+ * Buat VAPID JWT ES256 sesuai RFC 8292
+ */
+function createVapidJwt($endpoint, $privatePem, $subject = 'mailto:notifikasi@estimator-proyek.local') {
+    $parts = @parse_url($endpoint);
+    if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) {
+        return '';
+    }
+    $aud = $parts['scheme'] . '://' . $parts['host'] . (!empty($parts['port']) ? ':' . $parts['port'] : '');
+    $headerB64 = pushBase64UrlEncode(json_encode(['typ' => 'JWT', 'alg' => 'ES256']));
+    $payloadB64 = pushBase64UrlEncode(json_encode([
+        'aud' => $aud,
+        'exp' => time() + 43200,
+        'sub' => $subject
+    ], JSON_UNESCAPED_SLASHES));
+    $signingInput = $headerB64 . '.' . $payloadB64;
+
+    $privRes = @openssl_pkey_get_private($privatePem);
+    if ($privRes === false) {
+        return '';
+    }
+    $derSig = '';
+    if (!@openssl_sign($signingInput, $derSig, $privRes, OPENSSL_ALGO_SHA256)) {
+        return '';
+    }
+    $rawSig = derToRawEcdsa64($derSig);
+    if ($rawSig === false || strlen($rawSig) !== 64) {
+        return '';
+    }
+    return $signingInput . '.' . pushBase64UrlEncode($rawSig);
+}
+
+/**
+ * Bungkus public key EC P-256 uncompressed 65-byte menjadi SubjectPublicKeyInfo PEM
+ */
+function rawEcPublicKeyToPem($raw65) {
+    if (strlen($raw65) !== 65 || ord($raw65[0]) !== 0x04) {
+        return '';
+    }
+    $spkiPrefix = hex2bin('3059301306072a8648ce3d020106082a8648ce3d030107034200');
+    $der = $spkiPrefix . $raw65;
+    return "-----BEGIN PUBLIC KEY-----\n" . chunk_split(base64_encode($der), 64, "\n") . "-----END PUBLIC KEY-----\n";
+}
+
+/**
+ * Enkripsi payload Web Push sesuai RFC 8291 + RFC 8188 (Content-Encoding: aes128gcm)
+ */
+function encryptWebPushAes128Gcm($plaintext, $userPublicKeyB64, $userAuthB64) {
+    if (!function_exists('openssl_pkey_derive')) {
+        return false;
+    }
+    $uaPublic = pushBase64UrlDecode($userPublicKeyB64);
+    $authSecret = pushBase64UrlDecode($userAuthB64);
+    if (strlen($uaPublic) !== 65 || ord($uaPublic[0]) !== 0x04 || strlen($authSecret) !== 16) {
+        return false;
+    }
+
+    $uaPem = rawEcPublicKeyToPem($uaPublic);
+    $uaPubRes = @openssl_pkey_get_public($uaPem);
+    if ($uaPubRes === false) {
+        return false;
+    }
+
+    $asPriv = openssl_pkey_new([
+        'curve_name' => 'prime256v1',
+        'private_key_type' => OPENSSL_KEYTYPE_EC
+    ]);
+    if ($asPriv === false) {
+        return false;
+    }
+    $asDetails = openssl_pkey_get_details($asPriv);
+    $asPublic = "\x04"
+        . substr(str_pad((string)($asDetails['ec']['x'] ?? ''), 32, "\x00", STR_PAD_LEFT), -32)
+        . substr(str_pad((string)($asDetails['ec']['y'] ?? ''), 32, "\x00", STR_PAD_LEFT), -32);
+
+    $sharedSecret = @openssl_pkey_derive($uaPubRes, $asPriv, 32);
+    if ($sharedSecret === false || $sharedSecret === '') {
+        return false;
+    }
+    $sharedSecret = substr(str_pad($sharedSecret, 32, "\x00", STR_PAD_LEFT), -32);
+
+    // RFC 8291 Section 3.3 Key Derivation
+    $prkKey = hash_hmac('sha256', $sharedSecret, $authSecret, true);
+    $keyInfo = "WebPush: info\x00" . $uaPublic . $asPublic;
+    $ikm = hash_hmac('sha256', $keyInfo . "\x01", $prkKey, true);
+
+    // RFC 8188 aes128gcm Content-Encoding
+    $salt = random_bytes(16);
+    $prk = hash_hmac('sha256', $ikm, $salt, true);
+    $cekInfo = "Content-Encoding: aes128gcm\x00";
+    $cek = substr(hash_hmac('sha256', $cekInfo . "\x01", $prk, true), 0, 16);
+    $nonceInfo = "Content-Encoding: nonce\x00";
+    $nonce = substr(hash_hmac('sha256', $nonceInfo . "\x01", $prk, true), 0, 12);
+
+    $paddedPlaintext = (string)$plaintext . "\x02";
+    $tag = '';
+    $ciphertext = openssl_encrypt($paddedPlaintext, 'aes-128-gcm', $cek, OPENSSL_RAW_DATA, $nonce, $tag, '', 16);
+    if ($ciphertext === false || strlen($tag) !== 16) {
+        return false;
+    }
+
+    $header = $salt . pack('N', 4096) . chr(strlen($asPublic)) . $asPublic;
+    return $header . $ciphertext . $tag;
+}
+
+/**
+ * Kirim batch Web Push RFC 8291 secara paralel ke seluruh perangkat terdaftar
+ */
+function dispatchWebPushBatch($vapidKeys, $subscriptions, $notification) {
+    $stats = ['total' => 0, 'sent' => 0, 'failed' => 0, 'expired' => 0];
+    $expiredEndpoints = [];
+    if (empty($vapidKeys['publicKeyB64']) || empty($vapidKeys['privatePem']) || empty($subscriptions) || !is_array($subscriptions)) {
+        return ['stats' => $stats, 'expiredEndpoints' => $expiredEndpoints];
+    }
+
+    $payloadJson = json_encode([
+        'type' => 'estimator_notification',
+        'notification' => $notification,
+        'title' => $notification['title'] ?? 'Notifikasi Estimator',
+        'body' => $notification['message'] ?? '',
+        'tag' => 'est-notif-' . ($notification['id'] ?? time()),
+        'sentAtMs' => (int)round(microtime(true) * 1000)
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    $requests = [];
+    foreach ($subscriptions as $sub) {
+        $endpoint = trim((string)($sub['endpoint'] ?? ''));
+        $p256dh = trim((string)($sub['keys']['p256dh'] ?? ''));
+        $auth = trim((string)($sub['keys']['auth'] ?? ''));
+        if ($endpoint === '' || $p256dh === '' || $auth === '') {
+            continue;
+        }
+        $stats['total']++;
+        $encrypted = encryptWebPushAes128Gcm($payloadJson, $p256dh, $auth);
+        $jwt = createVapidJwt($endpoint, $vapidKeys['privatePem']);
+        if ($encrypted === false || $jwt === '') {
+            $stats['failed']++;
+            continue;
+        }
+        $requests[] = [
+            'endpoint' => $endpoint,
+            'body' => $encrypted,
+            'jwt' => $jwt
+        ];
+    }
+
+    if (empty($requests) || !function_exists('curl_init')) {
+        return ['stats' => $stats, 'expiredEndpoints' => $expiredEndpoints];
+    }
+
+    $mh = curl_multi_init();
+    $handles = [];
+    foreach ($requests as $idx => $req) {
+        $ch = curl_init($req['endpoint']);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $req['body'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 4,
+            CURLOPT_CONNECTTIMEOUT => 2,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/octet-stream',
+                'Content-Encoding: aes128gcm',
+                'Content-Length: ' . strlen($req['body']),
+                'TTL: 86400',
+                'Urgency: high',
+                'Authorization: vapid t=' . $req['jwt'] . ', k=' . $vapidKeys['publicKeyB64']
+            ]
+        ]);
+        curl_multi_add_handle($mh, $ch);
+        $handles[$idx] = ['ch' => $ch, 'endpoint' => $req['endpoint']];
+    }
+
+    $running = null;
+    do {
+        $mrc = curl_multi_exec($mh, $running);
+        if ($running > 0) {
+            curl_multi_select($mh, 0.2);
+        }
+    } while ($running > 0 && $mrc === CURLM_OK);
+
+    foreach ($handles as $h) {
+        $httpCode = (int)curl_getinfo($h['ch'], CURLINFO_HTTP_CODE);
+        if ($httpCode >= 200 && $httpCode < 300) {
+            $stats['sent']++;
+        } elseif ($httpCode === 404 || $httpCode === 410) {
+            $stats['expired']++;
+            $expiredEndpoints[] = $h['endpoint'];
+        } else {
+            $stats['failed']++;
+        }
+        curl_multi_remove_handle($mh, $h['ch']);
+        curl_close($h['ch']);
+    }
+    curl_multi_close($mh);
+
+    return ['stats' => $stats, 'expiredEndpoints' => $expiredEndpoints];
+}
+
+/**
+ * Bersihkan endpoint Web Push yang sudah kedaluwarsa (HTTP 404/410)
+ */
+function pruneExpiredPushSubscriptions($expiredEndpoints) {
+    if (empty($expiredEndpoints) || !is_array($expiredEndpoints)) {
+        return;
+    }
+    $expiredSet = array_flip($expiredEndpoints);
+    withDatabaseStore(function (&$store, &$shouldSave) use ($expiredSet) {
+        $subs = is_array($store['pushSubscriptions'] ?? null) ? $store['pushSubscriptions'] : [];
+        $filtered = array_values(array_filter($subs, function ($s) use ($expiredSet) {
+            return !isset($expiredSet[$s['endpoint'] ?? '']);
+        }));
+        if (count($filtered) !== count($subs)) {
+            $store['pushSubscriptions'] = $filtered;
+            $shouldSave = true;
+        }
+        return true;
+    }, true);
 }
 
 /**
@@ -833,6 +1152,28 @@ if ($action === 'get_rows' || $action === 'sync' || $action === 'load') {
 }
 
 // ============================================================================
+// 4B. GET VAPID PUBLIC KEY (Untuk Web Push saat tab ditutup di PC & HP)
+// ============================================================================
+if ($action === 'get_vapid_key') {
+    $res = withDatabaseStore(function (&$store, &$shouldSave) {
+        $keys = ensureVapidKeys($store, $shouldSave);
+        return [
+            'publicKey' => $keys['publicKeyB64'],
+            'subscriberCount' => count($store['pushSubscriptions'] ?? [])
+        ];
+    }, true);
+    if (isset($res['error'])) {
+        sendJsonResponse(['success' => false, 'status' => 'error', 'message' => $res['error']], 500);
+    }
+    sendJsonResponse([
+        'success' => true,
+        'status' => 'success',
+        'publicKey' => $res['publicKey'] ?? '',
+        'subscriberCount' => $res['subscriberCount'] ?? 0
+    ]);
+}
+
+// ============================================================================
 // 5. GET BACKUP (Unduh cadangan JSON)
 // ============================================================================
 if ($action === 'backup') {
@@ -1160,6 +1501,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $clientEventId
             );
             $shouldSave = true;
+            $pushDispatch = null;
+            if (!empty($createdNotif) && !empty($store['pushSubscriptions'])) {
+                $vapidKeys = ensureVapidKeys($store, $shouldSave);
+                $pushDispatch = [
+                    'vapidKeys' => $vapidKeys,
+                    'subscriptions' => $store['pushSubscriptions'],
+                    'notification' => $createdNotif
+                ];
+            }
 
             return [
                 'success' => true,
@@ -1167,9 +1517,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'queueCode' => $rec['queueCode'] ?? $queueCode,
                 'unifiedChatHistory' => $rec['unifiedChatHistory'],
                 'notification' => $createdNotif,
+                '__pushDispatch' => $pushDispatch,
                 'message' => 'Chat berhasil disimpan & diteruskan ke seluruh divisi!'
             ];
         }, true);
+
+        $pushDispatch = $res['__pushDispatch'] ?? null;
+        unset($res['__pushDispatch']);
+        if (!empty($pushDispatch)) {
+            $pushResult = dispatchWebPushBatch($pushDispatch['vapidKeys'], $pushDispatch['subscriptions'], $pushDispatch['notification']);
+            $res['pushStats'] = $pushResult['stats'];
+            if (!empty($pushResult['expiredEndpoints'])) {
+                pruneExpiredPushSubscriptions($pushResult['expiredEndpoints']);
+            }
+        }
 
         sendJsonResponse($res, isset($res['error']) ? 500 : 200);
     }
@@ -1391,9 +1752,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $record['status'],
                     $clientEventId
                 );
+            } elseif ($notifyEventType === 'contract_edit' || $updatedBy === 'contract') {
+                $contractActor = trim((string)($data['actorUsername'] ?? '')) ?: 'Admin Kontrak';
+                $createdNotif = appendRealtimeNotification(
+                    $store,
+                    'contract_edit',
+                    'Pembaruan Penawaran Admin Kontrak',
+                    $contractActor . ' memperbarui Admin Kontrak (' . $record['status'] . '): ' . $record['queueCode'] . ' - ' . $record['customerName'] . ' (' . $record['projectName'] . ')',
+                    $contractActor,
+                    $record['queueCode'],
+                    $record['customerName'],
+                    $record['projectName'],
+                    $record['status'],
+                    $clientEventId
+                );
             }
 
             $shouldSave = true;
+            $pushDispatch = null;
+            if (!empty($createdNotif) && !empty($store['pushSubscriptions'])) {
+                $vapidKeys = ensureVapidKeys($store, $shouldSave);
+                $pushDispatch = [
+                    'vapidKeys' => $vapidKeys,
+                    'subscriptions' => $store['pushSubscriptions'],
+                    'notification' => $createdNotif
+                ];
+            }
 
             return [
                 'success' => true,
@@ -1405,14 +1789,168 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'revFilesUploaded' => $revFilesUploaded,
                 'quoteFilesUploaded' => $quoteFilesUploaded,
                 'notification' => $createdNotif,
+                '__pushDispatch' => $pushDispatch,
                 'message' => 'Data ' . $record['queueCode'] . ' berhasil tersimpan ke Cloud Server Hosting!'
+            ];
+        }, true);
+
+        $pushDispatch = $res['__pushDispatch'] ?? null;
+        unset($res['__pushDispatch']);
+        if (!empty($pushDispatch)) {
+            $pushResult = dispatchWebPushBatch($pushDispatch['vapidKeys'], $pushDispatch['subscriptions'], $pushDispatch['notification']);
+            $res['pushStats'] = $pushResult['stats'];
+            if (!empty($pushResult['expiredEndpoints'])) {
+                pruneExpiredPushSubscriptions($pushResult['expiredEndpoints']);
+            }
+        }
+
+        sendJsonResponse($res, isset($res['error']) ? 500 : 200);
+    }
+
+    // --- F. Simpan Push Subscription perangkat (Browser / PWA HP & Desktop) ---
+    if ($postAction === 'save_push_subscription') {
+        $sub = is_array($data['subscription'] ?? null) ? $data['subscription'] : $data;
+        $endpoint = trim((string)($sub['endpoint'] ?? ''));
+        $keysObj = is_array($sub['keys'] ?? null) ? $sub['keys'] : [];
+        $p256dh = trim((string)($keysObj['p256dh'] ?? $data['p256dh'] ?? ''));
+        $auth = trim((string)($keysObj['auth'] ?? $data['auth'] ?? ''));
+        $rawPub = pushBase64UrlDecode($p256dh);
+        $rawAuth = pushBase64UrlDecode($auth);
+
+        if ($endpoint === '' || strlen($rawPub) !== 65 || ord($rawPub[0]) !== 0x04 || strlen($rawAuth) !== 16) {
+            sendJsonResponse(['success' => false, 'status' => 'error', 'message' => 'Subscription Web Push tidak valid.'], 400);
+        }
+
+        $res = withDatabaseStore(function (&$store, &$shouldSave) use ($endpoint, $p256dh, $auth, $data) {
+            $vapidKeys = ensureVapidKeys($store, $shouldSave);
+            $subs = is_array($store['pushSubscriptions'] ?? null) ? $store['pushSubscriptions'] : [];
+            $nowMs = (int)round(microtime(true) * 1000);
+            $entry = [
+                'endpoint' => $endpoint,
+                'keys' => [
+                    'p256dh' => $p256dh,
+                    'auth' => $auth
+                ],
+                'username' => trim((string)($data['username'] ?? '')) ?: 'Anonymous',
+                'role' => trim((string)($data['role'] ?? '')) ?: 'guest',
+                'deviceLabel' => trim((string)($data['deviceLabel'] ?? '')) ?: 'Browser',
+                'updatedAtMs' => $nowMs
+            ];
+            $updated = false;
+            foreach ($subs as &$existing) {
+                if (($existing['endpoint'] ?? '') === $endpoint) {
+                    $existing = array_merge($existing, $entry);
+                    $updated = true;
+                    break;
+                }
+            }
+            unset($existing);
+            if (!$updated) {
+                array_unshift($subs, $entry);
+            }
+            if (count($subs) > 200) {
+                $subs = array_slice($subs, 0, 200);
+            }
+            $store['pushSubscriptions'] = $subs;
+            $shouldSave = true;
+            return [
+                'success' => true,
+                'status' => 'success',
+                'publicKey' => $vapidKeys['publicKeyB64'],
+                'subscriberCount' => count($subs)
             ];
         }, true);
 
         sendJsonResponse($res, isset($res['error']) ? 500 : 200);
     }
 
-    // --- F. Fallback kompatibel bila format payload Millagen lama dikirim ---
+    // --- G. Hapus Push Subscription perangkat ---
+    if ($postAction === 'remove_push_subscription') {
+        $endpoint = trim((string)($data['endpoint'] ?? ($data['subscription']['endpoint'] ?? '')));
+        $res = withDatabaseStore(function (&$store, &$shouldSave) use ($endpoint) {
+            $subs = is_array($store['pushSubscriptions'] ?? null) ? $store['pushSubscriptions'] : [];
+            $before = count($subs);
+            if ($endpoint !== '') {
+                $subs = array_values(array_filter($subs, function ($s) use ($endpoint) {
+                    return ($s['endpoint'] ?? '') !== $endpoint;
+                }));
+            }
+            if (count($subs) !== $before) {
+                $store['pushSubscriptions'] = $subs;
+                $shouldSave = true;
+            }
+            return [
+                'success' => true,
+                'status' => 'success',
+                'subscriberCount' => count($subs)
+            ];
+        }, true);
+        sendJsonResponse($res, isset($res['error']) ? 500 : 200);
+    }
+
+    // --- H. Relay Web Push untuk mode Google Apps Script / Test Push ---
+    if ($postAction === 'relay_push' || $postAction === 'test_push') {
+        $n = is_array($data['notification'] ?? null) ? $data['notification'] : $data;
+        $eventType = trim((string)($n['eventType'] ?? ($postAction === 'test_push' ? 'test_push' : 'activity')));
+        $title = trim((string)($n['title'] ?? ($postAction === 'test_push' ? 'Tes Push Notifikasi Latar Belakang' : 'Notifikasi Aktivitas Proyek')));
+        $message = trim((string)($n['message'] ?? ($postAction === 'test_push' ? 'Notifikasi latar belakang & suara aktif meskipun tab ditutup.' : '-')));
+        $actor = trim((string)($n['actor'] ?? ($data['actorUsername'] ?? 'Sistem')));
+        $queueCode = trim((string)($n['queueCode'] ?? '-'));
+        $customerName = trim((string)($n['customerName'] ?? '-'));
+        $projectName = trim((string)($n['projectName'] ?? '-'));
+        $status = trim((string)($n['status'] ?? '-'));
+        $clientEventId = trim((string)($n['id'] ?? $n['clientEventId'] ?? $data['clientEventId'] ?? ''));
+        $targetEndpoint = trim((string)($data['targetEndpoint'] ?? ''));
+
+        $res = withDatabaseStore(function (&$store, &$shouldSave) use (
+            $eventType, $title, $message, $actor, $queueCode, $customerName, $projectName, $status, $clientEventId, $targetEndpoint
+        ) {
+            $vapidKeys = ensureVapidKeys($store, $shouldSave);
+            $createdNotif = appendRealtimeNotification(
+                $store,
+                $eventType,
+                $title,
+                $message,
+                $actor,
+                $queueCode,
+                $customerName,
+                $projectName,
+                $status,
+                $clientEventId
+            );
+            $shouldSave = true;
+            $subs = is_array($store['pushSubscriptions'] ?? null) ? $store['pushSubscriptions'] : [];
+            if ($targetEndpoint !== '') {
+                $subs = array_values(array_filter($subs, function ($s) use ($targetEndpoint) {
+                    return ($s['endpoint'] ?? '') === $targetEndpoint;
+                }));
+            }
+            return [
+                'success' => true,
+                'status' => 'success',
+                'notification' => $createdNotif,
+                '__pushDispatch' => !empty($subs) ? [
+                    'vapidKeys' => $vapidKeys,
+                    'subscriptions' => $subs,
+                    'notification' => $createdNotif
+                ] : null
+            ];
+        }, true);
+
+        $pushDispatch = $res['__pushDispatch'] ?? null;
+        unset($res['__pushDispatch']);
+        $res['pushStats'] = ['total' => 0, 'sent' => 0, 'failed' => 0, 'expired' => 0];
+        if (!empty($pushDispatch)) {
+            $pushResult = dispatchWebPushBatch($pushDispatch['vapidKeys'], $pushDispatch['subscriptions'], $pushDispatch['notification']);
+            $res['pushStats'] = $pushResult['stats'];
+            if (!empty($pushResult['expiredEndpoints'])) {
+                pruneExpiredPushSubscriptions($pushResult['expiredEndpoints']);
+            }
+        }
+        sendJsonResponse($res, isset($res['error']) ? 500 : 200);
+    }
+
+    // --- I. Fallback kompatibel bila format payload Millagen lama dikirim ---
     if (isset($data['members']) || isset($data['pins'])) {
         $legacyPayload = $securityHeader . json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $ok = @file_put_contents($legacyMillagenFile, $legacyPayload, LOCK_EX);
@@ -1433,7 +1971,12 @@ sendJsonResponse([
         'login_sync' => 'GET api.php?action=login_sync&userKey=...&authHash=...',
         'get_profile_and_history' => 'GET api.php?action=get_profile_and_history&userKey=...&authHash=...',
         'get_rows' => 'GET api.php?action=get_rows',
+        'get_notifications' => 'GET api.php?action=get_notifications',
+        'get_vapid_key' => 'GET api.php?action=get_vapid_key',
         'save_row' => 'POST api.php (JSON action=save_row)',
+        'send_project_chat' => 'POST api.php (JSON action=send_project_chat)',
+        'save_push_subscription' => 'POST api.php (JSON action=save_push_subscription)',
+        'relay_push' => 'POST api.php (JSON action=relay_push)',
         'save_user_profile' => 'POST api.php (JSON action=save_user_profile)',
         'backup' => 'GET api.php?action=backup'
     ]
