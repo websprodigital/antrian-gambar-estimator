@@ -87,7 +87,8 @@ function createDefaultStore() {
         'updatedAt' => time(),
         'records' => [],
         'usersProfiles' => [],
-        'history' => []
+        'history' => [],
+        'notifications' => []
     ];
 }
 
@@ -140,6 +141,9 @@ function withDatabaseStore(callable $callback, $writeMode = true) {
     }
     if (!isset($store['history']) || !is_array($store['history'])) {
         $store['history'] = [];
+    }
+    if (!isset($store['notifications']) || !is_array($store['notifications'])) {
+        $store['notifications'] = [];
     }
 
     $shouldSave = false;
@@ -253,6 +257,82 @@ function appendOnlineHistory(&$store, $username, $userKey, $device, $activity, $
     if (count($store['history']) > 500) {
         $store['history'] = array_slice($store['history'], 0, 500);
     }
+}
+
+/**
+ * Cek apakah status masih tahap antrian awal
+ */
+function isInitialQueueStatus($status) {
+    $s = strtolower(trim((string)$status));
+    return ($s === '' || $s === '-' || $s === 'belum edit' || $s === 'masih antrian gambar' || $s === 'antrian gambar');
+}
+
+/**
+ * Gabungkan array riwayat catatan tanpa duplikasi
+ */
+function mergeNotesHistoryArrays($existingHist, $incomingHist) {
+    $listA = is_array($existingHist) ? $existingHist : [];
+    $listB = is_array($incomingHist) ? $incomingHist : [];
+    $seen = [];
+    $merged = [];
+    foreach (array_merge($listB, $listA) as $item) {
+        if (!is_array($item)) continue;
+        $txt = trim((string)($item['text'] ?? ''));
+        if ($txt === '' || $txt === '-') continue;
+        $ts = trim((string)($item['timestamp'] ?? ''));
+        $author = trim((string)($item['author'] ?? ''));
+        $sig = $ts . '|' . $author . '|' . $txt;
+        if (isset($seen[$sig])) continue;
+        $seen[$sig] = true;
+        $merged[] = [
+            'timestamp' => $ts ?: date('d/m/Y H:i:s'),
+            'author' => $author ?: '-',
+            'text' => $txt
+        ];
+        if (count($merged) >= 100) break;
+    }
+    return $merged;
+}
+
+/**
+ * Tambahkan notifikasi real-time lintas perangkat & lintas tab ke store
+ */
+function appendRealtimeNotification(&$store, $eventType, $title, $message, $actor, $queueCode, $customerName, $projectName, $status, $clientEventId = '') {
+    if (!isset($store['notifications']) || !is_array($store['notifications'])) {
+        $store['notifications'] = [];
+    }
+    $cleanId = preg_replace('/[^a-zA-Z0-9_-]/', '', (string)$clientEventId);
+    if ($cleanId === '') {
+        try {
+            $randPart = bin2hex(random_bytes(3));
+        } catch (Exception $e) {
+            $randPart = substr(md5(uniqid('', true)), 0, 6);
+        }
+        $cleanId = 'NTF-' . (int)round(microtime(true) * 1000) . '-' . $randPart;
+    }
+    foreach ($store['notifications'] as $ex) {
+        if (($ex['id'] ?? '') === $cleanId) {
+            return $ex;
+        }
+    }
+    $entry = [
+        'id' => $cleanId,
+        'createdAtMs' => (int)round(microtime(true) * 1000),
+        'timestamp' => date('d/m/Y H:i:s'),
+        'eventType' => trim((string)$eventType) ?: 'activity',
+        'title' => trim((string)$title) ?: 'Notifikasi Aktivitas Proyek',
+        'message' => trim((string)$message) ?: '-',
+        'actor' => trim((string)$actor) ?: 'Sistem',
+        'queueCode' => trim((string)$queueCode) ?: '-',
+        'customerName' => trim((string)$customerName) ?: '-',
+        'projectName' => trim((string)$projectName) ?: '-',
+        'status' => trim((string)$status) ?: '-'
+    ];
+    array_unshift($store['notifications'], $entry);
+    if (count($store['notifications']) > 150) {
+        $store['notifications'] = array_slice($store['notifications'], 0, 150);
+    }
+    return $entry;
 }
 
 /**
@@ -530,10 +610,45 @@ if ($action === 'login_sync' || $action === 'verify_login') {
             'profile' => $safeProf,
             'records' => array_values($store['records']),
             'history' => $historyList,
+            'notifications' => array_slice($store['notifications'] ?? [], 0, 30),
             'total' => count($store['records']),
             'serverTimestamp' => $nowFmt
         ];
     }, true);
+
+    if (isset($res['error'])) {
+        sendJsonResponse(['success' => false, 'status' => 'error', 'message' => $res['error']], 500);
+    }
+    sendJsonResponse($res);
+}
+
+// ============================================================================
+// 2B. GET GET_NOTIFICATIONS (Feed Notifikasi Ringan Lintas Perangkat / Login / Tab Lain)
+// ============================================================================
+if ($action === 'get_notifications') {
+    $sinceMs = isset($_GET['since']) ? intval($_GET['since']) : 0;
+    $res = withDatabaseStore(function ($store) use ($sinceMs) {
+        $allNotifs = $store['notifications'] ?? [];
+        if ($sinceMs > 0) {
+            $filtered = [];
+            foreach ($allNotifs as $nt) {
+                if (intval($nt['createdAtMs'] ?? 0) >= $sinceMs) {
+                    $filtered[] = $nt;
+                }
+            }
+            $list = array_slice($filtered, 0, 50);
+        } else {
+            $list = array_slice($allNotifs, 0, 40);
+        }
+        return [
+            'success' => true,
+            'status' => 'success',
+            'notifications' => array_values($list),
+            'total' => count($list),
+            'updatedAt' => $store['updatedAt'] ?? time(),
+            'serverTimeMs' => (int)round(microtime(true) * 1000)
+        ];
+    }, false);
 
     if (isset($res['error'])) {
         sendJsonResponse(['success' => false, 'status' => 'error', 'message' => $res['error']], 500);
@@ -572,6 +687,7 @@ if ($action === 'get_profile_and_history' || $action === 'get_online_state') {
             'profile' => $prof,
             'records' => array_values($store['records']),
             'history' => $hist,
+            'notifications' => array_slice($store['notifications'] ?? [], 0, 30),
             'total' => count($store['records']),
             'serverTimestamp' => date('d/m/Y H:i')
         ];
@@ -601,7 +717,8 @@ if ($action === 'get_rows' || $action === 'sync' || $action === 'load') {
                 'data' => [
                     'records' => array_values($store['records']),
                     'usersProfiles' => empty($safeProfiles) ? new stdClass() : $safeProfiles,
-                    'history' => $store['history']
+                    'history' => $store['history'],
+                    'notifications' => array_slice($store['notifications'] ?? [], 0, 30)
                 ],
                 'updatedAt' => $store['updatedAt'] ?? time(),
                 'message' => 'Data berhasil diambil dari cloud server hosting.'
@@ -612,6 +729,7 @@ if ($action === 'get_rows' || $action === 'sync' || $action === 'load') {
             'status' => 'success',
             'total' => count($store['records']),
             'records' => array_values($store['records']),
+            'notifications' => array_slice($store['notifications'] ?? [], 0, 30),
             'updatedAt' => $store['updatedAt'] ?? time(),
             'serverTimestamp' => date('d/m/Y H:i')
         ];
@@ -919,6 +1037,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $existing = ($existingIdx >= 0) ? $store['records'][$existingIdx] : [];
+            $isSalesSide = ($updatedBy === 'sales' || $updatedBy === 'sales_new');
+            $incomingSalesNotesHist = is_array($data['salesNotesHistory'] ?? null) ? $data['salesNotesHistory'] : [];
+            $incomingEstNotesHist = is_array($data['estimatorNotesHistory'] ?? null) ? $data['estimatorNotesHistory'] : [];
+
             $record = [
                 'id' => (string)($existing['id'] ?? ('REC-' . time() . '-' . substr(md5($queueCode), 0, 5))),
                 'queueCode' => $queueCode ?: '-',
@@ -930,13 +1052,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'projectMaterial' => trim((string)($data['projectMaterial'] ?? $data['projectMaterialValue'] ?? ($existing['projectMaterial'] ?? '-'))),
                 'requestDeadline' => formatDateDMY($data['requestDeadline'] ?? $data['targetSelesai'] ?? ($existing['requestDeadline'] ?? '-')),
                 'sourceDesc' => trim((string)($data['sourceDesc'] ?? $data['sumberGambar'] ?? ($existing['sourceDesc'] ?? '-'))),
+                'salesNotes' => trim((string)($data['salesNotes'] ?? $data['catatanSales'] ?? ($existing['salesNotes'] ?? ''))),
+                'salesNotesHistory' => mergeNotesHistoryArrays($existing['salesNotesHistory'] ?? [], $incomingSalesNotesHist),
                 'customerFolderUrl' => trim((string)($data['customerFolderUrl'] ?? ($existing['customerFolderUrl'] ?? ''))),
                 'docsText' => trim((string)($data['docsText'] ?? ($existing['docsText'] ?? '-'))),
-                'status' => trim((string)($data['status'] ?? ($existing['status'] ?? 'Belum Edit'))),
+                'status' => trim((string)($data['status'] ?? ($existing['status'] ?? 'Masih Antrian Gambar'))),
                 'estimatorName' => trim((string)($data['estimatorName'] ?? ($existing['estimatorName'] ?? '(Belum dipilih)'))),
                 'estimateStartDate' => formatDateDMY($data['estimateStartDate'] ?? ($existing['estimateStartDate'] ?? '-')),
                 'estimateEndDate' => formatDateDMY($data['estimateEndDate'] ?? ($existing['estimateEndDate'] ?? '-')),
                 'estimatorNotes' => trim((string)($data['estimatorNotes'] ?? ($existing['estimatorNotes'] ?? '-'))),
+                'estimatorNotesHistory' => mergeNotesHistoryArrays($existing['estimatorNotesHistory'] ?? [], $incomingEstNotesHist),
                 'quoteNumber' => trim((string)($data['quoteNumber'] ?? ($existing['quoteNumber'] ?? '-'))),
                 'quoteStatus' => trim((string)($data['quoteStatus'] ?? ($existing['quoteStatus'] ?? 'Draft'))),
                 'quoteNotes' => trim((string)($data['quoteNotes'] ?? ($existing['quoteNotes'] ?? '-')))
@@ -955,7 +1080,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             for ($r = 1; $r <= 8; $r++) {
                 $val = $revDocMap[$r] ?? trim((string)($data['revGambar' . $r] ?? ''));
-                if (($val === '' || $updatedBy === 'sales' || $updatedBy === 'contract') && !empty($existing['revGambar' . $r])) {
+                if (($val === '' || $isSalesSide || $updatedBy === 'contract') && !empty($existing['revGambar' . $r])) {
                     $val = $existing['revGambar' . $r];
                 }
                 $record['revGambar' . $r] = $val;
@@ -978,18 +1103,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Jaga kolom peran lain saat update parsial dari 1 perangkat
             if ($existingIdx >= 0) {
                 if ($updatedBy === 'estimator' || $updatedBy === 'contract') {
-                    foreach (['salesName', 'customerName', 'projectName', 'scopeOfWork', 'projectMaterial', 'requestDeadline', 'sourceDesc', 'uploadDateTime'] as $sf) {
+                    foreach (['salesName', 'customerName', 'projectName', 'scopeOfWork', 'projectMaterial', 'requestDeadline', 'sourceDesc', 'uploadDateTime', 'salesNotes'] as $sf) {
                         if (!empty($existing[$sf]) && $existing[$sf] !== '-') {
                             $record[$sf] = $existing[$sf];
                         }
                     }
+                    if (!empty($existing['salesNotesHistory']) && is_array($existing['salesNotesHistory'])) {
+                        $record['salesNotesHistory'] = $existing['salesNotesHistory'];
+                    }
                 }
-                if ($updatedBy === 'sales' || $updatedBy === 'contract') {
-                    if (!empty($existing['status']) && $existing['status'] !== 'Belum Edit') $record['status'] = $existing['status'];
+                if ($isSalesSide || $updatedBy === 'contract') {
+                    if (!empty($existing['status']) && !isInitialQueueStatus($existing['status'])) $record['status'] = $existing['status'];
                     if (!empty($existing['estimatorName']) && $existing['estimatorName'] !== '(Belum dipilih)') $record['estimatorName'] = $existing['estimatorName'];
                     if (!empty($existing['estimateStartDate']) && $existing['estimateStartDate'] !== '-') $record['estimateStartDate'] = $existing['estimateStartDate'];
                     if (!empty($existing['estimateEndDate']) && $existing['estimateEndDate'] !== '-') $record['estimateEndDate'] = $existing['estimateEndDate'];
                     if (!empty($existing['estimatorNotes']) && $existing['estimatorNotes'] !== '-') $record['estimatorNotes'] = $existing['estimatorNotes'];
+                    if (!empty($existing['estimatorNotesHistory']) && is_array($existing['estimatorNotesHistory'])) {
+                        $record['estimatorNotesHistory'] = $existing['estimatorNotesHistory'];
+                    }
                 }
                 if ($updatedBy !== 'contract') {
                     if (!empty($existing['quoteNumber']) && $existing['quoteNumber'] !== '-') $record['quoteNumber'] = $existing['quoteNumber'];
@@ -1014,6 +1145,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $record['status'],
                 'Sales: ' . $record['salesName'] . ' | Estimator: ' . $record['estimatorName'] . ' | SPH: ' . $record['quoteNumber'] . ' (' . $record['quoteStatus'] . ')'
             );
+
+            $clientEventId = trim((string)($data['clientEventId'] ?? ''));
+            $notifyEventType = trim((string)($data['notifyEventType'] ?? ''));
+            $createdNotif = null;
+            if ($notifyEventType === 'sales_form_new' || $updatedBy === 'sales_new' || ($operation === 'inserted' && $updatedBy !== 'estimator' && $updatedBy !== 'contract')) {
+                $createdNotif = appendRealtimeNotification(
+                    $store,
+                    'sales_form_new',
+                    'Form Gambar Proyek Baru Diinput Sales',
+                    $record['salesName'] . ' mengisi Form Gambar Proyek: ' . $record['queueCode'] . ' - ' . $record['customerName'] . ' (' . $record['projectName'] . ')',
+                    $record['salesName'] ?: $actorUsername,
+                    $record['queueCode'],
+                    $record['customerName'],
+                    $record['projectName'],
+                    $record['status'],
+                    $clientEventId
+                );
+            } elseif ($notifyEventType === 'sales_form_edit' || ($updatedBy === 'sales' && $operation === 'updated')) {
+                $createdNotif = appendRealtimeNotification(
+                    $store,
+                    'sales_form_edit',
+                    'Edit Perubahan Data Gambar Sales',
+                    $record['salesName'] . ' mengedit di Edit Perubahan: ' . $record['queueCode'] . ' - ' . $record['customerName'] . ' (' . $record['projectName'] . ')',
+                    $record['salesName'] ?: $actorUsername,
+                    $record['queueCode'],
+                    $record['customerName'],
+                    $record['projectName'],
+                    $record['status'],
+                    $clientEventId
+                );
+            } elseif ($notifyEventType === 'estimator_edit' || $updatedBy === 'estimator') {
+                $estActor = ($record['estimatorName'] && $record['estimatorName'] !== '(Belum dipilih)') ? $record['estimatorName'] : $actorUsername;
+                $createdNotif = appendRealtimeNotification(
+                    $store,
+                    'estimator_edit',
+                    'Pembaruan Kelola Estimasi Estimator',
+                    $estActor . ' mengedit Kelola Estimasi (' . $record['status'] . '): ' . $record['queueCode'] . ' - ' . $record['customerName'] . ' (' . $record['projectName'] . ')',
+                    $estActor,
+                    $record['queueCode'],
+                    $record['customerName'],
+                    $record['projectName'],
+                    $record['status'],
+                    $clientEventId
+                );
+            }
+
             $shouldSave = true;
 
             return [
@@ -1025,6 +1202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'filesUploaded' => $filesUploaded,
                 'revFilesUploaded' => $revFilesUploaded,
                 'quoteFilesUploaded' => $quoteFilesUploaded,
+                'notification' => $createdNotif,
                 'message' => 'Data ' . $record['queueCode'] . ' berhasil tersimpan ke Cloud Server Hosting!'
             ];
         }, true);

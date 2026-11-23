@@ -45,6 +45,7 @@ var CONFIG = {
   SHEET_NAME: "Sheet1",
   USERS_SHEET_NAME: "Users_Profiles",
   HISTORY_SHEET_NAME: "History_Data",
+  NOTIFICATIONS_SHEET_NAME: "Notifications_Feed",
   PROFILE_PHOTO_FOLDER_NAME: "_Foto_Profil_Karyawan",
   TIMEZONE: "GMT+7",
   ROOT_FOLDER_ID: "",
@@ -77,19 +78,19 @@ var HEADERS = [
   "Dokumen Tambahan 6",
   "Dokumen Tambahan 7",
   "Dokumen Tambahan 8",
-  "Status Pengerjaan Gambar",
+  "Status Pengerjaan Desain",
   "Pilih Estimator",
   "Tgl Estimasi Pengerjaan",
   "Tgl Selesai Pengerjaan",
-  "Revisi Gambar 1",
-  "Revisi Gambar 2",
-  "Revisi Gambar 3",
-  "Revisi Gambar 4",
-  "Revisi Gambar 5",
-  "Revisi Gambar 6",
-  "Revisi Gambar 7",
-  "Revisi Gambar 8",
-  "Catatan Gambar Estimator",
+  "Revisi Desain 1",
+  "Revisi Desain 2",
+  "Revisi Desain 3",
+  "Revisi Desain 4",
+  "Revisi Desain 5",
+  "Revisi Desain 6",
+  "Revisi Desain 7",
+  "Revisi Desain 8",
+  "Catatan Desain Estimator",
   "Nomor Penawaran (SPH)",
   "Status Admin Kontrak",
   "Catatan SPH",
@@ -102,7 +103,10 @@ var HEADERS = [
   "Revisi Penawaran 6",
   "Revisi Penawaran 7",
   "Revisi Penawaran 8",
-  "Penawaran Final/Selesai"
+  "Penawaran Final/Selesai",
+  "Catatan Dari Sales",
+  "History Catatan Sales",
+  "History Catatan Estimator"
 ];
 
 // Header Sheet Akun & Profil Karyawan Per Username (Users_Profiles)
@@ -135,6 +139,21 @@ var HISTORY_HEADERS = [
   "Customer / Proyek",
   "Status",
   "Detail / Snapshot Data"
+];
+
+// Header Sheet Notifikasi Real-time Lintas Perangkat (Notifications_Feed)
+var NOTIFICATIONS_HEADERS = [
+  "EventId",
+  "CreatedAtMs",
+  "Timestamp",
+  "EventType",
+  "Title",
+  "Message",
+  "Actor",
+  "QueueCode",
+  "CustomerName",
+  "ProjectName",
+  "Status"
 ];
 
 /**
@@ -314,6 +333,149 @@ function appendOnlineHistory(ss, username, userKey, device, actionType, queueCod
     ]]);
   } catch (err) {
     Logger.log("Gagal catat History_Data: " + err);
+  }
+}
+
+function isInitialQueueStatusGas(statusStr) {
+  var s = (statusStr || "").toString().trim().toLowerCase();
+  return (s === "" || s === "-" || s === "belum edit" || s === "masih antrian gambar" || s === "antrian gambar");
+}
+
+function parseNotesHistoryJsonGas(rawVal) {
+  if (!rawVal) return [];
+  if (Array.isArray(rawVal)) return rawVal;
+  try {
+    var parsed = JSON.parse(rawVal.toString());
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function mergeNotesHistoryGas(existingRaw, incomingRaw) {
+  var listA = parseNotesHistoryJsonGas(existingRaw);
+  var listB = parseNotesHistoryJsonGas(incomingRaw);
+  var seen = {};
+  var merged = [];
+  var combined = listB.concat(listA);
+  for (var i = 0; i < combined.length; i++) {
+    var item = combined[i];
+    if (!item || typeof item !== "object") continue;
+    var txt = (item.text || "").toString().trim();
+    if (!txt || txt === "-") continue;
+    var ts = (item.timestamp || "").toString().trim();
+    var author = (item.author || "").toString().trim();
+    var sig = ts + "|" + author + "|" + txt;
+    if (seen[sig]) continue;
+    seen[sig] = true;
+    merged.push({
+      timestamp: ts || Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm:ss"),
+      author: author || "-",
+      text: txt
+    });
+    if (merged.length >= 100) break;
+  }
+  return merged;
+}
+
+function getOrCreateNotificationsSheet(ss) {
+  var sheetName = CONFIG.NOTIFICATIONS_SHEET_NAME || "Notifications_Feed";
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+  }
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(NOTIFICATIONS_HEADERS);
+    var hdr = sheet.getRange(1, 1, 1, NOTIFICATIONS_HEADERS.length);
+    hdr.setBackground("#20409a").setFontColor("#ffffff").setFontWeight("bold").setFontSize(10).setHorizontalAlignment("center");
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function appendRealtimeNotificationGas(ss, eventType, title, message, actor, queueCode, customerName, projectName, statusText, clientEventId) {
+  try {
+    var nSheet = getOrCreateNotificationsSheet(ss);
+    var nowMs = Date.now();
+    var ts = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm:ss");
+    var evtId = (clientEventId || "").toString().replace(/[^a-zA-Z0-9_-]/g, "");
+    if (!evtId) {
+      evtId = "NTF-" + nowMs + "-" + Math.floor(Math.random() * 10000);
+    }
+    var lastRow = nSheet.getLastRow();
+    if (lastRow >= 2) {
+      var checkCount = Math.min(20, lastRow - 1);
+      var existingIds = nSheet.getRange(lastRow - checkCount + 1, 1, checkCount, 1).getValues();
+      for (var i = 0; i < existingIds.length; i++) {
+        if ((existingIds[i][0] || "").toString().trim() === evtId) {
+          return null;
+        }
+      }
+    }
+    var rowVals = [
+      evtId,
+      nowMs,
+      ts,
+      (eventType || "activity").toString(),
+      (title || "Notifikasi Aktivitas Proyek").toString(),
+      (message || "-").toString(),
+      (actor || "Sistem").toString(),
+      (queueCode || "-").toString(),
+      (customerName || "-").toString(),
+      (projectName || "-").toString(),
+      (statusText || "-").toString()
+    ];
+    nSheet.appendRow(rowVals);
+    return {
+      id: evtId,
+      createdAtMs: nowMs,
+      timestamp: ts,
+      eventType: rowVals[3],
+      title: rowVals[4],
+      message: rowVals[5],
+      actor: rowVals[6],
+      queueCode: rowVals[7],
+      customerName: rowVals[8],
+      projectName: rowVals[9],
+      status: rowVals[10]
+    };
+  } catch (e) {
+    Logger.log("Gagal catat Notifications_Feed: " + e);
+    return null;
+  }
+}
+
+function getRecentNotificationsGas(ss, sinceMs, limitCount) {
+  try {
+    var nSheet = getOrCreateNotificationsSheet(ss);
+    var lastRow = nSheet.getLastRow();
+    if (lastRow < 2) return [];
+    var fetchCount = Math.min(limitCount || 40, lastRow - 1);
+    var startRow = Math.max(2, lastRow - fetchCount + 1);
+    var values = nSheet.getRange(startRow, 1, fetchCount, NOTIFICATIONS_HEADERS.length).getValues();
+    var minMs = Number(sinceMs || 0);
+    var out = [];
+    for (var i = values.length - 1; i >= 0; i--) {
+      var r = values[i];
+      var createdAtMs = Number(r[1] || 0);
+      if (minMs > 0 && createdAtMs < minMs) continue;
+      out.push({
+        id: (r[0] || "").toString(),
+        createdAtMs: createdAtMs,
+        timestamp: (r[2] || "-").toString(),
+        eventType: (r[3] || "activity").toString(),
+        title: (r[4] || "Notifikasi").toString(),
+        message: (r[5] || "-").toString(),
+        actor: (r[6] || "Sistem").toString(),
+        queueCode: (r[7] || "-").toString(),
+        customerName: (r[8] || "-").toString(),
+        projectName: (r[9] || "-").toString(),
+        status: (r[10] || "-").toString()
+      });
+    }
+    return out;
+  } catch (e) {
+    return [];
   }
 }
 
@@ -523,6 +685,7 @@ function doGet(e) {
           profile: profileObj,
           records: rows,
           history: historyList,
+          notifications: getRecentNotificationsGas(ss, 0, 30),
           total: rows.length,
           serverTimestamp: nowFormatted,
           spreadsheetUrl: ss.getUrl()
@@ -530,6 +693,18 @@ function doGet(e) {
       } finally {
         lockLogin.releaseLock();
       }
+    }
+
+    // 1B. Endpoint Ringan Notifikasi Real-time Lintas Perangkat / Tab Lain / Layar Login
+    if (action === "get_notifications") {
+      var sinceMsParam = Number(params.since || 0);
+      var notifList = getRecentNotificationsGas(ss, sinceMsParam, 40);
+      return createJsonResponse({
+        status: "success",
+        notifications: notifList,
+        total: notifList.length,
+        serverTimeMs: Date.now()
+      });
     }
 
     // 2. Refresh Profil, Data Terbaru & History Online untuk Sesi Berjalan
@@ -563,6 +738,7 @@ function doGet(e) {
         profile: pObj,
         records: allRows,
         history: hist,
+        notifications: getRecentNotificationsGas(ss, 0, 30),
         total: allRows.length,
         serverTimestamp: Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm"),
         spreadsheetUrl: ss.getUrl()
@@ -576,6 +752,7 @@ function doGet(e) {
         status: "success",
         total: rowsData.length,
         records: rowsData,
+        notifications: getRecentNotificationsGas(ss, 0, 30),
         serverTimestamp: Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm"),
         spreadsheetUrl: ss.getUrl()
       });
@@ -882,6 +1059,7 @@ function doPost(e) {
     var formattedEstimateEnd = formatGasDateDMY(data.estimateEndDate || "-") || "-";
     var quoteNoVal = (data.quoteNumber || "-").toString().trim() || "-";
 
+    var isSalesSide = (data.updatedBy === "sales" || data.updatedBy === "sales_new");
     var rowValues = [
       nowTimestamp,
       queueCode || "-",
@@ -903,7 +1081,7 @@ function doPost(e) {
       slotDocMap[6] || "",
       slotDocMap[7] || "",
       slotDocMap[8] || "",
-      data.status || "Belum Edit",
+      data.status || "Masih Antrian Gambar",
       data.estimatorName || "(Belum dipilih)",
       formattedEstimateStart,
       formattedEstimateEnd,
@@ -928,7 +1106,10 @@ function doPost(e) {
       quoteDocMap["quoteRev6"] || "",
       quoteDocMap["quoteRev7"] || "",
       quoteDocMap["quoteRev8"] || "",
-      quoteDocMap["quoteFinalDoc"] || ""
+      quoteDocMap["quoteFinalDoc"] || "",
+      data.salesNotes || data.catatanSales || "",
+      JSON.stringify(mergeNotesHistoryGas([], data.salesNotesHistory)),
+      JSON.stringify(mergeNotesHistoryGas([], data.estimatorNotesHistory))
     ];
 
     // BALANCE UPDATE: Cari apakah nomor antrian sudah ada di sheet
@@ -964,9 +1145,13 @@ function doPost(e) {
             rowValues[sc] = existingRowData[sc];
           }
         }
+        if (existingRowData[46]) rowValues[46] = existingRowData[46];
+        if (existingRowData[47]) rowValues[47] = existingRowData[47];
+      } else {
+        rowValues[47] = JSON.stringify(mergeNotesHistoryGas(existingRowData[47], data.salesNotesHistory));
       }
-      if (data.updatedBy === "sales") {
-        if (existingRowData[20] && existingRowData[20] !== "Belum Edit") {
+      if (isSalesSide) {
+        if (existingRowData[20] && !isInitialQueueStatusGas(existingRowData[20])) {
           rowValues[20] = existingRowData[20];
         }
         if (existingRowData[21] && existingRowData[21] !== "(Belum dipilih)") {
@@ -978,22 +1163,27 @@ function doPost(e) {
         if (existingRowData[23] && existingRowData[23] !== "-") {
           rowValues[23] = existingRowData[23];
         }
+        if (existingRowData[48]) rowValues[48] = existingRowData[48];
       }
       if (data.updatedBy === "contract") {
-        if (existingRowData[20] && existingRowData[20] !== "Belum Edit") rowValues[20] = existingRowData[20];
+        if (existingRowData[20] && !isInitialQueueStatusGas(existingRowData[20])) rowValues[20] = existingRowData[20];
         if (existingRowData[21] && existingRowData[21] !== "(Belum dipilih)") rowValues[21] = existingRowData[21];
         if (existingRowData[22] && existingRowData[22] !== "-") rowValues[22] = existingRowData[22];
         if (existingRowData[23] && existingRowData[23] !== "-") rowValues[23] = existingRowData[23];
         if (existingRowData[32] && existingRowData[32] !== "-") rowValues[32] = existingRowData[32];
+        if (existingRowData[48]) rowValues[48] = existingRowData[48];
+      }
+      if (data.updatedBy === "estimator") {
+        rowValues[48] = JSON.stringify(mergeNotesHistoryGas(existingRowData[48], data.estimatorNotesHistory));
       }
 
       for (var r = 1; r <= 8; r++) {
         var rCol = 23 + r;
-        if ((!rowValues[rCol] || data.updatedBy === "sales" || data.updatedBy === "contract") && existingRowData[rCol]) {
+        if ((!rowValues[rCol] || isSalesSide || data.updatedBy === "contract") && existingRowData[rCol]) {
           rowValues[rCol] = existingRowData[rCol];
         }
       }
-      if ((!rowValues[32] || rowValues[32] === "-" || data.updatedBy === "sales") && existingRowData[32] && existingRowData[32] !== "-") {
+      if ((!rowValues[32] || rowValues[32] === "-" || isSalesSide) && existingRowData[32] && existingRowData[32] !== "-") {
         rowValues[32] = existingRowData[32];
       }
       var existingQuoteNo = (existingRowData[33] || existingRowData[36] || "").toString().trim();
@@ -1037,9 +1227,54 @@ function doPost(e) {
       operationType === "updated" ? "UPDATE_DATA" : "SIMPAN_DATA_BARU",
       queueCode || "-",
       customerName + " / " + (data.projectName || data.namaProyek || "-"),
-      rowValues[20] || "Belum Edit",
+      rowValues[20] || "Masih Antrian Gambar",
       "Sales: " + rowValues[3] + " | Estimator: " + (rowValues[21] || "-") + " | SPH: " + (rowValues[33] || "-") + " (" + (rowValues[34] || "Draft") + ")"
     );
+
+    var createdGasNotif = null;
+    var gasNotifyType = (data.notifyEventType || "").toString().trim();
+    var gasClientEventId = (data.clientEventId || "").toString().trim();
+    if (gasNotifyType === "sales_form_new" || data.updatedBy === "sales_new" || (operationType === "inserted" && data.updatedBy !== "estimator" && data.updatedBy !== "contract")) {
+      createdGasNotif = appendRealtimeNotificationGas(
+        ss,
+        "sales_form_new",
+        "Form Gambar Proyek Baru Diinput Sales",
+        rowValues[3] + " mengisi Form Gambar Proyek: " + queueCode + " - " + rowValues[4] + " (" + rowValues[5] + ")",
+        rowValues[3] || actorUsername,
+        queueCode || "-",
+        rowValues[4] || "-",
+        rowValues[5] || "-",
+        rowValues[20] || "Masih Antrian Gambar",
+        gasClientEventId
+      );
+    } else if (gasNotifyType === "sales_form_edit" || (data.updatedBy === "sales" && operationType === "updated")) {
+      createdGasNotif = appendRealtimeNotificationGas(
+        ss,
+        "sales_form_edit",
+        "Edit Perubahan Data Gambar Sales",
+        rowValues[3] + " mengedit di Edit Perubahan: " + queueCode + " - " + rowValues[4] + " (" + rowValues[5] + ")",
+        rowValues[3] || actorUsername,
+        queueCode || "-",
+        rowValues[4] || "-",
+        rowValues[5] || "-",
+        rowValues[20] || "Masih Antrian Gambar",
+        gasClientEventId
+      );
+    } else if (gasNotifyType === "estimator_edit" || data.updatedBy === "estimator") {
+      var gasEstActor = (rowValues[21] && rowValues[21] !== "(Belum dipilih)") ? rowValues[21] : actorUsername;
+      createdGasNotif = appendRealtimeNotificationGas(
+        ss,
+        "estimator_edit",
+        "Pembaruan Kelola Estimasi Estimator",
+        gasEstActor + " mengedit Kelola Estimasi (" + rowValues[20] + "): " + queueCode + " - " + rowValues[4] + " (" + rowValues[5] + ")",
+        gasEstActor,
+        queueCode || "-",
+        rowValues[4] || "-",
+        rowValues[5] || "-",
+        rowValues[20] || "Masih Antrian Gambar",
+        gasClientEventId
+      );
+    }
 
     return createJsonResponse({
       status: "success",
@@ -1050,6 +1285,7 @@ function doPost(e) {
       filesUploaded: uploadedFiles,
       revFilesUploaded: revFilesUploaded,
       quoteFilesUploaded: quoteFilesUploaded,
+      notification: createdGasNotif,
       message: "Data " + queueCode + " berhasil " + (operationType === "updated" ? "diperbarui" : "disimpan") + " di Spreadsheet & Google Drive!"
     });
 
@@ -1346,6 +1582,7 @@ function setupHeadersIfEmpty(sheet) {
     headerRange.setWrap(true);
     sheet.setRowHeight(1, 40);
     sheet.setFrozenRows(1);
+    sheet.setFrozenColumns(6);
 
     sheet.setColumnWidth(1, 160);
     sheet.setColumnWidth(2, 120);
@@ -1486,7 +1723,7 @@ function handleBatchSave(records, actorUsername, actorKey, deviceInfo) {
       extractCleanUrl(item.extraImg6),
       extractCleanUrl(item.extraImg7),
       extractCleanUrl(item.extraImg8),
-      item.status || "Belum Edit",
+      item.status || "Masih Antrian Gambar",
       item.estimatorName || "(Belum dipilih)",
       formatGasDateDMY(item.estimateStartDate || "-") || "-",
       formatGasDateDMY(item.estimateEndDate || "-") || "-",
@@ -1511,7 +1748,10 @@ function handleBatchSave(records, actorUsername, actorKey, deviceInfo) {
       item.quoteRev6 || "",
       item.quoteRev7 || "",
       item.quoteRev8 || "",
-      item.quoteFinalDoc || ""
+      item.quoteFinalDoc || "",
+      item.salesNotes || "",
+      JSON.stringify(mergeNotesHistoryGas([], item.salesNotesHistory)),
+      JSON.stringify(mergeNotesHistoryGas([], item.estimatorNotesHistory))
     ];
 
     if (existingIdx > 0) {
@@ -1583,7 +1823,7 @@ function getAllRowsAsJSON(sheet) {
       extraImg6: v[17] ? v[17].toString() : "",
       extraImg7: v[18] ? v[18].toString() : "",
       extraImg8: v[19] ? v[19].toString() : "",
-      status: v[20] ? v[20].toString() : "Belum Edit",
+      status: v[20] ? v[20].toString() : "Masih Antrian Gambar",
       estimatorName: v[21] ? v[21].toString() : "",
       estimateStartDate: formatGasDateDMY(v[22]),
       estimateEndDate: formatGasDateDMY(v[23]),
@@ -1607,7 +1847,10 @@ function getAllRowsAsJSON(sheet) {
       quoteRev6: v[42] ? v[42].toString() : "",
       quoteRev7: v[43] ? v[43].toString() : "",
       quoteRev8: v[44] ? v[44].toString() : "",
-      quoteFinalDoc: v[45] ? v[45].toString() : ""
+      quoteFinalDoc: v[45] ? v[45].toString() : "",
+      salesNotes: v[46] ? v[46].toString() : "",
+      salesNotesHistory: parseNotesHistoryJsonGas(v[47]),
+      estimatorNotesHistory: parseNotesHistoryJsonGas(v[48])
     });
   }
   return records;

@@ -1598,13 +1598,29 @@
       box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
     }
 
-    /* 6 Cards Grid (Dashboard Metrik Utama) */
+    /* 7 Cards Grid (Dashboard Metrik Utama) */
+    .dashboard-stats-grid-7,
     .dashboard-stats-grid-6,
     .dashboard-stats-grid-5 {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1.15rem;
+      grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
+      gap: 0.95rem;
       margin-bottom: 2rem;
+    }
+
+    @media (min-width: 1360px) {
+      .dashboard-stats-grid-7 {
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 0.85rem;
+      }
+      .dashboard-stats-grid-7 .stat-card {
+        padding: 1.05rem;
+      }
+      .dashboard-stats-grid-7 .stat-label-badge {
+        font-size: 0.64rem;
+        padding: 0.18rem 0.45rem;
+        text-align: center;
+      }
     }
 
     /* 3 Cards Grid (Bagan Estimator) */
@@ -1693,6 +1709,7 @@
 
     .stat-card.card-upload::before { background: var(--primary); }
     .stat-card.card-belum-edit::before { background: #64748b; }
+    .stat-card.card-cek-kelengkapan::before { background: #0d9488; }
     .stat-card.card-sedang-edit::before { background: #0284c7; }
     .stat-card.card-revision::before { background: var(--warning); }
     .stat-card.card-finish::before { background: var(--success); }
@@ -1706,6 +1723,7 @@
       align-items: center;
       justify-content: space-between;
       margin-bottom: 0.85rem;
+      gap: 0.4rem;
     }
 
     .stat-icon {
@@ -1715,6 +1733,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
     }
 
     .stat-icon svg {
@@ -1724,6 +1743,7 @@
 
     .stat-card.card-upload .stat-icon { background: var(--primary-light); color: var(--primary); }
     .stat-card.card-belum-edit .stat-icon { background: #f1f5f9; color: #475569; }
+    .stat-card.card-cek-kelengkapan .stat-icon { background: #ccfbf1; color: #0f766e; }
     .stat-card.card-sedang-edit .stat-icon { background: #e0f2fe; color: #0284c7; }
     .stat-card.card-revision .stat-icon { background: var(--warning-light); color: var(--warning-dark); }
     .stat-card.card-finish .stat-icon { background: var(--success-light); color: var(--success-dark); }
@@ -1740,6 +1760,7 @@
 
     .badge-primary { background: var(--primary-light); color: var(--primary); }
     .badge-slate { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+    .badge-teal { background: #ccfbf1; color: #0f766e; border: 1px solid #99f6e4; }
     .badge-info { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
     .badge-warning { background: var(--warning-light); color: var(--warning-dark); }
     .badge-success { background: var(--success-light); color: var(--success-dark); }
@@ -2057,6 +2078,279 @@
       background: var(--warning-light);
       color: var(--warning-dark);
       border: 1px solid var(--warning-border);
+    }
+    .badge-status.status-cek-kelengkapan {
+      background: #ccfbf1;
+      color: #0f766e;
+      border: 1px solid #5eead4;
+    }
+
+    /* Multi-material stacked cell & expand toggle */
+    .custom-table td.scope-material-cell {
+      white-space: normal !important;
+      min-width: 265px;
+      max-width: 340px;
+      vertical-align: top;
+      padding: 0.65rem 0.85rem;
+    }
+    .scope-material-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .scope-material-item {
+      font-size: 0.78rem;
+      line-height: 1.38;
+      color: #0f172a;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      padding: 0.24rem 0.5rem;
+      font-weight: 600;
+      word-break: break-word;
+    }
+    .btn-expand-materials {
+      margin-top: 0.2rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      width: 100%;
+      padding: 0.28rem 0.5rem;
+      background: #eff6ff;
+      color: #20409a;
+      border: 1px dashed #93c5fd;
+      border-radius: 5px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-expand-materials:hover {
+      background: #20409a;
+      color: #ffffff;
+      border-style: solid;
+    }
+    .scope-extra-materials {
+      display: none;
+      flex-direction: column;
+      gap: 0.25rem;
+      margin-top: 0.15rem;
+    }
+    .scope-extra-materials.expanded {
+      display: flex;
+    }
+
+    /* Kolom Catatan Panjang + History Klik */
+    .custom-table td.notes-history-td {
+      white-space: normal !important;
+      min-width: 290px;
+      max-width: 420px;
+      vertical-align: top;
+      padding: 0.65rem 0.85rem;
+    }
+    .notes-history-card {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 0.5rem 0.65rem;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .notes-history-card:hover {
+      border-color: #20409a;
+      background: #eff6ff;
+      box-shadow: 0 2px 8px rgba(32, 64, 154, 0.12);
+    }
+    .notes-history-text {
+      font-size: 0.8rem;
+      line-height: 1.48;
+      color: #0f172a;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 135px;
+      overflow-y: auto;
+    }
+    .notes-history-meta-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem;
+      border-top: 1px dashed #cbd5e1;
+      padding-top: 0.3rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #20409a;
+    }
+
+    /* Timeline di dalam Modal History Catatan */
+    .notes-timeline-item {
+      border-left: 3px solid #20409a;
+      background: #f8fafc;
+      border-radius: 0 8px 8px 0;
+      padding: 0.75rem 0.95rem;
+      margin-bottom: 0.75rem;
+      border-top: 1px solid #e2e8f0;
+      border-right: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .notes-timeline-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.35rem;
+      font-size: 0.74rem;
+      font-weight: 800;
+      color: #1e3a8a;
+    }
+    .notes-timeline-body {
+      font-size: 0.84rem;
+      line-height: 1.55;
+      color: #0f172a;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Floating Real-Time Notification Pop-Up Container (Tampil di Login, Username Aktif & Tab Lain) */
+    #realtimeNotificationContainer {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 10095;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      max-width: 390px;
+      width: calc(100vw - 32px);
+      pointer-events: none;
+    }
+    @media (max-width: 640px) {
+      #realtimeNotificationContainer {
+        left: 12px;
+        right: 12px;
+        top: 12px;
+        width: auto;
+        max-width: none;
+      }
+    }
+    .rt-notif-card {
+      pointer-events: auto;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 14px 35px rgba(15, 23, 42, 0.24), 0 0 0 1px rgba(148, 163, 184, 0.28);
+      border-left: 5px solid #20409a;
+      padding: 0.85rem 0.95rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+      animation: rtNotifSlideIn 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+      color: #0f172a;
+    }
+    .rt-notif-card.type-sales_form_new { border-left-color: #20409a; }
+    .rt-notif-card.type-sales_form_edit { border-left-color: #0284c7; }
+    .rt-notif-card.type-estimator_edit { border-left-color: #059669; }
+    @keyframes rtNotifSlideIn {
+      from { transform: translateX(30px) scale(0.96); opacity: 0; }
+      to { transform: translateX(0) scale(1); opacity: 1; }
+    }
+    .rt-notif-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: #eff6ff;
+      color: #20409a;
+    }
+    .rt-notif-card.type-sales_form_edit .rt-notif-icon { background: #e0f2fe; color: #0284c7; }
+    .rt-notif-card.type-estimator_edit .rt-notif-icon { background: #d1fae5; color: #059669; }
+    .rt-notif-body { flex: 1; min-width: 0; }
+    .rt-notif-title {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.25;
+      margin-bottom: 0.2rem;
+    }
+    .rt-notif-msg {
+      font-size: 0.77rem;
+      color: #334155;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .rt-notif-meta {
+      margin-top: 0.32rem;
+      font-size: 0.69rem;
+      font-weight: 700;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+    .rt-notif-close {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.15rem;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 0.2rem;
+      flex-shrink: 0;
+    }
+    .rt-notif-close:hover { color: #0f172a; }
+    .rt-notif-control-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+      margin-top: 0.7rem;
+    }
+    .btn-notif-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.68rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      color: #1e3a8a;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-notif-pill:hover {
+      background: #dbeafe;
+    }
+    .btn-notif-pill.muted {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      color: #64748b;
+    }
+    .btn-notif-pill.granted {
+      background: #ecfdf5;
+      border-color: #86efac;
+      color: #047857;
+    }
+    .notif-bell-badge {
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.08rem 0.38rem;
+      border-radius: 999px;
+      min-width: 17px;
+      text-align: center;
     }
 
     .btn-view-image {
@@ -4662,6 +4956,10 @@
 </head>
 <body>
 
+  <!-- Floating Real-Time Notification Stack (Aktif di Layar Login, Username Login & Tab Lain) -->
+  <div id="realtimeNotificationContainer" aria-live="polite" aria-atomic="true"></div>
+  <audio id="notifFallbackAudio" preload="auto" style="display:none;"></audio>
+
   <!-- ======================================================================
        LOGIN OVERLAY SCREEN (SINGLE LOGIN CARD: ESTIMATOR STAFF & SALES)
        ====================================================================== -->
@@ -4718,6 +5016,17 @@
             </svg>
           </span>
           <span class="btn-upload-prominent-title">ISI FORM GAMBAR PROYEK</span>
+        </button>
+      </div>
+
+      <div class="rt-notif-control-bar" id="loginNotifControlBar">
+        <button type="button" class="btn-notif-pill" id="btnLoginToggleSound" onclick="toggleNotificationSoundSetting()" title="Aktifkan atau Bisukan Suara Notifikasi">
+          <span id="loginSoundIcon">🔊</span>
+          <span id="loginSoundLabel">Suara Notifikasi: Aktif</span>
+        </button>
+        <button type="button" class="btn-notif-pill" id="btnLoginRequestOsNotif" onclick="enableBrowserNotificationAndAudio()" title="Aktifkan Pop-Up Notifikasi meskipun sedang membuka Tab lain atau layar terkunci">
+          <span>🔔</span>
+          <span id="loginOsNotifLabel">Aktifkan Pop-Up Tab Lain</span>
         </button>
       </div>
 
@@ -4876,7 +5185,16 @@
             </div>
           </div>
 
-          <div class="header-actions" id="headerActionsWrap">
+          <div class="header-actions" id="headerActionsWrap" style="display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;">
+            <button type="button" class="btn-notif-pill" id="btnHeaderSoundToggle" onclick="toggleNotificationSoundSetting()" title="Aktifkan / Bisukan Suara Notifikasi">
+              <span id="headerSoundIcon">🔊</span>
+              <span id="headerSoundText" class="hide-on-xs">Suara Aktif</span>
+            </button>
+            <button type="button" class="btn-notif-pill" id="btnHeaderNotifBell" onclick="openNotificationFeedModal()" title="Lihat Riwayat Notifikasi Real-time & Aktifkan Pop-Up Tab Lain">
+              <span>🔔</span>
+              <span>Notif</span>
+              <span class="notif-bell-badge" id="headerNotifBadge" style="display:none;">0</span>
+            </button>
             <!-- Desktop Windows Sales Upload Button -->
             <button class="btn btn-primary btn-upload-prominent" id="desktopSalesUploadBtn" onclick="openSalesUploadModal()" style="display: none;">
               <span class="btn-upload-prominent-icon" aria-hidden="true">
@@ -4974,10 +5292,10 @@
             </div>
           </div>
 
-          <!-- 6 Metrik Utama Sesuai Instruksi User (Dengan Penambahan Sedang Edit) -->
-          <div class="dashboard-stats-grid-6">
+          <!-- 7 Metrik Utama Sesuai Instruksi User -->
+          <div class="dashboard-stats-grid-7">
             
-            <!-- 1. Upload Gambar Sales -->
+            <!-- 1. Upload Sales -->
             <div class="stat-card card-upload">
               <div class="stat-header">
                 <div class="stat-icon">
@@ -4985,64 +5303,77 @@
                 </div>
                 <span class="stat-label-badge badge-primary">Upload Sales</span>
               </div>
-              <div class="stat-title">Upload Gambar Sales</div>
+              <div class="stat-title">Upload Sales</div>
               <div class="stat-value" id="countUploadSales">0</div>
-              <div class="stat-desc" id="descUploadSales">Total berkas registrasi gambar proyek</div>
+              <div class="stat-desc" id="descUploadSales">Total berkas registrasi proyek sales</div>
             </div>
 
-            <!-- 2. Belum Edit -->
+            <!-- 2. Antrian Gambar -->
             <div class="stat-card card-belum-edit">
               <div class="stat-header">
                 <div class="stat-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                 </div>
-                <span class="stat-label-badge badge-slate">Belum Edit</span>
+                <span class="stat-label-badge badge-slate">Antrian Gambar</span>
               </div>
-              <div class="stat-title">Belum Edit</div>
+              <div class="stat-title">Antrian Gambar</div>
               <div class="stat-value" id="countBelumEdit">0</div>
-              <div class="stat-desc" id="descBelumEdit">Jumlah antrian gambar yang belum diedit estimator</div>
+              <div class="stat-desc" id="descBelumEdit">Masih antrian gambar menunggu estimator</div>
             </div>
 
-            <!-- 3. Sedang Edit (BARU SESUAI INSTRUKSI USER) -->
+            <!-- 3. Cek Kelengkapan Gambar -->
+            <div class="stat-card card-cek-kelengkapan">
+              <div class="stat-header">
+                <div class="stat-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                </div>
+                <span class="stat-label-badge badge-teal">Cek Kelengkapan Gambar</span>
+              </div>
+              <div class="stat-title">Cek Kelengkapan Gambar</div>
+              <div class="stat-value" id="countCekKelengkapan">0</div>
+              <div class="stat-desc" id="descCekKelengkapan">Tahap cek kelengkapan desain &amp; data</div>
+            </div>
+
+            <!-- 4. Sedang Desain -->
             <div class="stat-card card-sedang-edit">
               <div class="stat-header">
                 <div class="stat-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                 </div>
-                <span class="stat-label-badge badge-info">Sedang Edit</span>
+                <span class="stat-label-badge badge-info">Sedang Desain</span>
               </div>
-              <div class="stat-title">Sedang Edit</div>
+              <div class="stat-title">Sedang Desain</div>
               <div class="stat-value" id="countSedangEdit">0</div>
-              <div class="stat-desc" id="descSedangEdit">Jumlah antrian gambar sedang diproses estimator</div>
+              <div class="stat-desc" id="descSedangEdit">Antrian sedang proses desain estimator</div>
             </div>
 
-            <!-- 4. Revisi Gambar -->
+            <!-- 5. Revisi Desain -->
             <div class="stat-card card-revision">
               <div class="stat-header">
                 <div class="stat-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
                 </div>
-                <span class="stat-label-badge badge-warning">Revisi Gambar</span>
+                <span class="stat-label-badge badge-warning">Revisi Desain</span>
               </div>
-              <div class="stat-title">Revisi Gambar</div>
+              <div class="stat-title">Revisi Desain</div>
               <div class="stat-value" id="countRevisiGambar">0</div>
-              <div class="stat-desc" id="descRevisiGambar">Gambar dalam siklus revisi dari hasil Bagan Estimator</div>
+              <div class="stat-desc" id="descRevisiGambar">Proyek dalam siklus revisi desain</div>
             </div>
 
-            <!-- 5. Gambar Selesai -->
+            <!-- 6. Desain Selesai -->
             <div class="stat-card card-finish">
               <div class="stat-header">
                 <div class="stat-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                 </div>
-                <span class="stat-label-badge badge-success">Gambar Selesai</span>
+                <span class="stat-label-badge badge-success">Desain Selesai</span>
               </div>
-              <div class="stat-title">Gambar Selesai</div>
+              <div class="stat-title">Desain Selesai</div>
               <div class="stat-value" id="countFinishSelesai">0</div>
-              <div class="stat-desc" id="descFinishSelesai">Perhitungan estimasi selesai & disetujui di Bagan Estimator</div>
+              <div class="stat-desc" id="descFinishSelesai">Desain estimator selesai &amp; siap kontrak</div>
             </div>
 
-            <!-- 6. Admin Kontrak -->
+            <!-- 7. Admin Kontrak (Data diambil dari Desain Selesai) -->
             <div class="stat-card card-contract">
               <div class="stat-header">
                 <div class="stat-icon">
@@ -5052,7 +5383,7 @@
               </div>
               <div class="stat-title">Admin Kontrak</div>
               <div class="stat-value" id="countPenawaranTerbit">0</div>
-              <div class="stat-desc" id="descPenawaranTerbit">Surat Penawaran Harga (SPH) terbit</div>
+              <div class="stat-desc" id="descPenawaranTerbit">Data Admin Kontrak diambil dari Desain Selesai</div>
             </div>
 
           </div>
@@ -5072,11 +5403,12 @@
                 <thead>
                   <tr>
                     <th>Nama Sales</th>
-                    <th>Upload Gambar Sales</th>
-                    <th>Belum Edit</th>
-                    <th>Sedang Edit</th>
-                    <th>Revisi Gambar</th>
-                    <th>Gambar Selesai</th>
+                    <th>Upload Sales</th>
+                    <th>Antrian Gambar</th>
+                    <th>Cek Kelengkapan Gambar</th>
+                    <th>Sedang Desain</th>
+                    <th>Revisi Desain</th>
+                    <th>Desain Selesai</th>
                     <th>Admin Kontrak</th>
                   </tr>
                 </thead>
@@ -5087,7 +5419,7 @@
             </div>
           </div>
 
-          <!-- Bagian Aktivitas Proyek & Antrian Gambar Terkini (FORMAT LENGKAP 25 KOLOM) -->
+          <!-- Bagian Aktivitas Proyek & Antrian Gambar Terkini (33 KOLOM LENGKAP) -->
           <div class="card-panel">
             <div class="card-panel-title-bar">
               <div>
@@ -5102,7 +5434,7 @@
               <button class="btn btn-secondary btn-sm" onclick="switchNavPane('pane-gambar-sales')">Buka Halaman Gambar Sales &rarr;</button>
             </div>
 
-            <!-- FILTER DI BAWAH JUDUL: TANGGAL, NAMA SALES, STATUS PENGERJAAN GAMBAR (#b4c7ff) -->
+            <!-- FILTER DI BAWAH JUDUL: TANGGAL, NAMA SALES, STATUS PENGERJAAN (#b4c7ff) -->
             <div class="unified-filter-bar">
               <div class="filter-group" style="display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;">
                 <!-- Filter Tanggal -->
@@ -5116,13 +5448,14 @@
                   <option value="Samuel">Samuel</option>
                 </select>
 
-                <!-- Filter Status Pengerjaan Gambar -->
-                <select id="recentFilterStatus" class="select-filter" onchange="applyRecentTableFilters()" title="Status Pengerjaan Gambar">
-                  <option value="">Semua Status Pengerjaan Gambar</option>
-                  <option value="Belum Edit">Belum Edit</option>
-                  <option value="Sedang Edit">Sedang Edit</option>
-                  <option value="Revisi Gambar">Revisi Gambar</option>
-                  <option value="Gambar Selesai">Gambar Selesai</option>
+                <!-- Filter Status Pengerjaan -->
+                <select id="recentFilterStatus" class="select-filter" onchange="applyRecentTableFilters()" title="Status Pengerjaan">
+                  <option value="">Semua Status Pengerjaan</option>
+                  <option value="Masih Antrian Gambar">Antrian Gambar</option>
+                  <option value="Cek Kelengkapan Desain">Cek Kelengkapan Gambar</option>
+                  <option value="Sedang Desain">Sedang Desain</option>
+                  <option value="Revisi Desain">Revisi Desain</option>
+                  <option value="Desain Selesai">Desain Selesai</option>
                 </select>
 
                 <!-- Reset Filter -->
@@ -5143,6 +5476,7 @@
                     <th>Nama Customer</th>
                     <th>Nama Proyek</th>
                     <th>Skop Pengerjaan Material</th>
+                    <th>Project Material</th>
                     <th>Waktu Pengerjaan Selesai</th>
                     <th>Lihat Gambar</th>
                     <th>Keterangan Sumber Gambar</th>
@@ -5154,20 +5488,21 @@
                     <th>Gambar Tambahan (6)</th>
                     <th>Gambar Tambahan (7)</th>
                     <th>Gambar Tambahan (8)</th>
+                    <th>Catatan Dari Sales</th>
                     <th>Status Pengerjaan Gambar</th>
                     <th>Pilih Estimator</th>
                     <th>Tanggal Mulai Estimasi</th>
                     <th>Tanggal Pengerjaan Selesai</th>
-                    <th>Revisi Gambar 1</th>
-                    <th>Revisi Gambar 2</th>
-                    <th>Revisi Gambar 3</th>
-                    <th>Revisi Gambar 4</th>
-                    <th>Revisi Gambar 5</th>
-                    <th>Revisi Gambar 6</th>
-                    <th>Revisi Gambar 7</th>
-                    <th>Revisi Gambar 8</th>
-                    <th>Catatan Gambar Estimator</th>
-                    <th>Status Pengerjaan Gambar</th>
+                    <th>Revisi Desain 1</th>
+                    <th>Revisi Desain 2</th>
+                    <th>Revisi Desain 3</th>
+                    <th>Revisi Desain 4</th>
+                    <th>Revisi Desain 5</th>
+                    <th>Revisi Desain 6</th>
+                    <th>Revisi Desain 7</th>
+                    <th>Revisi Desain 8</th>
+                    <th>Catatan Desain Estimator</th>
+                    <th>Status Pengerjaan Desain</th>
                   </tr>
                 </thead>
                 <tbody id="dashboardRecentTbody">
@@ -5211,7 +5546,7 @@
              ================================================================== -->
         <section class="page-tab-pane" id="pane-gambar-sales">
           
-          <!-- FILTER GAMBAR SALES: TANGGAL, NAMA SALES, STATUS PENGERJAAN GAMBAR (#b4c7ff) -->
+          <!-- FILTER GAMBAR SALES: TANGGAL, NAMA SALES, STATUS PENGERJAAN (#b4c7ff) -->
           <div class="unified-filter-bar">
             <div class="filter-group" style="display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;">
               <!-- Filter Tanggal -->
@@ -5228,10 +5563,11 @@
               <!-- Filter Status Pengerjaan Gambar -->
               <select class="select-filter" id="filterStatusSales" onchange="renderAllTables()" title="Status Pengerjaan Gambar">
                 <option value="">Semua Status Pengerjaan Gambar</option>
-                <option value="Belum Edit">Belum Edit</option>
-                <option value="Sedang Edit">Sedang Edit</option>
-                <option value="Revisi Gambar">Revisi Gambar</option>
-                <option value="Gambar Selesai">Gambar Selesai</option>
+                <option value="Masih Antrian Gambar">Antrian Gambar</option>
+                <option value="Cek Kelengkapan Desain">Cek Kelengkapan Gambar</option>
+                <option value="Sedang Desain">Sedang Desain</option>
+                <option value="Revisi Desain">Revisi Desain</option>
+                <option value="Desain Selesai">Desain Selesai</option>
               </select>
 
               <!-- Sync Spreedsheet Button -->
@@ -5259,6 +5595,7 @@
                   <th>Nama Customer</th>
                   <th>Nama Proyek</th>
                   <th>Skop Pengerjaan Material</th>
+                  <th>Project Material</th>
                   <th>Waktu Pengerjaan Selesai</th>
                   <th>Folder Drive Customer</th>
                   <th>Keterangan Sumber Gambar</th>
@@ -5270,6 +5607,7 @@
                   <th>Gambar Tambahan (6)</th>
                   <th>Gambar Tambahan (7)</th>
                   <th>Gambar Tambahan (8)</th>
+                  <th>Catatan Dari Sales</th>
                   <th>Status Pengerjaan Gambar</th>
                   <th id="thEditPerubahan">Edit Perubahan</th>
                 </tr>
@@ -5283,7 +5621,7 @@
         </section>
 
         <!-- ==================================================================
-             PANE 3: BAGAN EDIT GAMBAR ESTIMATOR
+             PANE 3: BAGAN EDIT DESAIN ESTIMATOR
              ================================================================== -->
         <section class="page-tab-pane" id="pane-bagan-estimator">
           
@@ -5297,24 +5635,28 @@
                 <span class="badge-estimator-pill">Estimator</span>
               </div>
               <div class="stat-title" style="font-size: 1.15rem; font-weight: 800; color: #20409a; margin-bottom: 0.35rem;">Pak Setiawan</div>
-              <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">Jumlah Gambar:</div>
+              <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">Jumlah Desain:</div>
               <div class="stat-value" id="estCountSetiawan" style="font-size: 2.1rem; margin-bottom: 0.85rem; color: #20409a;">0</div>
               <div class="est-status-breakdown-box">
-                <div class="est-breakdown-title">Rinci Status Pengerjaan Gambar</div>
+                <div class="est-breakdown-title">Rinci Status Pengerjaan Desain</div>
                 <div class="est-breakdown-item">
-                  <span>Belum Edit :</span>
+                  <span>Masih Antrian Gambar :</span>
                   <strong id="estBelumSetiawan">0</strong>
                 </div>
                 <div class="est-breakdown-item">
-                  <span>Sedang Edit :</span>
+                  <span>Cek Kelengkapan Desain :</span>
+                  <strong id="estCekSetiawan" style="color: #0f766e;">0</strong>
+                </div>
+                <div class="est-breakdown-item">
+                  <span>Sedang Desain :</span>
                   <strong id="estSedangSetiawan" style="color: #0284c7;">0</strong>
                 </div>
                 <div class="est-breakdown-item">
-                  <span>Revisi Gambar :</span>
+                  <span>Revisi Desain :</span>
                   <strong id="estRevisiSetiawan" style="color: #dc2626;">0</strong>
                 </div>
                 <div class="est-breakdown-item">
-                  <span>Gambar Selesai :</span>
+                  <span>Desain Selesai :</span>
                   <strong id="estSelesaiSetiawan" style="color: #16a34a;">0</strong>
                 </div>
               </div>
@@ -5327,24 +5669,28 @@
                 <span class="badge-estimator-pill">Estimator</span>
               </div>
               <div class="stat-title" style="font-size: 1.15rem; font-weight: 800; color: #0284c7; margin-bottom: 0.35rem;">Bayu</div>
-              <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">Jumlah Gambar:</div>
+              <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">Jumlah Desain:</div>
               <div class="stat-value" id="estCountBayu" style="font-size: 2.1rem; margin-bottom: 0.85rem; color: #0284c7;">0</div>
               <div class="est-status-breakdown-box">
-                <div class="est-breakdown-title">Rinci Status Pengerjaan Gambar</div>
+                <div class="est-breakdown-title">Rinci Status Pengerjaan Desain</div>
                 <div class="est-breakdown-item">
-                  <span>Belum Edit :</span>
+                  <span>Masih Antrian Gambar :</span>
                   <strong id="estBelumBayu">0</strong>
                 </div>
                 <div class="est-breakdown-item">
-                  <span>Sedang Edit :</span>
+                  <span>Cek Kelengkapan Desain :</span>
+                  <strong id="estCekBayu" style="color: #0f766e;">0</strong>
+                </div>
+                <div class="est-breakdown-item">
+                  <span>Sedang Desain :</span>
                   <strong id="estSedangBayu" style="color: #0284c7;">0</strong>
                 </div>
                 <div class="est-breakdown-item">
-                  <span>Revisi Gambar :</span>
+                  <span>Revisi Desain :</span>
                   <strong id="estRevisiBayu" style="color: #dc2626;">0</strong>
                 </div>
                 <div class="est-breakdown-item">
-                  <span>Gambar Selesai :</span>
+                  <span>Desain Selesai :</span>
                   <strong id="estSelesaiBayu" style="color: #16a34a;">0</strong>
                 </div>
               </div>
@@ -5357,24 +5703,28 @@
                 <span class="badge-estimator-pill">Estimator</span>
               </div>
               <div class="stat-title" style="font-size: 1.15rem; font-weight: 800; color: #10b981; margin-bottom: 0.35rem;">Pajal</div>
-              <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">Jumlah Gambar:</div>
+              <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">Jumlah Desain:</div>
               <div class="stat-value" id="estCountPajal" style="font-size: 2.1rem; margin-bottom: 0.85rem; color: #10b981;">0</div>
               <div class="est-status-breakdown-box">
-                <div class="est-breakdown-title">Rinci Status Pengerjaan Gambar</div>
+                <div class="est-breakdown-title">Rinci Status Pengerjaan Desain</div>
                 <div class="est-breakdown-item">
-                  <span>Belum Edit :</span>
+                  <span>Masih Antrian Gambar :</span>
                   <strong id="estBelumPajal">0</strong>
                 </div>
                 <div class="est-breakdown-item">
-                  <span>Sedang Edit :</span>
+                  <span>Cek Kelengkapan Desain :</span>
+                  <strong id="estCekPajal" style="color: #0f766e;">0</strong>
+                </div>
+                <div class="est-breakdown-item">
+                  <span>Sedang Desain :</span>
                   <strong id="estSedangPajal" style="color: #0284c7;">0</strong>
                 </div>
                 <div class="est-breakdown-item">
-                  <span>Revisi Gambar :</span>
+                  <span>Revisi Desain :</span>
                   <strong id="estRevisiPajal" style="color: #dc2626;">0</strong>
                 </div>
                 <div class="est-breakdown-item">
-                  <span>Gambar Selesai :</span>
+                  <span>Desain Selesai :</span>
                   <strong id="estSelesaiPajal" style="color: #16a34a;">0</strong>
                 </div>
               </div>
@@ -5382,7 +5732,7 @@
 
           </div>
 
-          <!-- FILTER BAGAN ESTIMATOR: ESTIMATOR, SALES, TANGGAL, STATUS PENGERJAAN GAMBAR (#b4c7ff) -->
+          <!-- FILTER BAGAN ESTIMATOR: ESTIMATOR, SALES, TANGGAL, STATUS PENGERJAAN DESAIN (#b4c7ff) -->
           <div class="unified-filter-bar">
             <div class="filter-group" style="display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;">
               <!-- Filter Estimator -->
@@ -5404,13 +5754,14 @@
               <!-- Filter Tanggal -->
               <input type="date" id="filterEstimatorDate" class="filter-date-input" onchange="renderAllTables()" title="Tanggal">
 
-              <!-- Filter Status Pengerjaan Gambar -->
-              <select class="select-filter" id="filterEstimatorStatus" onchange="renderAllTables()" title="Status Pengerjaan Gambar">
-                <option value="">Semua Status Pengerjaan Gambar</option>
-                <option value="Belum Edit">Belum Edit</option>
-                <option value="Sedang Edit">Sedang Edit</option>
-                <option value="Revisi Gambar">Revisi Gambar</option>
-                <option value="Gambar Selesai">Gambar Selesai</option>
+              <!-- Filter Status Pengerjaan Desain -->
+              <select class="select-filter" id="filterEstimatorStatus" onchange="renderAllTables()" title="Status Pengerjaan Desain">
+                <option value="">Semua Status Pengerjaan Desain</option>
+                <option value="Masih Antrian Gambar">Masih Antrian Gambar</option>
+                <option value="Cek Kelengkapan Desain">Cek Kelengkapan Desain</option>
+                <option value="Sedang Desain">Sedang Desain</option>
+                <option value="Revisi Desain">Revisi Desain</option>
+                <option value="Desain Selesai">Desain Selesai</option>
               </select>
 
               <!-- Reset Filter -->
@@ -5433,16 +5784,16 @@
                   <th>Pilih Estimator</th>
                   <th>Tanggal Estimasi Pengerjaan</th>
                   <th>Tanggal Pengerjaan Selesai</th>
-                  <th>Revisi Gambar (1)</th>
-                  <th>Revisi Gambar (2)</th>
-                  <th>Revisi Gambar (3)</th>
-                  <th>Revisi Gambar (4)</th>
-                  <th>Revisi Gambar (5)</th>
-                  <th>Revisi Gambar (6)</th>
-                  <th>Revisi Gambar (7)</th>
-                  <th>Revisi Gambar (8)</th>
-                  <th>Catatan Gambar Estimator</th>
-                  <th>Status Pengerjaan Gambar</th>
+                  <th>Revisi Desain (1)</th>
+                  <th>Revisi Desain (2)</th>
+                  <th>Revisi Desain (3)</th>
+                  <th>Revisi Desain (4)</th>
+                  <th>Revisi Desain (5)</th>
+                  <th>Revisi Desain (6)</th>
+                  <th>Revisi Desain (7)</th>
+                  <th>Revisi Desain (8)</th>
+                  <th>Catatan Desain Estimator</th>
+                  <th>Status Pengerjaan Desain</th>
                   <th id="thAksiEstimator">Aksi Estimator</th>
                 </tr>
               </thead>
@@ -6044,6 +6395,18 @@
             </div>
           </div>
 
+          <!-- BARIS PALING BAWAH: CATATAN DARI SALES -->
+          <div class="form-group" style="margin-top: 1.15rem; margin-bottom: 0;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.45rem; flex-wrap: wrap;">
+              <label class="form-label" for="salesInputNotes" style="margin-bottom: 0;">Catatan Dari Sales</label>
+              <button type="button" id="btnViewSalesNotesHistoryInForm" class="btn btn-secondary btn-sm" style="display: none; font-size: 0.72rem; padding: 0.2rem 0.55rem;" onclick="openNotesHistoryModal(document.getElementById('editSalesId').value, 'sales')">
+                🕒 Lihat History Catatan
+              </button>
+            </div>
+            <textarea class="form-control track-history" id="salesInputNotes" rows="4" placeholder="Tuliskan catatan lengkap dari sales (instruksi khusus, spesifikasi lapangan, perubahan gambar, dll.)..."></textarea>
+            <div class="form-help">Catatan ini akan tersimpan beserta History perubahannya dan tampil pada kolom Catatan Dari Sales di Menu Gambar Sales.</div>
+          </div>
+
         </div>
 
         <div class="modal-footer">
@@ -6146,7 +6509,7 @@
         Data Estimator berhasil diperbarui!
       </h3>
       <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.45;">
-        Perubahan penugasan, jadwal pengerjaan, revisi gambar, dan catatan estimator telah tersimpan.
+        Perubahan penugasan, jadwal pengerjaan, revisi desain, dan catatan desain estimator telah tersimpan.
       </p>
 
       <!-- Bottom Button: Klik Ok -->
@@ -6237,7 +6600,7 @@
       <div class="modal-header" style="background-color: #1f3f9a !important; color: #ffffff !important; border-bottom: 2px solid #162e70;">
         <h3 style="color: #ffffff !important;">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-          <span style="color: #ffffff !important;">Pembaruan Bagan Edit Gambar Estimator</span>
+          <span style="color: #ffffff !important;">Pembaruan Bagan Edit Desain Estimator</span>
         </h3>
         <button class="modal-close-btn" onclick="closeModal('modalEstimatorEdit')" style="color: #ffffff !important; background: rgba(255, 255, 255, 0.2) !important;">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -6276,87 +6639,93 @@
             </div>
           </div>
 
-          <!-- DROP DOWN STATUS PENGERJAAN GAMBAR SESUAI INSTRUKSI USER -->
+          <!-- DROP DOWN STATUS PENGERJAAN DESAIN SESUAI INSTRUKSI USER -->
           <div class="form-group">
-            <label class="form-label">Status Pengerjaan Gambar <span class="req">*</span></label>
+            <label class="form-label">Status Pengerjaan Desain <span class="req">*</span></label>
             <select class="form-control" id="estInputStatus" style="font-weight: 800; font-size: 0.92rem; border-color: var(--primary);">
-              <option value="Belum Edit">Belum Edit</option>
-              <option value="Sedang Edit">Sedang Edit</option>
-              <option value="Revisi Gambar">Revisi Gambar</option>
-              <option value="Gambar Selesai">Gambar Selesai</option>
+              <option value="Masih Antrian Gambar">Masih Antrian Gambar</option>
+              <option value="Cek Kelengkapan Desain">Cek Kelengkapan Desain</option>
+              <option value="Sedang Desain">Sedang Desain</option>
+              <option value="Revisi Desain">Revisi Desain</option>
+              <option value="Desain Selesai">Desain Selesai</option>
             </select>
-            <div class="form-help">Pilih salah satu: <strong>Belum Edit</strong>, <strong>Sedang Edit</strong>, <strong>Revisi Gambar</strong>, atau <strong>Gambar Selesai</strong></div>
+            <div class="form-help">Standar status awal baku: <strong>Masih Antrian Gambar</strong>. Pilihan lanjutan: <strong>Cek Kelengkapan Desain</strong>, <strong>Sedang Desain</strong>, <strong>Revisi Desain</strong>, atau <strong>Desain Selesai</strong>.</div>
           </div>
 
-          <!-- INPUT REVISI GAMBAR 1 SAMPAI 8 DENGAN SYSTEM UPLOAD DOKUMEN -->
+          <!-- INPUT REVISI DESAIN 1 SAMPAI 8 DENGAN SYSTEM UPLOAD DOKUMEN -->
           <div class="revision-box-container">
-            <div style="font-size: 0.84rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.85rem; display: flex; align-items: center; justify-content: space-between;">
-              <span>📁 Revisi Gambar 1 sampai dengan Revisi Gambar 8 (Sistem Upload Dokumen)</span>
+            <div style="font-size: 0.84rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.85rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem;">
+              <span>📁 Revisi Desain 1 sampai dengan Revisi Desain 8 (Sistem Upload Dokumen)</span>
               <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 400;">Unggah dokumen PDF/DWG atau ketik keterangan</span>
             </div>
 
-            <!-- Revisi Gambar 1 -->
+            <!-- Revisi Desain 1 -->
             <div class="revision-upload-row">
-              <strong style="font-size: 0.78rem; color: var(--text-main);">Revisi Gambar 1:</strong>
+              <strong style="font-size: 0.78rem; color: var(--text-main);">Revisi Desain 1:</strong>
               <input type="file" class="form-control" accept=".pdf,.dwg,.dxf,.png,.jpg" onchange="handleRevDocUpload(this, 1)">
               <input type="text" class="form-control" id="estInputRev1" placeholder="Nama Dokumen / Link Revisi 1">
             </div>
 
-            <!-- Revisi Gambar 2 -->
+            <!-- Revisi Desain 2 -->
             <div class="revision-upload-row">
-              <strong style="font-size: 0.78rem; color: var(--text-main);">Revisi Gambar 2:</strong>
+              <strong style="font-size: 0.78rem; color: var(--text-main);">Revisi Desain 2:</strong>
               <input type="file" class="form-control" accept=".pdf,.dwg,.dxf,.png,.jpg" onchange="handleRevDocUpload(this, 2)">
               <input type="text" class="form-control" id="estInputRev2" placeholder="Nama Dokumen / Link Revisi 2">
             </div>
 
-            <!-- Revisi Gambar 3 -->
+            <!-- Revisi Desain 3 -->
             <div class="revision-upload-row">
-              <strong style="font-size: 0.78rem; color: var(--text-main);">Revisi Gambar 3:</strong>
+              <strong style="font-size: 0.78rem; color: var(--text-main);">Revisi Desain 3:</strong>
               <input type="file" class="form-control" accept=".pdf,.dwg,.dxf,.png,.jpg" onchange="handleRevDocUpload(this, 3)">
               <input type="text" class="form-control" id="estInputRev3" placeholder="Nama Dokumen / Link Revisi 3">
             </div>
 
-            <!-- Revisi Gambar 4 -->
+            <!-- Revisi Desain 4 -->
             <div class="revision-upload-row">
-              <strong style="font-size: 0.78rem; color: var(--text-main);">Revisi Gambar 4:</strong>
+              <strong style="font-size: 0.78rem; color: var(--text-main);">Revisi Desain 4:</strong>
               <input type="file" class="form-control" accept=".pdf,.dwg,.dxf,.png,.jpg" onchange="handleRevDocUpload(this, 4)">
               <input type="text" class="form-control" id="estInputRev4" placeholder="Nama Dokumen / Link Revisi 4">
             </div>
 
-            <!-- Revisi Gambar 5 -->
+            <!-- Revisi Desain 5 -->
             <div class="revision-upload-row">
-              <strong style="font-size: 0.78rem; color: var(--text-main);">Revisi Gambar 5:</strong>
+              <strong style="font-size: 0.78rem; color: var(--text-main);">Revisi Desain 5:</strong>
               <input type="file" class="form-control" accept=".pdf,.dwg,.dxf,.png,.jpg" onchange="handleRevDocUpload(this, 5)">
               <input type="text" class="form-control" id="estInputRev5" placeholder="Nama Dokumen / Link Revisi 5">
             </div>
 
-            <!-- Revisi Gambar 6 -->
+            <!-- Revisi Desain 6 -->
             <div class="revision-upload-row">
-              <strong style="font-size: 0.78rem; color: var(--text-main);">Revisi Gambar 6:</strong>
+              <strong style="font-size: 0.78rem; color: var(--text-main);">Revisi Desain 6:</strong>
               <input type="file" class="form-control" accept=".pdf,.dwg,.dxf,.png,.jpg" onchange="handleRevDocUpload(this, 6)">
               <input type="text" class="form-control" id="estInputRev6" placeholder="Nama Dokumen / Link Revisi 6">
             </div>
 
-            <!-- Revisi Gambar 7 -->
+            <!-- Revisi Desain 7 -->
             <div class="revision-upload-row">
-              <strong style="font-size: 0.78rem; color: var(--text-main);">Revisi Gambar 7:</strong>
+              <strong style="font-size: 0.78rem; color: var(--text-main);">Revisi Desain 7:</strong>
               <input type="file" class="form-control" accept=".pdf,.dwg,.dxf,.png,.jpg" onchange="handleRevDocUpload(this, 7)">
               <input type="text" class="form-control" id="estInputRev7" placeholder="Nama Dokumen / Link Revisi 7">
             </div>
 
-            <!-- Revisi Gambar 8 -->
+            <!-- Revisi Desain 8 -->
             <div class="revision-upload-row">
-              <strong style="font-size: 0.78rem; color: var(--text-main);">Revisi Gambar 8:</strong>
+              <strong style="font-size: 0.78rem; color: var(--text-main);">Revisi Desain 8:</strong>
               <input type="file" class="form-control" accept=".pdf,.dwg,.dxf,.png,.jpg" onchange="handleRevDocUpload(this, 8)">
               <input type="text" class="form-control" id="estInputRev8" placeholder="Nama Dokumen / Link Revisi 8">
             </div>
           </div>
 
-          <!-- CATATAN GAMBAR DARI ESTIMATOR (TERLIHAT SAMPAI BAWAH) -->
+          <!-- CATATAN DESAIN ESTIMATOR (TERLIHAT SAMPAI BAWAH & RIWAYAT HISTORY) -->
           <div class="form-group" style="margin-bottom: 1.5rem;">
-            <label class="form-label">Catatan Gambar Dari Estimator <span class="req">*</span></label>
-            <textarea class="form-control" id="estInputNotes" rows="4" placeholder="Tuliskan catatan teknis gambar, asumsi volume, spesifikasi material, atau kendala kalkulasi..."></textarea>
-            <div class="form-help">Catatan ini akan tersimpan dan tampil pada bagan estimator serta aktivitas proyek</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.45rem; flex-wrap: wrap;">
+              <label class="form-label" for="estInputNotes" style="margin-bottom: 0;">Catatan Desain Estimator <span class="req">*</span></label>
+              <button type="button" id="btnViewEstNotesHistoryInForm" class="btn btn-secondary btn-sm" style="display: none; font-size: 0.72rem; padding: 0.2rem 0.55rem;" onclick="openNotesHistoryModal(document.getElementById('editEstimatorRowId').value, 'estimator')">
+                🕒 Lihat History Catatan
+              </button>
+            </div>
+            <textarea class="form-control" id="estInputNotes" rows="5" placeholder="Tuliskan catatan teknis desain, asumsi volume, spesifikasi material, atau kendala kalkulasi secara lengkap..."></textarea>
+            <div class="form-help">Catatan ini tersimpan sebagai riwayat (History) yang dapat diklik serta tampil penuh pada Bagan Estimator dan Aktivitas Proyek.</div>
           </div>
 
         </div>
@@ -6817,6 +7186,60 @@
       <div class="modal-footer" style="justify-content: space-between;">
         <button type="button" class="btn btn-secondary" onclick="closeModal('modalEmployeeProfile')">Tutup</button>
         <button type="button" class="btn btn-primary" id="btnSaveModalProfile" onclick="saveProfileFromSource('modal')" style="font-weight: 700;">Klik Simpan Perubahan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL HISTORY CATATAN (CATATAN DARI SALES & CATATAN DESAIN ESTIMATOR) -->
+  <div class="modal-backdrop" id="modalNotesHistory">
+    <div class="modal-dialog" style="max-width: 680px;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #20409a 0%, #172b6b 100%); color: #ffffff; border-bottom: none;">
+        <h3 style="color: #ffffff; margin: 0; font-size: 1.05rem;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ffffff" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span id="notesHistoryModalTitle" style="color:#ffffff;">History Catatan Proyek</span>
+        </h3>
+        <button type="button" class="modal-close-btn" onclick="closeModal('modalNotesHistory')" style="color: #ffffff; background: rgba(255,255,255,0.2);">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 1.35rem; max-height: 70vh; overflow-y: auto;">
+        <div id="notesHistoryProjectMeta" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.82rem; font-weight: 700; color: #1e3a8a;">-</div>
+        <div id="notesHistoryTimelineList"></div>
+      </div>
+      <div class="modal-footer" style="background: #f8fafc;">
+        <button type="button" class="btn btn-primary" onclick="closeModal('modalNotesHistory')">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL RIWAYAT NOTIFIKASI REAL-TIME & PENGATURAN POP-UP TAB LAIN -->
+  <div class="modal-backdrop" id="modalNotificationFeed">
+    <div class="modal-dialog" style="max-width: 600px;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #20409a 0%, #172b6b 100%); color: #ffffff; border-bottom: none;">
+        <h3 style="color: #ffffff; margin: 0; font-size: 1.05rem;">
+          <span>🔔 Notifikasi Aktivitas Real-Time</span>
+        </h3>
+        <button type="button" class="modal-close-btn" onclick="closeModal('modalNotificationFeed')" style="color: #ffffff; background: rgba(255,255,255,0.2);">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 1.25rem; max-height: 68vh; overflow-y: auto;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.75rem 0.9rem;">
+          <div style="font-size: 0.78rem; color: #1e3a8a; font-weight: 600;">
+            Suara &amp; Pop-up aktif saat login username, membuka tab lain, maupun di layar login PC/HP.
+          </div>
+          <div style="display: flex; gap: 0.45rem; flex-wrap: wrap;">
+            <button type="button" class="btn-notif-pill" id="btnModalRequestOsNotif" onclick="enableBrowserNotificationAndAudio()">🔔 Aktifkan Pop-Up Tab Lain</button>
+            <button type="button" class="btn-notif-pill" onclick="testNotificationAndSound()" title="Uji Suara & Pop-Up">🎵 Tes Suara &amp; Pop-Up</button>
+          </div>
+        </div>
+        <div id="modalNotificationFeedList" style="display: flex; flex-direction: column; gap: 0.6rem;">
+          <div style="font-size: 0.82rem; color: #64748b;">Belum ada notifikasi aktivitas.</div>
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #f8fafc; justify-content: space-between;">
+        <button type="button" class="btn btn-secondary" onclick="clearUnreadNotificationBadge()">Tandai Sudah Dibaca</button>
+        <button type="button" class="btn btn-primary" onclick="closeModal('modalNotificationFeed')">Tutup</button>
       </div>
     </div>
   </div>
@@ -7359,6 +7782,79 @@
       saveAllUserProfiles(allProfiles);
     }
 
+    function getStatusBucket(status) {
+      const s = String(status || '').trim().toLowerCase();
+      if (s === 'desain selesai' || s === 'gambar selesai' || s === 'selesai') return 'desain_selesai';
+      if (s === 'revisi desain' || s === 'revisi gambar' || s.startsWith('revisi')) return 'revisi_desain';
+      if (s === 'sedang desain' || s === 'sedang edit') return 'sedang_desain';
+      if (s === 'cek kelengkapan desain' || s === 'cek kelengkapan gambar' || s.includes('cek kelengkapan')) return 'cek_kelengkapan';
+      return 'antrian';
+    }
+
+    function normalizeEstimatorStatusValue(status) {
+      const b = getStatusBucket(status);
+      if (b === 'desain_selesai') return 'Desain Selesai';
+      if (b === 'revisi_desain') return 'Revisi Desain';
+      if (b === 'sedang_desain') return 'Sedang Desain';
+      if (b === 'cek_kelengkapan') return 'Cek Kelengkapan Desain';
+      return 'Masih Antrian Gambar';
+    }
+
+    function mergeNotesHistoryClient(listA, listB) {
+      const merged = [];
+      const seen = new Set();
+      const combined = [].concat(Array.isArray(listB) ? listB : [], Array.isArray(listA) ? listA : []);
+      combined.forEach(function(item) {
+        if (!item || typeof item !== 'object') return;
+        const txt = String(item.text || '').trim();
+        if (!txt || txt === '-') return;
+        const ts = String(item.timestamp || '').trim();
+        const author = String(item.author || '-').trim();
+        const sig = ts + '|' + author + '|' + txt;
+        if (seen.has(sig)) return;
+        seen.add(sig);
+        merged.push({
+          timestamp: ts || (typeof formatLiveDateTimeSpaced === 'function' ? formatLiveDateTimeSpaced(new Date()) : new Date().toLocaleString()),
+          author: author || '-',
+          text: txt
+        });
+      });
+      return merged.slice(0, 100);
+    }
+
+    function appendNoteToHistoryClient(existingArr, noteText, authorName) {
+      const base = mergeNotesHistoryClient(existingArr, []);
+      const cleanTxt = String(noteText || '').trim();
+      if (!cleanTxt || cleanTxt === '-') return base;
+      if (base.length > 0 && base[0].text === cleanTxt) return base;
+      const tsStr = (typeof formatLiveDateTimeSpaced === 'function')
+        ? formatLiveDateTimeSpaced(new Date())
+        : new Date().toLocaleString();
+      base.unshift({
+        timestamp: tsStr,
+        author: String(authorName || '-').trim() || '-',
+        text: cleanTxt
+      });
+      return base.slice(0, 100);
+    }
+
+    function getNotesHistoryForRecord(record, type) {
+      if (!record) return [];
+      const arrKey = (type === 'sales') ? 'salesNotesHistory' : 'estimatorNotesHistory';
+      const strKey = (type === 'sales') ? 'salesNotes' : 'estimatorNotes';
+      let hist = mergeNotesHistoryClient(record[arrKey], []);
+      const rawTxt = String(record[strKey] || '').trim();
+      if (rawTxt && rawTxt !== '-' && !hist.some(h => h.text === rawTxt)) {
+        const fallbackAuthor = (type === 'sales') ? (record.salesName || 'Sales') : (record.estimatorName || 'Estimator');
+        hist.unshift({
+          timestamp: record.uploadDateTime || '-',
+          author: fallbackAuthor,
+          text: rawTxt
+        });
+      }
+      return hist;
+    }
+
     function applyRemoteRecordsToDatabase(remoteRecords) {
       if (!Array.isArray(remoteRecords)) return 0;
       var nowTs = Date.now();
@@ -7409,6 +7905,10 @@
           if (remoteItem.scopeOfWork && remoteItem.scopeOfWork !== '-') target.scopeOfWork = remoteItem.scopeOfWork;
           if (remoteItem.projectMaterial && remoteItem.projectMaterial !== '-') target.projectMaterial = remoteItem.projectMaterial;
           if (remoteItem.sourceDesc && remoteItem.sourceDesc !== '-') target.sourceDesc = remoteItem.sourceDesc;
+          if (remoteItem.salesNotes !== undefined && remoteItem.salesNotes !== '-') target.salesNotes = remoteItem.salesNotes;
+          if (Array.isArray(remoteItem.salesNotesHistory)) {
+            target.salesNotesHistory = mergeNotesHistoryClient(target.salesNotesHistory, remoteItem.salesNotesHistory);
+          }
           if (remoteDeadline) target.requestDeadline = remoteDeadline;
           if (remoteItem.customerFolderUrl && remoteItem.customerFolderUrl !== '-') target.customerFolderUrl = remoteItem.customerFolderUrl;
           if (remoteItem.status) target.status = remoteItem.status;
@@ -7419,6 +7919,9 @@
             if (remoteItem['revGambar' + r]) target['revGambar' + r] = remoteItem['revGambar' + r];
           }
           if (remoteItem.estimatorNotes && remoteItem.estimatorNotes !== '-') target.estimatorNotes = remoteItem.estimatorNotes;
+          if (Array.isArray(remoteItem.estimatorNotesHistory)) {
+            target.estimatorNotesHistory = mergeNotesHistoryClient(target.estimatorNotesHistory, remoteItem.estimatorNotesHistory);
+          }
           if (remoteItem.quoteNumber && remoteItem.quoteNumber !== '-') target.quoteNumber = remoteItem.quoteNumber;
           if (remoteItem.quoteStatus) target.quoteStatus = remoteItem.quoteStatus;
           if (remoteItem.quoteNotes && remoteItem.quoteNotes !== '-') target.quoteNotes = remoteItem.quoteNotes;
@@ -7445,6 +7948,8 @@
             projectMaterial: remoteItem.projectMaterial || 'Material Terpasang',
             requestDeadline: remoteDeadline,
             sourceDesc: remoteItem.sourceDesc || '',
+            salesNotes: (remoteItem.salesNotes && remoteItem.salesNotes !== '-') ? remoteItem.salesNotes : '',
+            salesNotesHistory: mergeNotesHistoryClient([], remoteItem.salesNotesHistory),
             customerFolderUrl: remoteItem.customerFolderUrl || '',
             driveLink: remoteItem.docsText || '',
             imageFile: generateBlueprintSVG(rQ, remoteItem.projectName, remoteItem.scopeOfWork),
@@ -7468,7 +7973,8 @@
             revGambar7: remoteItem.revGambar7 || '',
             revGambar8: remoteItem.revGambar8 || '',
             estimatorNotes: remoteItem.estimatorNotes || '',
-            status: remoteItem.status || 'Belum Edit',
+            estimatorNotesHistory: mergeNotesHistoryClient([], remoteItem.estimatorNotesHistory),
+            status: remoteItem.status || 'Masih Antrian Gambar',
             quoteNumber: (remoteItem.quoteNumber && remoteItem.quoteNumber !== '-') ? remoteItem.quoteNumber : '',
             quoteStatus: remoteItem.quoteStatus || 'Draft',
             quoteNotes: remoteItem.quoteNotes || '',
@@ -7548,6 +8054,9 @@
             renderAllTables();
             updateDashboardView();
             applyRecentTableFilters();
+          }
+          if (Array.isArray(data.notifications) && typeof processIncomingCloudNotifications === 'function') {
+            processIncomingCloudNotifications(data.notifications, false);
           }
           renderOnlineHistoryContainers();
           if (!isSilent && typeof showSpreadsheetSyncToast === 'function') {
@@ -7894,6 +8403,9 @@
             applyRemoteRecordsToDatabase(data.records);
             if (typeof lastOnlineSyncAt !== 'undefined') lastOnlineSyncAt = Date.now();
             if (typeof populateFilters === 'function') populateFilters();
+          }
+          if (Array.isArray(data.notifications) && typeof processIncomingCloudNotifications === 'function') {
+            processIncomingCloudNotifications(data.notifications, true);
           }
           try {
             sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ username: userDef.name, authHash: inputHash }));
@@ -8283,7 +8795,7 @@
         subtitleElem.textContent = 'Data berurutan melebar dapat digulir kiri dan kanan serta edit perubahan';
       } else if (paneId === 'pane-bagan-estimator') {
         titleElem.textContent = 'Bagan Estimator';
-        subtitleElem.textContent = 'Penugasan estimator, jadwal pengerjaan, Revisi Gambar 1 s/d 8, dan catatan gambar';
+        subtitleElem.textContent = 'Penugasan estimator, jadwal pengerjaan, Revisi Desain 1 s/d 8, dan catatan desain estimator';
       } else if (paneId === 'pane-bagan-rosa') {
         if (uploadCenterWrap) uploadCenterWrap.style.display = 'none';
         titleElem.textContent = 'Bagan Admin Kontrak';
@@ -9248,17 +9760,20 @@
         });
       }
 
-      // Hitung 6 Metrik Utama Dashboard (Termasuk Sedang Edit)
+      // Hitung 7 Metrik Utama Dashboard (Termasuk Cek Kelengkapan Gambar)
       const totalUpload = filteredData.length;
-      const totalBelumEdit = filteredData.filter(d => d.status === 'Belum Edit').length;
-      const totalSedangEdit = filteredData.filter(d => d.status === 'Sedang Edit').length;
-      const totalRevisi = filteredData.filter(d => d.status === 'Revisi Gambar').length;
-      const totalFinish = filteredData.filter(d => d.status === 'Gambar Selesai').length;
-      // INSTRUKSI USER #4: Data angka pada kolom admin kontrak di dapat dari angka gambar selesai (terapkan pada estimator dan sales)
+      const totalBelumEdit = filteredData.filter(d => getStatusBucket(d.status) === 'antrian').length;
+      const totalCekKelengkapan = filteredData.filter(d => getStatusBucket(d.status) === 'cek_kelengkapan').length;
+      const totalSedangEdit = filteredData.filter(d => getStatusBucket(d.status) === 'sedang_desain').length;
+      const totalRevisi = filteredData.filter(d => getStatusBucket(d.status) === 'revisi_desain').length;
+      const totalFinish = filteredData.filter(d => getStatusBucket(d.status) === 'desain_selesai').length;
+      // Data Admin Kontrak diambil dari Desain Selesai (terapkan pada estimator dan sales)
       const totalContract = totalFinish;
 
       document.getElementById('countUploadSales').textContent = totalUpload;
       document.getElementById('countBelumEdit').textContent = totalBelumEdit;
+      const elCek = document.getElementById('countCekKelengkapan');
+      if (elCek) elCek.textContent = totalCekKelengkapan;
       const elSedang = document.getElementById('countSedangEdit');
       if (elSedang) elSedang.textContent = totalSedangEdit;
       document.getElementById('countRevisiGambar').textContent = totalRevisi;
@@ -9266,13 +9781,15 @@
       document.getElementById('countPenawaranTerbit').textContent = totalContract;
 
       const salesSuffix = currentDashboardSales ? ` (${currentDashboardSales})` : (currentUser && currentUser.role === 'sales' ? ` (${currentUser.salesName})` : ' (Semua Sales)');
-      document.getElementById('descUploadSales').textContent = `Total registrasi gambar proyek${salesSuffix}`;
-      document.getElementById('descBelumEdit').textContent = `Jumlah antrian gambar belum diedit estimator${salesSuffix}`;
+      document.getElementById('descUploadSales').textContent = `Total registrasi proyek sales${salesSuffix}`;
+      document.getElementById('descBelumEdit').textContent = `Masih antrian gambar menunggu estimator${salesSuffix}`;
+      const descCek = document.getElementById('descCekKelengkapan');
+      if (descCek) descCek.textContent = `Tahap cek kelengkapan gambar & data${salesSuffix}`;
       const descSedang = document.getElementById('descSedangEdit');
-      if (descSedang) descSedang.textContent = `Jumlah antrian gambar sedang diproses estimator${salesSuffix}`;
-      document.getElementById('descRevisiGambar').textContent = `Gambar berstatus Revisi Gambar${salesSuffix}`;
-      document.getElementById('descFinishSelesai').textContent = `Gambar berstatus Gambar Selesai${salesSuffix}`;
-      document.getElementById('descPenawaranTerbit').textContent = `Surat Penawaran Harga (SPH) terbit${salesSuffix}`;
+      if (descSedang) descSedang.textContent = `Antrian sedang proses desain estimator${salesSuffix}`;
+      document.getElementById('descRevisiGambar').textContent = `Proyek berstatus Revisi Desain${salesSuffix}`;
+      document.getElementById('descFinishSelesai').textContent = `Proyek berstatus Desain Selesai${salesSuffix}`;
+      document.getElementById('descPenawaranTerbit').textContent = `Data Admin Kontrak diambil dari Desain Selesai${salesSuffix}`;
 
       // Update Subtitle Aktivitas Terkini dengan Keterangan Periode Tanggal
       let datePeriodNote = '';
@@ -9294,7 +9811,6 @@
       applyRecentTableFilters();
 
       // Render Rekapitulasi Performa Masing-Masing Sales
-      // Aturan User: "KOLOM INI DI HAPUS SAJA, UNTUK SEMUA DASHBOARD SALES / USERNAME SALES"
       const summaryCardPanel = document.getElementById('salesSummaryCardPanel');
       if (summaryCardPanel) {
         if (!isSalesUser && currentDashboardSales && currentDashboardSales.trim() !== '') {
@@ -9311,9 +9827,9 @@
       const bSales = document.getElementById('navBadgeSales');
       if (bSales) bSales.textContent = baseData.length;
       const bEst = document.getElementById('navBadgeEstimator');
-      if (bEst) bEst.textContent = baseData.filter(d => d.status === 'Belum Edit' || d.status === 'Sedang Edit' || d.status === 'Revisi Gambar').length;
+      if (bEst) bEst.textContent = baseData.filter(d => getStatusBucket(d.status) !== 'desain_selesai').length;
       const bRosa = document.getElementById('navBadgeRosa');
-      if (bRosa) bRosa.textContent = baseData.filter(d => (d.status || '').trim().toLowerCase() === 'gambar selesai').length;
+      if (bRosa) bRosa.textContent = baseData.filter(d => getStatusBucket(d.status) === 'desain_selesai').length;
     }
 
     // Handler Filter Periode Tanggal Dashboard
@@ -9386,7 +9902,7 @@
       }
 
       if (fStatus && fStatus.trim() !== '') {
-        list = list.filter(item => item.status === fStatus);
+        list = list.filter(item => getStatusBucket(item.status) === getStatusBucket(fStatus));
       }
 
       renderDashboardRecentTable(list);
@@ -9515,13 +10031,123 @@
       });
     }
 
-    // Render Tabel Aktivitas Proyek & Antrian Gambar Terkini (31 Kolom Lengkap)
+    function parseScopeMaterials(scopeStr) {
+      const raw = String(scopeStr || '').trim();
+      if (!raw || raw === '-' || raw.toLowerCase() === 'pekerjaan material') {
+        return raw && raw !== '-' ? [raw] : [];
+      }
+      return raw
+        .split(/\s*[;\r\n]+\s*|\s*,\s+/)
+        .map(s => s.trim())
+        .filter(s => s && s !== '-');
+    }
+
+    function toggleExtraMaterialsCell(btn) {
+      if (!btn) return;
+      const stack = btn.closest('.scope-material-stack');
+      if (!stack) return;
+      const extraBox = stack.querySelector('.scope-extra-materials');
+      if (!extraBox) return;
+      const isOpen = extraBox.classList.toggle('expanded');
+      btn.textContent = isOpen ? '(TUTUP MATERIAL LAINNYA)' : '(KLIK MATERIAL LAINNYA)';
+      if (typeof applyFreezeColumnOffsets === 'function') {
+        applyFreezeColumnOffsets();
+      }
+    }
+
+    function renderScopeMaterialCell(scopeStr, rowId) {
+      const items = parseScopeMaterials(scopeStr);
+      if (items.length === 0) {
+        return `<td class="scope-material-cell"><span style="color:#94a3b8;">-</span></td>`;
+      }
+      if (items.length <= 3) {
+        const listHtml = items.map(it => `<div class="scope-material-item">${escapeHtml(it)}</div>`).join('');
+        return `<td class="scope-material-cell"><div class="scope-material-stack">${listHtml}</div></td>`;
+      }
+      const firstHtml = items.slice(0, 3).map(it => `<div class="scope-material-item">${escapeHtml(it)}</div>`).join('');
+      const restHtml = items.slice(3).map(it => `<div class="scope-material-item">${escapeHtml(it)}</div>`).join('');
+      return `
+        <td class="scope-material-cell">
+          <div class="scope-material-stack">
+            ${firstHtml}
+            <button type="button" class="btn-expand-materials" onclick="toggleExtraMaterialsCell(this)" data-extra-count="${items.length - 3}">(KLIK MATERIAL LAINNYA)</button>
+            <div class="scope-extra-materials">${restHtml}</div>
+          </div>
+        </td>
+      `;
+    }
+
+    function renderProjectMaterialCell(val) {
+      const clean = String(val || '').trim();
+      if (!clean || clean === '-') return `<td><span style="color:#94a3b8;">-</span></td>`;
+      const parts = clean.split(/\s*[;,]\s*/).map(s => s.trim()).filter(Boolean);
+      const html = parts.map(p => `<div class="scope-material-item" style="background:#eff6ff; border-color:#bfdbfe; color:#1e3a8a;">${escapeHtml(p)}</div>`).join('');
+      return `<td style="white-space: normal; min-width: 155px; vertical-align: top;"><div class="scope-material-stack">${html}</div></td>`;
+    }
+
+    function renderNotesHistoryCell(row, type) {
+      const hist = getNotesHistoryForRecord(row, type);
+      const currentRaw = String(type === 'sales' ? (row.salesNotes || '') : (row.estimatorNotes || '')).trim();
+      const displayTxt = (currentRaw && currentRaw !== '-') ? currentRaw : (hist[0] ? hist[0].text : '');
+      const safeId = escapeHtml(row.id || row.queueCode || '');
+      const labelTitle = (type === 'sales') ? 'Catatan Dari Sales' : 'Catatan Desain Estimator';
+      return `
+        <td class="notes-history-td">
+          <div class="notes-history-card" onclick="openNotesHistoryModal('${safeId}', '${type}')" title="Klik untuk melihat History lengkap ${labelTitle}">
+            <div class="notes-history-text">${displayTxt ? escapeHtml(displayTxt) : '<em style="color:#94a3b8">Tidak ada catatan</em>'}</div>
+            <div class="notes-history-meta-bar">
+              <span>🕒 History (${hist.length})</span>
+              <span>Klik Lihat History &rarr;</span>
+            </div>
+          </div>
+        </td>
+      `;
+    }
+
+    function openNotesHistoryModal(rowId, type) {
+      let item = projectDatabase.find(x => x.id === rowId || x.queueCode === rowId);
+      if (!item) {
+        alert('Simpan data formulir terlebih dahulu untuk melihat daftar History Catatan.');
+        return;
+      }
+      const isSalesNote = (type === 'sales');
+      const titleEl = document.getElementById('notesHistoryModalTitle');
+      const metaEl = document.getElementById('notesHistoryProjectMeta');
+      const listEl = document.getElementById('notesHistoryTimelineList');
+
+      if (titleEl) {
+        titleEl.textContent = isSalesNote ? 'History Catatan Dari Sales' : 'History Catatan Desain Estimator';
+      }
+      if (metaEl) {
+        metaEl.textContent = `${item.queueCode || '-'} • ${item.customerName || '-'} — ${item.projectName || '-'} (Sales: ${item.salesName || '-'})`;
+      }
+
+      const hist = getNotesHistoryForRecord(item, isSalesNote ? 'sales' : 'estimator');
+      if (listEl) {
+        if (hist.length === 0) {
+          listEl.innerHTML = `<div style="text-align:center; padding: 2rem; color: #64748b; font-style: italic;">Belum ada riwayat catatan tersimpan pada proyek ini.</div>`;
+        } else {
+          listEl.innerHTML = hist.map((entry, idx) => `
+            <div class="notes-timeline-item">
+              <div class="notes-timeline-header">
+                <span>${idx === 0 ? '🟢 Catatan Terbaru' : '🕒 Riwayat #' + (hist.length - idx)} • ${escapeHtml(entry.author || '-')}</span>
+                <span style="font-family: var(--font-mono); color: #475569;">${escapeHtml(entry.timestamp || '-')}</span>
+              </div>
+              <div class="notes-timeline-body">${escapeHtml(entry.text || '-')}</div>
+            </div>
+          `).join('');
+        }
+      }
+      openModal('modalNotesHistory');
+    }
+
+    // Render Tabel Aktivitas Proyek & Antrian Gambar Terkini (33 Kolom Lengkap)
     function renderDashboardRecentTable(dataList) {
       const tbody = document.getElementById('dashboardRecentTbody');
       tbody.innerHTML = '';
 
       if (dataList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="31" style="text-align:center; padding: 2rem; color: #94a3b8;">Belum ada aktivitas proyek pada antrian ini</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="33" style="text-align:center; padding: 2rem; color: #94a3b8;">Belum ada aktivitas proyek pada antrian ini</td></tr>`;
         applyFreezeColumnOffsets();
         return;
       }
@@ -9534,7 +10160,8 @@
             <td><strong>${row.salesName}</strong></td>
             <td>${row.customerName}</td>
             <td><strong>${row.projectName}</strong></td>
-            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${row.scopeOfWork}">${row.scopeOfWork}</td>
+            ${renderScopeMaterialCell(row.scopeOfWork, row.id)}
+            ${renderProjectMaterialCell(row.projectMaterial)}
             <td><span style="color:#2563eb; font-weight:700;">${formatDateDMY(row.requestDeadline, '-')}</span></td>
             <td>
               <button class="btn-view-image" onclick="openImageViewer('${row.id}')">
@@ -9551,6 +10178,7 @@
             <td>${renderExtraImgPill(row.extraImg6, 6, row.id)}</td>
             <td>${renderExtraImgPill(row.extraImg7, 7, row.id)}</td>
             <td>${renderExtraImgPill(row.extraImg8, 8, row.id)}</td>
+            ${renderNotesHistoryCell(row, 'sales')}
             <td>${getStatusBadgeHTML(row.status)}</td>
             <td>${row.estimatorName ? `<strong>${row.estimatorName}</strong>` : ''}</td>
             <td>${formatDateDMY(row.estimateStartDate, '-')}</td>
@@ -9563,9 +10191,7 @@
             <td>${renderRevisionBadge(row.revGambar6, 6, row.id, 'revGambar')}</td>
             <td>${renderRevisionBadge(row.revGambar7, 7, row.id, 'revGambar')}</td>
             <td>${renderRevisionBadge(row.revGambar8, 8, row.id, 'revGambar')}</td>
-            <td style="max-width: 220px; overflow: hidden; text-overflow: ellipsis;" title="${row.estimatorNotes || '-'}">
-              ${row.estimatorNotes || '<em style="color:#94a3b8">Tidak ada catatan</em>'}
-            </td>
+            ${renderNotesHistoryCell(row, 'estimator')}
             <td>${getStatusBadgeHTML(row.status)}</td>
           </tr>
         `;
@@ -9573,18 +10199,19 @@
       applyFreezeColumnOffsets();
     }
 
-    // Render Tabel Rekapitulasi Performa untuk Sales yang Terpilih (Dengan Penambahan Kolom Sedang Edit)
+    // Render Tabel Rekapitulasi Performa untuk Sales yang Terpilih
     function renderSalesSummaryTable(selectedSalesName) {
       const tbody = document.getElementById('salesSummaryTbody');
       tbody.innerHTML = '';
 
-      const items = projectDatabase.filter(d => d.salesName === selectedSalesName);
+      const items = projectDatabase.filter(d => isSalesNameMatch(d.salesName, selectedSalesName));
       const upCount = items.length;
-      const belumEditCount = items.filter(d => d.status === 'Belum Edit').length;
-      const sedangEditCount = items.filter(d => d.status === 'Sedang Edit').length;
-      const revCount = items.filter(d => d.status === 'Revisi Gambar').length;
-      const doneCount = items.filter(d => d.status === 'Gambar Selesai').length;
-      // INSTRUKSI USER #4: Data angka pada kolom admin kontrak di dapat dari angka gambar selesai
+      const belumEditCount = items.filter(d => getStatusBucket(d.status) === 'antrian').length;
+      const cekKelengkapanCount = items.filter(d => getStatusBucket(d.status) === 'cek_kelengkapan').length;
+      const sedangEditCount = items.filter(d => getStatusBucket(d.status) === 'sedang_desain').length;
+      const revCount = items.filter(d => getStatusBucket(d.status) === 'revisi_desain').length;
+      const doneCount = items.filter(d => getStatusBucket(d.status) === 'desain_selesai').length;
+      // Data Admin Kontrak diambil dari Desain Selesai
       const sphCount = doneCount;
 
       document.getElementById('salesSummarySubtitle').textContent = `Menampilkan rincian metrik untuk sales: ${selectedSalesName}`;
@@ -9600,25 +10227,29 @@
             </div>
           </td>
           <td><strong style="color: var(--primary); font-size: 1rem;">${upCount}</strong> Proyek</td>
-          <td><span class="badge-status status-belum-edit">${belumEditCount} Belum Edit</span></td>
-          <td><span class="badge-status status-sedang-edit">${sedangEditCount} Sedang Edit</span></td>
-          <td><span class="badge-status status-revisi">${revCount} Gambar</span></td>
-          <td><span class="badge-status status-selesai">${doneCount} Gambar</span></td>
-          <td><strong style="color: var(--purple); font-size: 1rem;">${sphCount}</strong> SPH</td>
+          <td><span class="badge-status status-belum-edit">${belumEditCount} Antrian</span></td>
+          <td><span class="badge-status status-cek-kelengkapan">${cekKelengkapanCount} Cek</span></td>
+          <td><span class="badge-status status-sedang-edit">${sedangEditCount} Desain</span></td>
+          <td><span class="badge-status status-revisi">${revCount} Revisi</span></td>
+          <td><span class="badge-status status-selesai">${doneCount} Selesai</span></td>
+          <td><strong style="color: var(--purple); font-size: 1rem;">${sphCount}</strong> Kontrak</td>
         </tr>
       `;
     }
 
-    // Status Badge Helper Sesuai Status Pengerjaan Gambar (Belum Edit, Sedang Edit, Revisi Gambar, Gambar Selesai)
+    // Status Badge Helper (Mendukung status baru + backward-compatible data lama)
     function getStatusBadgeHTML(status) {
-      if (status === 'Gambar Selesai') {
-        return `<span class="badge-status status-selesai"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> Gambar Selesai</span>`;
-      } else if (status === 'Revisi Gambar') {
-        return `<span class="badge-status status-revisi"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Revisi Gambar</span>`;
-      } else if (status === 'Sedang Edit') {
-        return `<span class="badge-status status-sedang-edit"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Sedang Edit</span>`;
+      const bucket = getStatusBucket(status);
+      if (bucket === 'desain_selesai') {
+        return `<span class="badge-status status-selesai"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> Desain Selesai</span>`;
+      } else if (bucket === 'revisi_desain') {
+        return `<span class="badge-status status-revisi"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Revisi Desain</span>`;
+      } else if (bucket === 'sedang_desain') {
+        return `<span class="badge-status status-sedang-edit"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Sedang Desain</span>`;
+      } else if (bucket === 'cek_kelengkapan') {
+        return `<span class="badge-status status-cek-kelengkapan"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> Cek Kelengkapan Desain</span>`;
       } else {
-        return `<span class="badge-status status-belum-edit"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Belum Edit</span>`;
+        return `<span class="badge-status status-belum-edit"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Masih Antrian Gambar</span>`;
       }
     }
 
@@ -9637,7 +10268,7 @@
       }
     }
 
-    // Pembaruan Metrik 3 Estimator (Pak Setiawan, Bayu, Pajal) Sesuai Permintaan User
+    // Pembaruan Metrik 3 Estimator (Pak Setiawan, Bayu, Pajal)
     function updateEstimatorCards() {
       let baseData = getAccessibleDatabase();
       if (currentUser && currentUser.role === 'sales' && currentUser.salesName) {
@@ -9659,23 +10290,26 @@
       }
 
       const estimators = [
-        { key: 'setiawan', countId: 'estCountSetiawan', belumId: 'estBelumSetiawan', sedangId: 'estSedangSetiawan', revisiId: 'estRevisiSetiawan', selesaiId: 'estSelesaiSetiawan' },
-        { key: 'bayu', countId: 'estCountBayu', belumId: 'estBelumBayu', sedangId: 'estSedangBayu', revisiId: 'estRevisiBayu', selesaiId: 'estSelesaiBayu' },
-        { key: 'pajal', countId: 'estCountPajal', belumId: 'estBelumPajal', sedangId: 'estSedangPajal', revisiId: 'estRevisiPajal', selesaiId: 'estSelesaiPajal' }
+        { key: 'setiawan', countId: 'estCountSetiawan', belumId: 'estBelumSetiawan', cekId: 'estCekSetiawan', sedangId: 'estSedangSetiawan', revisiId: 'estRevisiSetiawan', selesaiId: 'estSelesaiSetiawan' },
+        { key: 'bayu', countId: 'estCountBayu', belumId: 'estBelumBayu', cekId: 'estCekBayu', sedangId: 'estSedangBayu', revisiId: 'estRevisiBayu', selesaiId: 'estSelesaiBayu' },
+        { key: 'pajal', countId: 'estCountPajal', belumId: 'estBelumPajal', cekId: 'estCekPajal', sedangId: 'estSedangPajal', revisiId: 'estRevisiPajal', selesaiId: 'estSelesaiPajal' }
       ];
 
       estimators.forEach(est => {
         const list = baseData.filter(item => matchesEst(item, est.key));
         const total = list.length;
-        const belum = list.filter(d => d.status === 'Belum Edit').length;
-        const sedang = list.filter(d => d.status === 'Sedang Edit').length;
-        const revisi = list.filter(d => d.status === 'Revisi Gambar').length;
-        const selesai = list.filter(d => d.status === 'Gambar Selesai').length;
+        const belum = list.filter(d => getStatusBucket(d.status) === 'antrian').length;
+        const cek = list.filter(d => getStatusBucket(d.status) === 'cek_kelengkapan').length;
+        const sedang = list.filter(d => getStatusBucket(d.status) === 'sedang_desain').length;
+        const revisi = list.filter(d => getStatusBucket(d.status) === 'revisi_desain').length;
+        const selesai = list.filter(d => getStatusBucket(d.status) === 'desain_selesai').length;
 
         const elTotal = document.getElementById(est.countId);
         if (elTotal) elTotal.textContent = total;
         const elBelum = document.getElementById(est.belumId);
         if (elBelum) elBelum.textContent = belum;
+        const elCek = document.getElementById(est.cekId);
+        if (elCek) elCek.textContent = cek;
         const elSedang = document.getElementById(est.sedangId);
         if (elSedang) elSedang.textContent = sedang;
         const elRevisi = document.getElementById(est.revisiId);
@@ -9707,7 +10341,7 @@
       const isSalesUser = currentUser && currentUser.role === 'sales';
       const lockedSalesName = (isSalesUser && currentUser.salesName) ? currentUser.salesName : '';
 
-      // 1. Data untuk GAMBAR SALES (Filter: Tanggal, Nama Sales, Status Pengerjaan Gambar)
+      // 1. Data untuk GAMBAR SALES
       const fSalesDate = document.getElementById('filterSalesDate')?.value || '';
       const fSalesName = lockedSalesName || (document.getElementById('filterSalesName')?.value || '');
       const fSalesStatus = document.getElementById('filterStatusSales')?.value || '';
@@ -9715,13 +10349,12 @@
       const salesList = baseData.filter(item => {
         const mSearch = matchesSearch(item);
         const mSales = !fSalesName || isSalesNameMatch(item.salesName, fSalesName);
-        const mStatus = !fSalesStatus || item.status === fSalesStatus;
+        const mStatus = !fSalesStatus || (getStatusBucket(item.status) === getStatusBucket(fSalesStatus));
         const mDate = matchesDate(item, fSalesDate);
         return mSearch && mSales && mStatus && mDate;
       });
 
-      // 2. Data untuk BAGAN ESTIMATOR (Filter: Estimator, Nama Sales, Tanggal, Status Pengerjaan Gambar)
-      // Bagi role Sales: terkunci otomatis ke nama sales masing-masing
+      // 2. Data untuk BAGAN ESTIMATOR
       const fEstName = document.getElementById('filterEstimatorName')?.value || '';
       const fEstSales = lockedSalesName || (document.getElementById('filterEstimatorSales')?.value || '');
       const fEstDate = document.getElementById('filterEstimatorDate')?.value || '';
@@ -9735,18 +10368,17 @@
         ));
         const mSales = !fEstSales || isSalesNameMatch(item.salesName, fEstSales);
         const mDate = matchesDate(item, fEstDate);
-        const mStatus = !fEstStatus || item.status === fEstStatus;
+        const mStatus = !fEstStatus || (getStatusBucket(item.status) === getStatusBucket(fEstStatus));
         return mSearch && mEst && mSales && mDate && mStatus;
       });
 
-      // 3. Data untuk BAGAN ADMIN KONTRAK (Hanya menampilkan data berstatus Pengerjaan Gambar: Gambar Selesai)
+      // 3. Data untuk BAGAN ADMIN KONTRAK (Hanya menampilkan data berstatus Desain Selesai)
       const fRosaStatus = document.getElementById('filterStatusRosa')?.value || '';
       const fRosaSales = lockedSalesName || (document.getElementById('filterRosaSales')?.value || '');
       const fRosaDate = document.getElementById('filterRosaDate')?.value || '';
 
       const rosaList = baseData.filter(item => {
-        const isGambarSelesai = ((item.status || '').trim().toLowerCase() === 'gambar selesai');
-        if (!isGambarSelesai) return false;
+        if (getStatusBucket(item.status) !== 'desain_selesai') return false;
         const mSearch = matchesSearch(item);
         const mStatus = !fRosaStatus || item.quoteStatus === fRosaStatus;
         const mSales = !fRosaSales || isSalesNameMatch(item.salesName, fRosaSales);
@@ -9754,10 +10386,6 @@
         return mSearch && mStatus && mSales && mDate;
       });
 
-      // Hak Akses Ketat Tombol & Kolom Aksi:
-      // - Menu Gambar Sales (Edit Perubahan): hanya Sales (Rini, Priyo, Samuel)
-      // - Bagan Estimator (Kelola Estimasi): hanya Estimator (Pak Setiawan, Pajal, Bayu)
-      // - Bagan Admin Kontrak (Edit Penawaran): hanya Admin Kontrak (Rosa)
       const canEditSales = Boolean(currentUser && currentUser.role === 'sales');
       const canManageEstimator = Boolean(currentUser && currentUser.role === 'admin');
       const canManageContract = Boolean(currentUser && currentUser.role === 'contract');
@@ -9771,11 +10399,11 @@
       const thAksiKontrak = document.getElementById('thAksiKontrak');
       if (thAksiKontrak) thAksiKontrak.style.display = canManageContract ? '' : 'none';
 
-      // 1. Render Tabel GAMBAR SALES (Tanpa Kolom Lihat Gambar)
+      // 1. Render Tabel GAMBAR SALES (Project Material setelah Skop Pengerjaan, Catatan Dari Sales sebelum Status)
       const salesTbody = document.getElementById('salesTableTbody');
       salesTbody.innerHTML = '';
       if (salesList.length === 0) {
-        salesTbody.innerHTML = `<tr><td colspan="${canEditSales ? 19 : 18}" style="text-align:center; padding: 2.5rem; color: #94a3b8; font-weight:600;">Belum ada data gambar sales pada tabel ini</td></tr>`;
+        salesTbody.innerHTML = `<tr><td colspan="${canEditSales ? 21 : 20}" style="text-align:center; padding: 2.5rem; color: #94a3b8; font-weight:600;">Belum ada data gambar sales pada tabel ini</td></tr>`;
       } else {
         salesList.forEach(row => {
           salesTbody.innerHTML += `
@@ -9785,7 +10413,8 @@
             <td><strong>${row.salesName}</strong></td>
             <td>${row.customerName}</td>
             <td><strong>${row.projectName}</strong></td>
-            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis;" title="${row.scopeOfWork}">${row.scopeOfWork}</td>
+            ${renderScopeMaterialCell(row.scopeOfWork, row.id)}
+            ${renderProjectMaterialCell(row.projectMaterial)}
             <td><span style="color:#2563eb; font-weight:700;">${formatDateDMY(row.requestDeadline, '-')}</span></td>
             <td>${renderDriveCustomerPill(row)}</td>
             <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${row.sourceDesc || '-'}">${row.sourceDesc || '-'}</td>
@@ -9797,6 +10426,7 @@
             <td>${renderExtraImgPill(row.extraImg6, 6, row.id)}</td>
             <td>${renderExtraImgPill(row.extraImg7, 7, row.id)}</td>
             <td>${renderExtraImgPill(row.extraImg8, 8, row.id)}</td>
+            ${renderNotesHistoryCell(row, 'sales')}
             <td>${getStatusBadgeHTML(row.status)}</td>
             ${canEditSales ? `
               <td>
@@ -9811,7 +10441,7 @@
         });
       }
 
-      // 2. Render Tabel BAGAN ESTIMATOR
+      // 2. Render Tabel BAGAN ESTIMATOR (Dengan History Catatan Desain Estimator)
       const estTbody = document.getElementById('estimatorTableTbody');
       estTbody.innerHTML = '';
       if (estimatorList.length === 0) {
@@ -9836,9 +10466,7 @@
             <td>${renderRevisionBadge(row.revGambar6, 6, row.id, 'revGambar')}</td>
             <td>${renderRevisionBadge(row.revGambar7, 7, row.id, 'revGambar')}</td>
             <td>${renderRevisionBadge(row.revGambar8, 8, row.id, 'revGambar')}</td>
-            <td style="max-width: 260px; overflow: hidden; text-overflow: ellipsis;" title="${row.estimatorNotes || '-'}">
-              ${row.estimatorNotes || '<em style="color:#94a3b8">Tidak ada catatan</em>'}
-            </td>
+            ${renderNotesHistoryCell(row, 'estimator')}
             <td>${getStatusBadgeHTML(row.status)}</td>
             ${canManageEstimator ? `
               <td>
@@ -9853,11 +10481,11 @@
         });
       }
 
-      // 3. Render Tabel BAGAN ADMIN KONTRAK (18 Kolom: Revisi Penawaran 1-8 + Penawaran Final/Selesai + Aksi Kontrak)
+      // 3. Render Tabel BAGAN ADMIN KONTRAK (18 Kolom: Hanya Desain Selesai)
       const rosaTbody = document.getElementById('rosaTableTbody');
       rosaTbody.innerHTML = '';
       if (rosaList.length === 0) {
-        rosaTbody.innerHTML = `<tr><td colspan="${canManageContract ? 18 : 17}" style="text-align:center; padding: 2.5rem; color: #94a3b8; font-weight:600;">Belum ada proyek berstatus Gambar Selesai untuk Bagan Admin Kontrak</td></tr>`;
+        rosaTbody.innerHTML = `<tr><td colspan="${canManageContract ? 18 : 17}" style="text-align:center; padding: 2.5rem; color: #94a3b8; font-weight:600;">Belum ada proyek berstatus Desain Selesai untuk Bagan Admin Kontrak</td></tr>`;
       } else {
         rosaList.forEach(row => {
           rosaTbody.innerHTML += `
@@ -11058,11 +11686,13 @@
         customer: document.getElementById('salesInputCustomer').value,
         project: document.getElementById('salesInputProject').value,
         scope: document.getElementById('salesInputScope').value,
+        projectMaterial: document.getElementById('salesInputProjectMaterial') ? document.getElementById('salesInputProjectMaterial').value : '',
         deadline: document.getElementById('salesInputDeadline').value,
         sourceSelect: document.getElementById('salesSourceSelect') ? document.getElementById('salesSourceSelect').value : '',
         sourceCustom: document.getElementById('salesInputSourceCustom') ? document.getElementById('salesInputSourceCustom').value : '',
         sourceDesc: document.getElementById('salesInputSourceDesc').value,
         driveLink: document.getElementById('salesInputDriveLink') ? document.getElementById('salesInputDriveLink').value : '',
+        salesNotes: document.getElementById('salesInputNotes') ? document.getElementById('salesInputNotes').value : '',
         extraImg1: document.getElementById('extraImg1').value,
         extraImg2: document.getElementById('extraImg2').value,
         extraImg3: document.getElementById('extraImg3').value,
@@ -11087,12 +11717,17 @@
       document.getElementById('salesInputProject').value = snap.project || '';
       document.getElementById('salesInputScope').value = snap.scope || '';
       populateScopeFromValue(snap.scope || '');
+      const pmVal = snap.projectMaterial || '';
+      if (document.getElementById('salesInputProjectMaterial')) document.getElementById('salesInputProjectMaterial').value = pmVal;
+      if (document.getElementById('chkMaterialTerpasang')) document.getElementById('chkMaterialTerpasang').checked = pmVal.indexOf('Material Terpasang') !== -1;
+      if (document.getElementById('chkMaterialOnly')) document.getElementById('chkMaterialOnly').checked = pmVal.indexOf('Material Only') !== -1;
       document.getElementById('salesInputDeadline').value = snap.deadline || '';
       syncFilterDatePlaceholderStates();
       if (document.getElementById('salesSourceSelect')) document.getElementById('salesSourceSelect').value = snap.sourceSelect || '';
       if (document.getElementById('salesInputSourceCustom')) document.getElementById('salesInputSourceCustom').value = snap.sourceCustom || '';
       document.getElementById('salesInputSourceDesc').value = snap.sourceDesc || '';
       if (document.getElementById('salesInputDriveLink')) document.getElementById('salesInputDriveLink').value = snap.driveLink || '';
+      if (document.getElementById('salesInputNotes')) document.getElementById('salesInputNotes').value = snap.salesNotes || '';
       
       for (let i = 1; i <= 8; i++) {
         const val = snap['extraImg' + i] || '';
@@ -11522,6 +12157,7 @@
     }
 
     function openSalesUploadModal() {
+      isSubmittingSalesForm = false;
       document.getElementById('editSalesId').value = '';
       document.getElementById('salesModalTitle').textContent = 'Tambah Gambar Sales Baru';
       
@@ -11586,6 +12222,12 @@
       if (chkMatOnly) chkMatOnly.checked = false;
       if (hidProjectMat) hidProjectMat.value = '';
 
+      // Reset Catatan Dari Sales & Tombol History
+      const salesNotesEl = document.getElementById('salesInputNotes');
+      if (salesNotesEl) salesNotesEl.value = '';
+      const btnSalesHist = document.getElementById('btnViewSalesNotesHistoryInForm');
+      if (btnSalesHist) btnSalesHist.style.display = 'none';
+
       // Reset 8 Slot Upload Dokumen
       resetUploadSlots();
       currentUploadedBase64 = null;
@@ -11602,6 +12244,7 @@
         alert('Akses ditolak: Hanya username Sales (Rini, Priyo, Samuel) yang dapat melakukan edit perubahan!');
         return;
       }
+      isSubmittingSalesForm = false;
       const item = projectDatabase.find(x => x.id === id);
       if (!item) return;
 
@@ -11692,6 +12335,22 @@
         }
       }
 
+      // Populate Catatan Dari Sales & Tombol History
+      const salesNotesEl = document.getElementById('salesInputNotes');
+      if (salesNotesEl) {
+        salesNotesEl.value = (item.salesNotes && item.salesNotes !== '-') ? item.salesNotes : '';
+      }
+      const btnSalesHist = document.getElementById('btnViewSalesNotesHistoryInForm');
+      if (btnSalesHist) {
+        const salesHist = getNotesHistoryForRecord(item, 'sales');
+        if (salesHist.length > 0) {
+          btnSalesHist.style.display = 'inline-flex';
+          btnSalesHist.textContent = `🕒 History Catatan (${salesHist.length})`;
+        } else {
+          btnSalesHist.style.display = 'none';
+        }
+      }
+
       formUndoStack = [getFormSnapshot()];
       formRedoStack = [];
       updateUndoRedoUI();
@@ -11776,11 +12435,16 @@
         const extra6 = document.getElementById('extraImg6') ? document.getElementById('extraImg6').value : '';
         const extra7 = document.getElementById('extraImg7') ? document.getElementById('extraImg7').value : '';
         const extra8 = document.getElementById('extraImg8') ? document.getElementById('extraImg8').value : '';
+        const salesNotes = (document.getElementById('salesInputNotes') ? document.getElementById('salesInputNotes').value.trim() : '');
+        const salesAuthorName = (currentUser && currentUser.name) ? currentUser.name : (salesName || 'Sales');
+        const notifyEventType = editId ? 'sales_form_edit' : 'sales_form_new';
+        const clientEventId = 'EVT-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
 
         let targetSavedRecord = null;
         if (editId) {
           const idx = projectDatabase.findIndex(x => x.id === editId);
           if (idx !== -1) {
+            const nextSalesHist = appendNoteToHistoryClient(projectDatabase[idx].salesNotesHistory, salesNotes, salesAuthorName);
             projectDatabase[idx] = {
               ...projectDatabase[idx],
               salesName,
@@ -11799,11 +12463,15 @@
               extraImg6: extra6,
               extraImg7: extra7,
               extraImg8: extra8,
-              projectMaterial: document.getElementById('salesInputProjectMaterial') ? document.getElementById('salesInputProjectMaterial').value : ''
+              projectMaterial: document.getElementById('salesInputProjectMaterial') ? document.getElementById('salesInputProjectMaterial').value : '',
+              salesNotes,
+              salesNotesHistory: nextSalesHist,
+              status: projectDatabase[idx].status || 'Masih Antrian Gambar'
             };
             targetSavedRecord = projectDatabase[idx];
           }
         } else {
+          const initSalesHist = appendNoteToHistoryClient([], salesNotes, salesAuthorName);
           const newRecord = {
             id: 'REC-' + Date.now(),
             queueCode,
@@ -11824,6 +12492,8 @@
             extraImg6: extra6,
             extraImg7: extra7,
             extraImg8: extra8,
+            salesNotes,
+            salesNotesHistory: initSalesHist,
             estimatorName: '',
             estimateStartDate: '',
             estimateEndDate: '',
@@ -11836,7 +12506,8 @@
             revGambar7: '',
             revGambar8: '',
             estimatorNotes: '',
-            status: 'Belum Edit',
+            estimatorNotesHistory: [],
+            status: 'Masih Antrian Gambar',
             quoteNumber: '',
             quoteRev1: '',
             quoteRev2: '',
@@ -11876,12 +12547,33 @@
         closeModal('modalSalesUpload');
         openModal('modalSaveSuccess');
 
+        if (targetSavedRecord && typeof emitRealtimeNotification === 'function') {
+          emitRealtimeNotification({
+            id: clientEventId,
+            eventType: notifyEventType,
+            title: editId ? 'Edit Perubahan Data Gambar Sales' : 'Form Gambar Proyek Baru Diinput Sales',
+            message: editId
+              ? `${salesName} mengedit di Edit Perubahan: ${targetSavedRecord.queueCode} - ${targetSavedRecord.customerName} (${targetSavedRecord.projectName})`
+              : `${salesName} mengisi Form Gambar Proyek: ${targetSavedRecord.queueCode} - ${targetSavedRecord.customerName} (${targetSavedRecord.projectName})`,
+            actor: salesAuthorName,
+            queueCode: targetSavedRecord.queueCode,
+            customerName: targetSavedRecord.customerName,
+            projectName: targetSavedRecord.projectName,
+            status: targetSavedRecord.status || 'Masih Antrian Gambar'
+          }, { fromLocalAction: true });
+        }
+
         // Otomatis kirim data formulir sales ke Google Spreadsheet & Google Drive Customer Folder
         if (targetSavedRecord) {
           const filesToSend = Object.values(slotFilesData);
           slotFilesData = {};
           const dispatchSaveToCloud = function() {
-            sendRecordToGoogleSpreadsheet(targetSavedRecord, false, filesToSend, [], [], { isNewInsert: !editId, updatedBy: 'sales' });
+            sendRecordToGoogleSpreadsheet(targetSavedRecord, false, filesToSend, [], [], {
+              isNewInsert: !editId,
+              updatedBy: !editId ? 'sales_new' : 'sales',
+              clientEventId: clientEventId,
+              notifyEventType: notifyEventType
+            });
           };
           if (!getGoogleScriptUrl() && typeof shouldProbePhpCloudApi === 'function' && shouldProbePhpCloudApi() && typeof ensureCloudApiDetected === 'function') {
             ensureCloudApiDetected().then(dispatchSaveToCloud).catch(dispatchSaveToCloud);
@@ -11998,14 +12690,25 @@
       }
 
       document.getElementById('estInputNotes').value = item.estimatorNotes || '';
+
+      const btnEstHist = document.getElementById('btnViewEstNotesHistoryInForm');
+      if (btnEstHist) {
+        const estHist = getNotesHistoryForRecord(item, 'estimator');
+        if (estHist.length > 0) {
+          btnEstHist.style.display = 'inline-flex';
+          btnEstHist.textContent = `🕒 History Catatan (${estHist.length})`;
+        } else {
+          btnEstHist.style.display = 'none';
+        }
+      }
       
-      // Dropdown Status Pengerjaan Gambar: Belum Edit, Sedang Edit, Revisi Gambar, Gambar Selesai
-      document.getElementById('estInputStatus').value = item.status || 'Belum Edit';
+      // Dropdown Status Pengerjaan Desain: Masih Antrian Gambar (default), Cek Kelengkapan Desain, Sedang Desain, Revisi Desain, Desain Selesai
+      document.getElementById('estInputStatus').value = normalizeEstimatorStatusValue(item.status || 'Masih Antrian Gambar');
 
       openModal('modalEstimatorEdit');
     }
 
-    // Handler Upload Dokumen Revisi Gambar (Baca Base64 untuk Preview & Upload Drive)
+    // Handler Upload Dokumen Revisi Desain (Baca Base64 untuk Preview & Upload Drive)
     function handleRevDocUpload(inputElem, revIndex) {
       if (inputElem.files && inputElem.files[0]) {
         const file = inputElem.files[0];
@@ -12063,10 +12766,13 @@
           projectDatabase[idx]['revGambar' + i] = revEl.value || '';
         }
       }
-      projectDatabase[idx].estimatorNotes = document.getElementById('estInputNotes')?.value || '-';
+      const estNoteVal = (document.getElementById('estInputNotes')?.value || '').trim() || '-';
+      const estAuthor = (currentUser && currentUser.name) ? currentUser.name : (projectDatabase[idx].estimatorName || 'Estimator');
+      projectDatabase[idx].estimatorNotes = estNoteVal;
+      projectDatabase[idx].estimatorNotesHistory = appendNoteToHistoryClient(projectDatabase[idx].estimatorNotesHistory, estNoteVal, estAuthor);
       
-      // Update status pengerjaan gambar: Belum Edit, Sedang Edit, Revisi Gambar, atau Gambar Selesai
-      projectDatabase[idx].status = document.getElementById('estInputStatus')?.value || 'Sedang Edit';
+      // Update status pengerjaan desain: Masih Antrian Gambar, Cek Kelengkapan Desain, Sedang Desain, Revisi Desain, atau Desain Selesai
+      projectDatabase[idx].status = normalizeEstimatorStatusValue(document.getElementById('estInputStatus')?.value || 'Masih Antrian Gambar');
       projectDatabase[idx]._dirtyOnline = true;
       projectDatabase[idx]._syncedToSheet = false;
 
@@ -12085,8 +12791,27 @@
       closeModal('modalEstimatorEdit');
       openModal('modalEstimatorSaveSuccess');
 
+      const clientEventId = 'EVT-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+      if (typeof emitRealtimeNotification === 'function') {
+        emitRealtimeNotification({
+          id: clientEventId,
+          eventType: 'estimator_edit',
+          title: 'Pembaruan Kelola Estimasi Estimator',
+          message: `${estAuthor} mengedit Kelola Estimasi (${projectDatabase[idx].status}): ${projectDatabase[idx].queueCode} - ${projectDatabase[idx].customerName} (${projectDatabase[idx].projectName})`,
+          actor: estAuthor,
+          queueCode: projectDatabase[idx].queueCode,
+          customerName: projectDatabase[idx].customerName,
+          projectName: projectDatabase[idx].projectName,
+          status: projectDatabase[idx].status
+        }, { fromLocalAction: true });
+      }
+
       // Sinkronkan pembaruan Estimator ke Google Spreadsheet & Google Drive
-      sendRecordToGoogleSpreadsheet(projectDatabase[idx], false, [], revFilesToSend, [], { updatedBy: 'estimator' });
+      sendRecordToGoogleSpreadsheet(projectDatabase[idx], false, [], revFilesToSend, [], {
+        updatedBy: 'estimator',
+        clientEventId: clientEventId,
+        notifyEventType: 'estimator_edit'
+      });
     }
 
     // ==========================================================================
@@ -12314,7 +13039,8 @@
         "Nomor SPH Penawaran",
         "Status Admin Kontrak",
         "Dokumen / Gambar",
-        "Catatan Estimator",
+        "Catatan Dari Sales",
+        "Catatan Desain Estimator",
         "Nomor Penawaran",
         "Revisi Penawaran 1",
         "Revisi Penawaran 2",
@@ -12349,10 +13075,11 @@
           escapeCsvCell(d.estimatorName || '(Belum dipilih)'),
           escapeCsvCell(formatDateDMY(d.estimateStartDate, '-')),
           escapeCsvCell(formatDateDMY(d.estimateEndDate, '-')),
-          escapeCsvCell(d.status || 'Belum Edit'),
+          escapeCsvCell(d.status || 'Masih Antrian Gambar'),
           escapeCsvCell(d.quoteNumber || '-'),
           escapeCsvCell(d.quoteStatus || 'Draft'),
           escapeCsvCell(docsText),
+          escapeCsvCell(d.salesNotes || '-'),
           escapeCsvCell(d.estimatorNotes || '-'),
           escapeCsvCell(d.quoteNumber || '-'),
           escapeCsvCell(d.quoteRev1 || ''),
@@ -12750,7 +13477,7 @@
         estimatorName: record.estimatorName || '(Belum dipilih)',
         estimateStartDate: fmtEstStart,
         estimateEndDate: fmtEstEnd,
-        status: record.status || 'Belum Edit',
+        status: record.status || 'Masih Antrian Gambar',
         revGambar1: record.revGambar1 || '',
         revGambar2: record.revGambar2 || '',
         revGambar3: record.revGambar3 || '',
@@ -12772,7 +13499,12 @@
         quoteRev8: record.quoteRev8 || '',
         quoteFinalDoc: record.quoteFinalDoc || '',
         docsText: docsText,
+        salesNotes: record.salesNotes || '',
+        salesNotesHistory: Array.isArray(record.salesNotesHistory) ? record.salesNotesHistory : [],
         estimatorNotes: record.estimatorNotes || '-',
+        estimatorNotesHistory: Array.isArray(record.estimatorNotesHistory) ? record.estimatorNotesHistory : [],
+        clientEventId: (extraMeta && extraMeta.clientEventId) ? extraMeta.clientEventId : '',
+        notifyEventType: (extraMeta && extraMeta.notifyEventType) ? extraMeta.notifyEventType : '',
         extraImg1: record.extraImg1 || '',
         extraImg2: record.extraImg2 || '',
         extraImg3: record.extraImg3 || '',
@@ -12829,6 +13561,9 @@
 
           if (parsedRes && parsedRes.status === 'error') {
             throw new Error(parsedRes.message || 'Gagal menyimpan data di Google Apps Script.');
+          }
+          if (parsedRes && parsedRes.notification && typeof markRealtimeNotificationSeen === 'function') {
+            markRealtimeNotificationSeen(parsedRes.notification);
           }
 
           let queueWasReassigned = false;
@@ -12986,7 +13721,7 @@
           extraImg6: col(17) || '',
           extraImg7: col(18) || '',
           extraImg8: col(19) || '',
-          status: col(20) || 'Belum Edit',
+          status: col(20) || 'Masih Antrian Gambar',
           estimatorName: col(21) || '',
           estimateStartDate: formatDateDMY(col(22), ''),
           estimateEndDate: formatDateDMY(col(23), ''),
@@ -13010,7 +13745,10 @@
           quoteRev6: col(42) || '',
           quoteRev7: col(43) || '',
           quoteRev8: col(44) || '',
-          quoteFinalDoc: col(45) || ''
+          quoteFinalDoc: col(45) || '',
+          salesNotes: col(46) || '',
+          salesNotesHistory: (function() { try { const v = col(47); return v ? JSON.parse(v) : []; } catch (e) { return []; } })(),
+          estimatorNotesHistory: (function() { try { const v = col(48); return v ? JSON.parse(v) : []; } catch (e) { return []; } })()
         });
       }
       return parsed;
@@ -13121,6 +13859,9 @@
           if (currentUser && typeof syncOnlineProfileAndHistory === 'function') {
             try { await syncOnlineProfileAndHistory(true); } catch (histErr) {}
           }
+          if (Array.isArray(data.notifications) && typeof processIncomingCloudNotifications === 'function') {
+            processIncomingCloudNotifications(data.notifications, false);
+          }
           if (!isSilent) {
             showSpreadsheetSyncToast(`Sinkronisasi balance selesai: ${data.records.length} data diperbarui dari Google Spreadsheet.`);
           }
@@ -13192,7 +13933,7 @@
           revGambar6: record.revGambar6 || '',
           revGambar7: record.revGambar7 || '',
           revGambar8: record.revGambar8 || '',
-          status: record.status || 'Belum Edit',
+          status: record.status || 'Masih Antrian Gambar',
           quoteNumber: record.quoteNumber || '-',
           quoteStatus: record.quoteStatus || 'Draft',
           quoteNotes: record.quoteNotes || '-',
@@ -13206,7 +13947,10 @@
           quoteRev8: record.quoteRev8 || '',
           quoteFinalDoc: record.quoteFinalDoc || '',
           docsText: docsText,
-          estimatorNotes: record.estimatorNotes || '-'
+          salesNotes: record.salesNotes || '',
+          salesNotesHistory: Array.isArray(record.salesNotesHistory) ? record.salesNotesHistory : [],
+          estimatorNotes: record.estimatorNotes || '-',
+          estimatorNotesHistory: Array.isArray(record.estimatorNotesHistory) ? record.estimatorNotesHistory : []
         };
       });
 
@@ -13284,6 +14028,652 @@
       });
     });
 
+    // ==========================================================================
+    // REAL-TIME NOTIFICATION, AUDIO CHIME, CROSS-TAB & BACKGROUND POLLING ENGINE
+    // ==========================================================================
+    const NOTIF_SEEN_STORAGE_KEY = 'ESTIMATOR_SEEN_NOTIF_IDS_V1';
+    const NOTIF_SOUND_MUTED_KEY = 'ESTIMATOR_NOTIF_SOUND_MUTED_V1';
+    const NOTIF_BASELINE_STORAGE_KEY = 'ESTIMATOR_NOTIF_BASELINE_MS_V1';
+    const NOTIF_BC_NAME = 'antrian_estimator_notif_v1';
+    const NOTIF_LS_BROADCAST_KEY = 'ESTIMATOR_REALTIME_NOTIF_BROADCAST_V1';
+    const BASE_DOCUMENT_TITLE = document.title || 'Antrian Gambar Estimator | Management System';
+
+    window.__realtimeNotifHistory = [];
+    window.__soundPlayCount = 0;
+    window.__lastSoundAttempt = null;
+
+    let notifAudioContext = null;
+    let notifAudioUnlocked = false;
+    let notifBroadcastChannel = null;
+    let notifSeenIdSet = new Set();
+    let notifUnreadCount = 0;
+    let notifBaselineMs = 0;
+    let notifPollTimerId = null;
+    let isPollingCloudNotifs = false;
+
+    function buildNotifChimeWavDataUri() {
+      try {
+        const sampleRate = 16000;
+        const durationSec = 0.42;
+        const numSamples = Math.floor(sampleRate * durationSec);
+        const buffer = new ArrayBuffer(44 + numSamples * 2);
+        const view = new DataView(buffer);
+        const writeStr = (offset, str) => {
+          for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+        };
+        writeStr(0, 'RIFF');
+        view.setUint32(4, 36 + numSamples * 2, true);
+        writeStr(8, 'WAVE');
+        writeStr(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeStr(36, 'data');
+        view.setUint32(40, numSamples * 2, true);
+
+        for (let i = 0; i < numSamples; i++) {
+          const t = i / sampleRate;
+          const freq = (t < 0.16) ? 880 : 1318.5;
+          const localT = (t < 0.16) ? t : (t - 0.16);
+          const env = Math.min(1, localT / 0.015) * Math.exp(-localT * 10);
+          const sample = Math.sin(2 * Math.PI * freq * t) * 0.42 * env;
+          view.setInt16(44 + i * 2, Math.max(-32767, Math.min(32767, Math.floor(sample * 32767))), true);
+        }
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        for (let b = 0; b < bytes.length; b++) binary += String.fromCharCode(bytes[b]);
+        return 'data:audio/wav;base64,' + btoa(binary);
+      } catch (e) {
+        return '';
+      }
+    }
+
+    function loadSeenNotificationIds() {
+      const merged = [];
+      try {
+        const sRaw = sessionStorage.getItem(NOTIF_SEEN_STORAGE_KEY);
+        if (sRaw) {
+          const arr = JSON.parse(sRaw);
+          if (Array.isArray(arr)) arr.forEach(x => merged.push(String(x)));
+        }
+      } catch (e) {}
+      try {
+        const lRaw = localStorage.getItem(NOTIF_SEEN_STORAGE_KEY);
+        if (lRaw) {
+          const arr = JSON.parse(lRaw);
+          if (Array.isArray(arr)) arr.forEach(x => merged.push(String(x)));
+        }
+      } catch (e) {}
+      notifSeenIdSet = new Set(merged.slice(-250));
+    }
+
+    function persistSeenNotificationIds() {
+      const list = Array.from(notifSeenIdSet).slice(-250);
+      notifSeenIdSet = new Set(list);
+      try { sessionStorage.setItem(NOTIF_SEEN_STORAGE_KEY, JSON.stringify(list)); } catch (e) {}
+      try { localStorage.setItem(NOTIF_SEEN_STORAGE_KEY, JSON.stringify(list)); } catch (e) {}
+    }
+
+    function markRealtimeNotificationSeen(notifOrId) {
+      const id = (notifOrId && typeof notifOrId === 'object') ? String(notifOrId.id || '') : String(notifOrId || '');
+      if (!id) return;
+      if (!notifSeenIdSet.has(id)) {
+        notifSeenIdSet.add(id);
+        persistSeenNotificationIds();
+      }
+    }
+
+    function isNotificationSoundMuted() {
+      try {
+        return localStorage.getItem(NOTIF_SOUND_MUTED_KEY) === '1';
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function updateNotificationControlButtons() {
+      const muted = isNotificationSoundMuted();
+      const perm = (typeof Notification !== 'undefined' && Notification.permission) ? Notification.permission : 'default';
+
+      const loginSoundBtn = document.getElementById('btnLoginToggleSound');
+      const loginSoundIcon = document.getElementById('loginSoundIcon');
+      const loginSoundLabel = document.getElementById('loginSoundLabel');
+      if (loginSoundBtn) loginSoundBtn.classList.toggle('muted', muted);
+      if (loginSoundIcon) loginSoundIcon.textContent = muted ? '🔇' : '🔊';
+      if (loginSoundLabel) loginSoundLabel.textContent = muted ? 'Suara Notifikasi: Mati' : 'Suara Notifikasi: Aktif';
+
+      const headerSoundBtn = document.getElementById('btnHeaderSoundToggle');
+      const headerSoundIcon = document.getElementById('headerSoundIcon');
+      const headerSoundText = document.getElementById('headerSoundText');
+      if (headerSoundBtn) headerSoundBtn.classList.toggle('muted', muted);
+      if (headerSoundIcon) headerSoundIcon.textContent = muted ? '🔇' : '🔊';
+      if (headerSoundText) headerSoundText.textContent = muted ? 'Suara Mati' : 'Suara Aktif';
+
+      const loginOsBtn = document.getElementById('btnLoginRequestOsNotif');
+      const loginOsLabel = document.getElementById('loginOsNotifLabel');
+      const modalOsBtn = document.getElementById('btnModalRequestOsNotif');
+      if (perm === 'granted') {
+        if (loginOsBtn) loginOsBtn.classList.add('granted');
+        if (loginOsLabel) loginOsLabel.textContent = 'Pop-Up Tab Lain Aktif';
+        if (modalOsBtn) {
+          modalOsBtn.classList.add('granted');
+          modalOsBtn.textContent = '✅ Pop-Up Tab Lain Aktif';
+        }
+      } else if (perm === 'denied') {
+        if (loginOsBtn) loginOsBtn.classList.remove('granted');
+        if (loginOsLabel) loginOsLabel.textContent = 'Pop-Up Diblokir Browser';
+        if (modalOsBtn) {
+          modalOsBtn.classList.remove('granted');
+          modalOsBtn.textContent = '⚠️ Izin Notifikasi Diblokir';
+        }
+      } else {
+        if (loginOsBtn) loginOsBtn.classList.remove('granted');
+        if (loginOsLabel) loginOsLabel.textContent = 'Aktifkan Pop-Up Tab Lain';
+        if (modalOsBtn) {
+          modalOsBtn.classList.remove('granted');
+          modalOsBtn.textContent = '🔔 Aktifkan Pop-Up Tab Lain';
+        }
+      }
+
+      const badgeEl = document.getElementById('headerNotifBadge');
+      if (badgeEl) {
+        if (notifUnreadCount > 0) {
+          badgeEl.style.display = 'inline-block';
+          badgeEl.textContent = notifUnreadCount > 99 ? '99+' : String(notifUnreadCount);
+        } else {
+          badgeEl.style.display = 'none';
+          badgeEl.textContent = '0';
+        }
+      }
+
+      if (document.hidden && notifUnreadCount > 0) {
+        document.title = `(${notifUnreadCount}) 🔔 Notifikasi Baru - Antrian Gambar Estimator`;
+      } else if (document.title !== BASE_DOCUMENT_TITLE) {
+        document.title = BASE_DOCUMENT_TITLE;
+      }
+    }
+
+    function unlockNotificationAudio() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          if (!notifAudioContext) notifAudioContext = new AudioCtx();
+          if (notifAudioContext.state === 'suspended') {
+            notifAudioContext.resume().catch(() => {});
+          }
+          const osc = notifAudioContext.createOscillator();
+          const gain = notifAudioContext.createGain();
+          gain.gain.value = 0.0001;
+          osc.connect(gain);
+          gain.connect(notifAudioContext.destination);
+          osc.start();
+          osc.stop(notifAudioContext.currentTime + 0.02);
+        }
+        const audioEl = document.getElementById('notifFallbackAudio');
+        if (audioEl && !audioEl.src) {
+          audioEl.src = buildNotifChimeWavDataUri();
+        }
+        notifAudioUnlocked = true;
+      } catch (e) {}
+    }
+
+    function playNotificationSound(eventType) {
+      if (isNotificationSoundMuted()) return false;
+      let triggered = false;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          if (!notifAudioContext) notifAudioContext = new AudioCtx();
+          if (notifAudioContext.state === 'suspended') {
+            notifAudioContext.resume().catch(() => {});
+          }
+          const now = notifAudioContext.currentTime;
+          const chord = (eventType === 'estimator_edit')
+            ? [659.25, 987.77, 1318.51]
+            : (eventType === 'sales_form_edit' ? [587.33, 880, 1174.66] : [523.25, 659.25, 1046.5]);
+
+          chord.forEach((freq, idx) => {
+            const osc = notifAudioContext.createOscillator();
+            const gain = notifAudioContext.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+            gain.gain.setValueAtTime(0.001, now + idx * 0.09);
+            gain.gain.exponentialRampToValueAtTime(0.22, now + idx * 0.09 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0008, now + idx * 0.09 + 0.28);
+            osc.connect(gain);
+            gain.connect(notifAudioContext.destination);
+            osc.start(now + idx * 0.09);
+            osc.stop(now + idx * 0.09 + 0.30);
+          });
+          triggered = true;
+        }
+      } catch (e) {}
+
+      try {
+        const audioEl = document.getElementById('notifFallbackAudio');
+        if (audioEl) {
+          if (!audioEl.src) audioEl.src = buildNotifChimeWavDataUri();
+          audioEl.currentTime = 0;
+          const p = audioEl.play();
+          if (p && typeof p.catch === 'function') p.catch(() => {});
+          triggered = true;
+        }
+      } catch (e) {}
+
+      if (triggered) {
+        window.__soundPlayCount = (window.__soundPlayCount || 0) + 1;
+        window.__lastSoundAttempt = {
+          playedAt: Date.now(),
+          eventType: eventType || 'activity',
+          audioCtxState: notifAudioContext ? notifAudioContext.state : 'fallback'
+        };
+      }
+      return triggered;
+    }
+
+    function toggleNotificationSoundSetting() {
+      const nextMuted = !isNotificationSoundMuted();
+      try {
+        localStorage.setItem(NOTIF_SOUND_MUTED_KEY, nextMuted ? '1' : '0');
+      } catch (e) {}
+      updateNotificationControlButtons();
+      if (!nextMuted) {
+        unlockNotificationAudio();
+        playNotificationSound('sales_form_new');
+        showSpreadsheetSyncToast('Suara notifikasi diaktifkan.');
+      } else {
+        showSpreadsheetSyncToast('Suara notifikasi dibisukan.');
+      }
+    }
+
+    async function enableBrowserNotificationAndAudio() {
+      try {
+        localStorage.setItem(NOTIF_SOUND_MUTED_KEY, '0');
+      } catch (e) {}
+      unlockNotificationAudio();
+
+      if (typeof Notification === 'undefined') {
+        updateNotificationControlButtons();
+        playNotificationSound('sales_form_new');
+        showSpreadsheetSyncToast('Suara & pop-up dalam aplikasi aktif!');
+        return;
+      }
+
+      try {
+        let perm = Notification.permission;
+        if (perm === 'default') {
+          perm = await Notification.requestPermission();
+        }
+        updateNotificationControlButtons();
+        if (perm === 'granted') {
+          playNotificationSound('estimator_edit');
+          dispatchBrowserOsNotification({
+            id: 'TEST-PERM-' + Date.now(),
+            eventType: 'sales_form_new',
+            title: 'Notifikasi Real-Time Aktif',
+            message: 'Pop-up & suara kini muncul di halaman login, saat membuka tab lain, maupun di HP/Komputer.',
+            queueCode: 'SYSTEM'
+          });
+          showSpreadsheetSyncToast('Izin Pop-Up Tab Lain & Suara Notifikasi Aktif!');
+        } else {
+          playNotificationSound('sales_form_new');
+          showSpreadsheetSyncToast('Pop-up & suara dalam halaman tetap aktif!');
+        }
+      } catch (e) {
+        updateNotificationControlButtons();
+      }
+    }
+
+    function dispatchBrowserOsNotification(notif) {
+      if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+      const title = notif.title || 'Notifikasi Antrian Gambar Estimator';
+      const body = notif.message || 'Ada pembaruan data baru.';
+      const opts = {
+        body: body,
+        tag: notif.id || ('NTF-' + Date.now()),
+        renotify: true,
+        silent: false,
+        data: { url: window.location.href }
+      };
+      try {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistration) {
+          navigator.serviceWorker.getRegistration().then(function(reg) {
+            if (reg && typeof reg.showNotification === 'function') {
+              reg.showNotification(title, opts).catch(function() {
+                try { new Notification(title, opts); } catch (e) {}
+              });
+            } else {
+              try { new Notification(title, opts); } catch (e) {}
+            }
+          }).catch(function() {
+            try { new Notification(title, opts); } catch (e) {}
+          });
+          return;
+        }
+      } catch (swErr) {}
+      try {
+        new Notification(title, opts);
+      } catch (e) {}
+    }
+
+    function getNotifBadgeLabel(eventType) {
+      if (eventType === 'sales_form_new') return 'Form Gambar Proyek';
+      if (eventType === 'sales_form_edit') return 'Edit Perubahan Sales';
+      if (eventType === 'estimator_edit') return 'Kelola Estimasi';
+      return 'Aktivitas Proyek';
+    }
+
+    function getNotifIconSvg(eventType) {
+      if (eventType === 'estimator_edit') {
+        return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>';
+      }
+      if (eventType === 'sales_form_edit') {
+        return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
+      }
+      return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>';
+    }
+
+    function renderNotificationFeedModalList() {
+      const listEl = document.getElementById('modalNotificationFeedList');
+      if (!listEl) return;
+      const items = window.__realtimeNotifHistory || [];
+      if (items.length === 0) {
+        listEl.innerHTML = '<div style="font-size: 0.82rem; color: #64748b; text-align:center; padding: 1.5rem 0;">Belum ada notifikasi aktivitas terbaru.</div>';
+        return;
+      }
+      listEl.innerHTML = items.map(function(nt) {
+        const typeCls = nt.eventType || 'sales_form_new';
+        return `
+          <div class="notes-timeline-item" style="border-left: 4px solid ${typeCls === 'estimator_edit' ? '#059669' : (typeCls === 'sales_form_edit' ? '#0284c7' : '#20409a')};">
+            <div class="notes-timeline-header">
+              <span>🔔 ${escapeHtml(getNotifBadgeLabel(typeCls))} • ${escapeHtml(nt.queueCode || '-')}</span>
+              <span style="font-family: var(--font-mono);">${escapeHtml(nt.timestamp || '-')}</span>
+            </div>
+            <div style="font-size: 0.8rem; font-weight: 800; color: #0f172a; margin-bottom: 0.2rem;">${escapeHtml(nt.title || '-')}</div>
+            <div class="notes-timeline-body" style="font-size: 0.77rem;">${escapeHtml(nt.message || '-')}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function addNotificationToFeed(notif) {
+      if (!notif || !notif.id) return;
+      const list = window.__realtimeNotifHistory || [];
+      if (!list.some(x => x.id === notif.id)) {
+        list.unshift(notif);
+        if (list.length > 80) list.length = 80;
+        window.__realtimeNotifHistory = list;
+        renderNotificationFeedModalList();
+      }
+    }
+
+    function showRealtimePopupToast(notif) {
+      const container = document.getElementById('realtimeNotificationContainer');
+      if (!container || !notif) return;
+
+      const safeId = escapeHtml(notif.id || ('NTF-' + Date.now()));
+      if (container.querySelector(`[data-notif-id="${safeId}"]`)) return;
+
+      while (container.children.length >= 4) {
+        container.removeChild(container.lastElementChild);
+      }
+
+      const typeCls = notif.eventType || 'sales_form_new';
+      const card = document.createElement('div');
+      card.className = `rt-notif-card type-${typeCls}`;
+      card.setAttribute('data-notif-id', safeId);
+      card.innerHTML = `
+        <div class="rt-notif-icon">${getNotifIconSvg(typeCls)}</div>
+        <div class="rt-notif-body">
+          <div class="rt-notif-title">${escapeHtml(notif.title || 'Notifikasi Aktivitas')}</div>
+          <div class="rt-notif-msg">${escapeHtml(notif.message || '-')}</div>
+          <div class="rt-notif-meta">
+            <span>📌 ${escapeHtml(getNotifBadgeLabel(typeCls))}</span>
+            <span>🕒 ${escapeHtml(notif.timestamp || formatLiveDateTimeSpaced(new Date()))}</span>
+          </div>
+        </div>
+        <button type="button" class="rt-notif-close" aria-label="Tutup notifikasi" title="Tutup">&times;</button>
+      `;
+
+      const closeBtn = card.querySelector('.rt-notif-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          if (card.parentNode) card.parentNode.removeChild(card);
+        });
+      }
+
+      container.prepend(card);
+
+      const scheduleAutoDismiss = () => {
+        setTimeout(() => {
+          if (!document.hidden && card.parentNode) {
+            card.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(16px)';
+            setTimeout(() => { if (card.parentNode) card.parentNode.removeChild(card); }, 260);
+          } else if (document.hidden && card.parentNode) {
+            const onBack = () => {
+              if (!document.hidden) {
+                document.removeEventListener('visibilitychange', onBack);
+                setTimeout(() => { if (card.parentNode) card.parentNode.removeChild(card); }, 10000);
+              }
+            };
+            document.addEventListener('visibilitychange', onBack);
+          }
+        }, 11000);
+      };
+      scheduleAutoDismiss();
+    }
+
+    function openNotificationFeedModal() {
+      renderNotificationFeedModalList();
+      clearUnreadNotificationBadge();
+      openModal('modalNotificationFeed');
+    }
+
+    function clearUnreadNotificationBadge() {
+      notifUnreadCount = 0;
+      updateNotificationControlButtons();
+    }
+
+    function testNotificationAndSound() {
+      unlockNotificationAudio();
+      emitRealtimeNotification({
+        id: 'TEST-' + Date.now(),
+        eventType: 'sales_form_new',
+        title: 'Tes Suara & Pop-Up Notifikasi Berhasil',
+        message: 'Sistem suara chime dan pop-up real-time siap bekerja di semua perangkat & tab lain.',
+        actor: currentUser ? currentUser.name : 'Pengguna',
+        queueCode: 'TEST-OK',
+        customerName: '-',
+        projectName: 'Uji Sistem Notifikasi',
+        status: 'Masih Antrian Gambar'
+      }, { fromLocalAction: true });
+    }
+
+    function normalizeNotificationEntry(raw) {
+      if (!raw || typeof raw !== 'object') return null;
+      const createdAtMs = Number(raw.createdAtMs || Date.now());
+      return {
+        id: String(raw.id || ('NTF-' + createdAtMs + '-' + Math.random().toString(36).slice(2, 6))),
+        createdAtMs: createdAtMs,
+        timestamp: String(raw.timestamp || formatLiveDateTimeSpaced(new Date(createdAtMs))),
+        eventType: String(raw.eventType || 'sales_form_new'),
+        title: String(raw.title || 'Notifikasi Aktivitas Proyek'),
+        message: String(raw.message || '-'),
+        actor: String(raw.actor || 'Sistem'),
+        queueCode: String(raw.queueCode || '-'),
+        customerName: String(raw.customerName || '-'),
+        projectName: String(raw.projectName || '-'),
+        status: String(raw.status || '-')
+      };
+    }
+
+    function broadcastNotificationAcrossTabs(notif) {
+      try {
+        if (notifBroadcastChannel) {
+          notifBroadcastChannel.postMessage({ kind: 'realtime_notif', notif: notif });
+        }
+      } catch (e) {}
+      try {
+        localStorage.setItem(NOTIF_LS_BROADCAST_KEY, JSON.stringify({ kind: 'realtime_notif', notif: notif, sentAt: Date.now() }));
+      } catch (e) {}
+    }
+
+    function emitRealtimeNotification(rawNotif, opts) {
+      const options = opts || {};
+      const notif = normalizeNotificationEntry(rawNotif);
+      if (!notif) return;
+
+      const alreadySeen = notifSeenIdSet.has(notif.id);
+      markRealtimeNotificationSeen(notif.id);
+      addNotificationToFeed(notif);
+
+      if (alreadySeen && !options.forceShow) return;
+
+      notifUnreadCount = (notifUnreadCount || 0) + 1;
+      showRealtimePopupToast(notif);
+      playNotificationSound(notif.eventType);
+      updateNotificationControlButtons();
+
+      // Dispatch browser/SW OS notification for cross-tab/cross-device/background visibility
+      if (!options.fromLocalAction || document.hidden) {
+        dispatchBrowserOsNotification(notif);
+      }
+
+      if (options.fromLocalAction) {
+        broadcastNotificationAcrossTabs(notif);
+      }
+    }
+
+    function processIncomingCloudNotifications(list, isSilentSeed) {
+      if (!Array.isArray(list) || list.length === 0) return;
+      const ordered = list.slice().sort((a, b) => Number(a.createdAtMs || 0) - Number(b.createdAtMs || 0));
+      let newlyAlertedCount = 0;
+
+      ordered.forEach(function(raw) {
+        const nt = normalizeNotificationEntry(raw);
+        if (!nt) return;
+        addNotificationToFeed(nt);
+
+        if (notifSeenIdSet.has(nt.id)) return;
+        markRealtimeNotificationSeen(nt.id);
+
+        const isRecentLive = (nt.createdAtMs >= notifBaselineMs);
+        if (!isSilentSeed && isRecentLive) {
+          notifUnreadCount = (notifUnreadCount || 0) + 1;
+          showRealtimePopupToast(nt);
+          playNotificationSound(nt.eventType);
+          dispatchBrowserOsNotification(nt);
+          newlyAlertedCount++;
+        }
+      });
+
+      updateNotificationControlButtons();
+
+      if (newlyAlertedCount > 0 && currentUser && typeof syncFromGoogleSpreadsheet === 'function' && (Date.now() - lastOnlineSyncAt > 2500)) {
+        syncFromGoogleSpreadsheet(true);
+      }
+    }
+
+    async function pollCloudNotifications() {
+      const gUrl = (typeof getGoogleScriptUrl === 'function') ? getGoogleScriptUrl() : '';
+      if (!gUrl || !gUrl.startsWith('http')) return;
+      if (isPollingCloudNotifs) return;
+      isPollingCloudNotifs = true;
+      try {
+        const sep = gUrl.includes('?') ? '&' : '?';
+        const url = gUrl + sep + 'action=get_notifications&t=' + Date.now();
+        const res = await fetch(url);
+        if (!res || !res.ok) return;
+        const data = await res.json();
+        if (data && data.status === 'success' && Array.isArray(data.notifications)) {
+          processIncomingCloudNotifications(data.notifications, false);
+        }
+      } catch (e) {
+      } finally {
+        isPollingCloudNotifs = false;
+      }
+    }
+
+    function initRealtimeNotificationSystem() {
+      loadSeenNotificationIds();
+      notifBaselineMs = Date.now() - 4000;
+      try {
+        const audioEl = document.getElementById('notifFallbackAudio');
+        if (audioEl && !audioEl.src) {
+          audioEl.src = buildNotifChimeWavDataUri();
+        }
+      } catch (e) {}
+
+      // Registrasi Service Worker agar pop-up OS bekerja saat membuka tab lain maupun di HP Android/Desktop
+      try {
+        if ('serviceWorker' in navigator && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
+          navigator.serviceWorker.register('sw.js').catch(() => {});
+        }
+      } catch (swErr) {}
+
+      // Buka kunci Web Audio API pada sentuhan/klik pertama pengguna
+      ['pointerdown', 'touchstart', 'keydown'].forEach(function(evtName) {
+        window.addEventListener(evtName, function onFirstGesture() {
+          if (!notifAudioUnlocked) unlockNotificationAudio();
+        }, { passive: true });
+      });
+
+      // Sinkronisasi langsung antar tab di browser yang sama (termasuk saat membuka tab lain atau halaman login)
+      try {
+        if (typeof BroadcastChannel !== 'undefined') {
+          notifBroadcastChannel = new BroadcastChannel(NOTIF_BC_NAME);
+          notifBroadcastChannel.onmessage = function(ev) {
+            if (ev && ev.data && ev.data.kind === 'realtime_notif' && ev.data.notif) {
+              emitRealtimeNotification(ev.data.notif, { fromLocalAction: false });
+              if (currentUser && typeof syncFromGoogleSpreadsheet === 'function') {
+                setTimeout(() => { syncFromGoogleSpreadsheet(true); }, 350);
+              }
+            }
+          };
+        }
+      } catch (bcErr) {}
+
+      window.addEventListener('storage', function(ev) {
+        if (ev.key === NOTIF_LS_BROADCAST_KEY && ev.newValue) {
+          try {
+            const parsed = JSON.parse(ev.newValue);
+            if (parsed && parsed.notif) {
+              emitRealtimeNotification(parsed.notif, { fromLocalAction: false });
+              if (currentUser && typeof syncFromGoogleSpreadsheet === 'function') {
+                setTimeout(() => { syncFromGoogleSpreadsheet(true); }, 350);
+              }
+            }
+          } catch (e) {}
+        } else if (ev.key === NOTIF_SOUND_MUTED_KEY) {
+          updateNotificationControlButtons();
+        }
+      });
+
+      document.addEventListener('visibilitychange', function() {
+        updateNotificationControlButtons();
+        if (!document.hidden) {
+          pollCloudNotifications();
+        }
+      });
+
+      window.addEventListener('focus', function() {
+        updateNotificationControlButtons();
+        pollCloudNotifications();
+      });
+
+      updateNotificationControlButtons();
+      renderNotificationFeedModalList();
+
+      if (notifPollTimerId) clearInterval(notifPollTimerId);
+      notifPollTimerId = setInterval(pollCloudNotifications, 4000);
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       getGoogleScriptUrl(); // Otomatis simpan ?gas=... jika tautan dibuka pertama kali di HP/Komputer baru
       loadDatabase();
@@ -13304,6 +14694,7 @@
         inp.addEventListener('input', syncFilterDatePlaceholderStates);
       });
       checkLoginSession();
+      initRealtimeNotificationSystem();
       updateLiveDateTimeDisplays();
       setInterval(updateLiveDateTimeDisplays, 500);
       initPanAndZoomForTables();
@@ -13315,9 +14706,14 @@
         if (currentUser && phpUrl) {
           syncFromGoogleSpreadsheet(true);
         }
+        if (phpUrl || getGoogleScriptUrl()) {
+          pollCloudNotifications();
+        }
       });
       if (currentUser) {
         setTimeout(() => { syncFromGoogleSpreadsheet(true); }, 500);
+      } else if (getGoogleScriptUrl()) {
+        setTimeout(() => { pollCloudNotifications(); }, 400);
       }
 
       // Balance update & sinkronisasi akun online otomatis lintas HP dan Komputer
@@ -13350,6 +14746,7 @@
 
       window.addEventListener('online', () => {
         updateSpreadsheetSyncStatusUI();
+        pollCloudNotifications();
         if (currentUser) {
           const gUrl = getGoogleScriptUrl();
           if (gUrl && gUrl.startsWith('http')) {
