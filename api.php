@@ -146,8 +146,43 @@ function withDatabaseStore(callable $callback, $writeMode = true) {
         $store['notifications'] = [];
     }
 
+    $migratedQueue = false;
+    foreach ($store['records'] as &$rRef) {
+        if (is_array($rRef) && !empty($rRef['queueCode'])) {
+            $normQ = normalizeQueueCodeTo2027($rRef['queueCode'], $rRef['salesName'] ?? '');
+            if ($normQ !== $rRef['queueCode']) {
+                $rRef['queueCode'] = $normQ;
+                $migratedQueue = true;
+            }
+        }
+    }
+    unset($rRef);
+    foreach ($store['history'] as &$hRef) {
+        if (is_array($hRef) && !empty($hRef['queueCode'])) {
+            $normHQ = normalizeQueueCodeTo2027($hRef['queueCode']);
+            if ($normHQ !== $hRef['queueCode']) {
+                $hRef['queueCode'] = $normHQ;
+                $migratedQueue = true;
+            }
+        }
+    }
+    unset($hRef);
+    foreach ($store['notifications'] as &$nRef) {
+        if (is_array($nRef) && !empty($nRef['queueCode'])) {
+            $normNQ = normalizeQueueCodeTo2027($nRef['queueCode']);
+            if ($normNQ !== $nRef['queueCode']) {
+                $nRef['queueCode'] = $normNQ;
+                $migratedQueue = true;
+            }
+        }
+    }
+    unset($nRef);
+
     $shouldSave = false;
     $result = $callback($store, $shouldSave);
+    if ($migratedQueue) {
+        $shouldSave = true;
+    }
 
     if ($writeMode && $shouldSave) {
         $store['updatedAt'] = time();
@@ -436,15 +471,41 @@ function saveUploadedBase64File($uploadDir, $prefix, $origName, $mimeType, $base
 }
 
 /**
+ * Normalisasi kode antrian lama (APS-PU0001/SM0002/RN0003) ke format APS-XX2027xxxx
+ */
+function normalizeQueueCodeTo2027($codeStr, $salesName = '') {
+    $str = trim((string)$codeStr);
+    if ($str === '' || $str === '-') {
+        return $str;
+    }
+    if (preg_match('/^APS-(?:RN|PU|SM|SL|GN)20\d{2}\d{4,}$/i', $str)) {
+        return strtoupper($str);
+    }
+    if (preg_match('/^(APS-(?:RN|PU|SM|SL|GN))(\d{1,6})$/i', $str, $m)) {
+        return strtoupper($m[1]) . '2027' . str_pad((string)intval($m[2]), 4, '0', STR_PAD_LEFT);
+    }
+    if (preg_match('/^(APS-(?:RN|PU|SM|SL|GN))-(\d{1,6})$/i', $str, $md)) {
+        return strtoupper($md[1]) . '2027' . str_pad((string)intval($md[2]), 4, '0', STR_PAD_LEFT);
+    }
+    if ($salesName !== '' && preg_match('/^APS-\d{1,6}$/i', $str)) {
+        $sn = strtolower((string)$salesName);
+        $pfx = (strpos($sn, 'rini') !== false) ? 'APS-RN2027' : ((strpos($sn, 'priyo') !== false) ? 'APS-PU2027' : ((strpos($sn, 'samuel') !== false) ? 'APS-SM2027' : 'APS-SL2027'));
+        $seq = preg_replace('/\D+/', '', $str);
+        return $pfx . str_pad((string)intval($seq ?: '1'), 4, '0', STR_PAD_LEFT);
+    }
+    return $str;
+}
+
+/**
  * Cari index baris pada $records berdasarkan queueCode
  */
 function findRecordIndexByQueue($records, $queueCode) {
-    $q = trim((string)$queueCode);
+    $q = normalizeQueueCodeTo2027($queueCode);
     if ($q === '' || $q === '-') {
         return -1;
     }
     foreach ($records as $idx => $rec) {
-        if (trim((string)($rec['queueCode'] ?? '')) === $q) {
+        if (normalizeQueueCodeTo2027($rec['queueCode'] ?? '', $rec['salesName'] ?? '') === $q) {
             return $idx;
         }
     }
@@ -926,7 +987,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // --- C. DELETE_ROW ---
     if ($postAction === 'delete_row' && (!empty($data['queueCode']) || !empty($data['noAntrian']))) {
-        $delCode = trim((string)($data['queueCode'] ?? $data['noAntrian'] ?? ''));
+        $delCode = normalizeQueueCodeTo2027($data['queueCode'] ?? $data['noAntrian'] ?? '');
         $res = withDatabaseStore(function (&$store, &$shouldSave) use ($delCode, $actorUsername, $actorKey, $deviceInfo) {
             $idx = findRecordIndexByQueue($store['records'], $delCode);
             if ($idx < 0) {
@@ -965,7 +1026,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $updated = 0;
             foreach ($items as $item) {
                 if (!is_array($item)) continue;
-                $qCode = trim((string)($item['queueCode'] ?? ''));
+                $qCode = normalizeQueueCodeTo2027($item['queueCode'] ?? '', $item['salesName'] ?? '');
                 $idx = findRecordIndexByQueue($store['records'], $qCode);
                 $isNew = !empty($item['isNewInsert']) && ($item['isNewInsert'] === true || $item['isNewInsert'] === 'true');
                 if ($idx >= 0 && $isNew) {
@@ -1007,7 +1068,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // --- D2. SEND_PROJECT_CHAT (Balasan chat terhubung lintas Sales, Estimator & Admin Kontrak) ---
     if ($postAction === 'send_project_chat') {
         $res = withDatabaseStore(function (&$store, &$shouldSave) use ($data, $actorUsername, $actorKey, $deviceInfo) {
-            $queueCode = trim((string)($data['queueCode'] ?? $data['noAntrian'] ?? ''));
+            $queueCode = normalizeQueueCodeTo2027($data['queueCode'] ?? $data['noAntrian'] ?? '', $data['salesName'] ?? '');
             $chatMsg = is_array($data['chatMessage'] ?? null) ? $data['chatMessage'] : [];
             $chatText = trim((string)($chatMsg['text'] ?? ($data['text'] ?? '')));
             if ($chatText === '') {
@@ -1116,7 +1177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $res = withDatabaseStore(function (&$store, &$shouldSave) use ($data, $uploadDir, $actorUsername, $actorKey, $deviceInfo) {
             $salesName = trim((string)($data['salesName'] ?? $data['namaSales'] ?? 'Sales'));
             $customerName = trim((string)($data['customerName'] ?? $data['namaCustomer'] ?? 'Customer'));
-            $queueCode = trim((string)($data['queueCode'] ?? $data['noAntrian'] ?? ''));
+            $queueCode = normalizeQueueCodeTo2027($data['queueCode'] ?? $data['noAntrian'] ?? '', $salesName);
             $isNewInsert = !empty($data['isNewInsert']) && ($data['isNewInsert'] === true || $data['isNewInsert'] === 'true');
             $updatedBy = trim((string)($data['updatedBy'] ?? ''));
 

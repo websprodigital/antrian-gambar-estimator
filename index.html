@@ -8006,37 +8006,45 @@
         if (nowTs - dEntry[1] > 30000) pendingDeleteQueues.delete(dEntry[0]);
       }
 
-      var remoteSet = new Set(remoteRecords.map(function(r) { return String(r.queueCode || '').trim(); }).filter(Boolean));
+      var remoteSet = new Set(remoteRecords.map(function(r) {
+        return normalizeQueueCodeTo2027(String(r.queueCode || '').trim(), r.salesName);
+      }).filter(Boolean));
       var unsyncedLocals = [];
       projectDatabase = (projectDatabase || []).filter(function(loc) {
-        var q = String(loc.queueCode || '').trim();
+        var rawQ = String(loc.queueCode || '').trim();
+        var q = normalizeQueueCodeTo2027(rawQ, loc.salesName);
         if (!q) return false;
-        if (pendingDeleteQueues.has(q)) return false;
+        loc.queueCode = q;
+        if (pendingDeleteQueues.has(q) || pendingDeleteQueues.has(rawQ)) return false;
         var needsUpload = (!loc._syncedToSheet || Boolean(loc._dirtyOnline));
-        if (needsUpload && !pendingSyncQueues.has(q)) {
+        if (needsUpload && !pendingSyncQueues.has(q) && !pendingSyncQueues.has(rawQ)) {
           unsyncedLocals.push(loc);
         }
         if (remoteSet.has(q)) return true;
-        if (pendingSyncQueues.has(q)) return true;
+        if (pendingSyncQueues.has(q) || pendingSyncQueues.has(rawQ)) return true;
         if (needsUpload) return true;
         return false;
       });
 
       var updatedCount = 0;
       remoteRecords.forEach(function(remoteItem) {
-        var rQ = String(remoteItem.queueCode || '').trim();
-        if (!rQ || rQ === '-' || pendingDeleteQueues.has(rQ)) return;
+        var rawRQ = String(remoteItem.queueCode || '').trim();
+        var rQ = normalizeQueueCodeTo2027(rawRQ, remoteItem.salesName);
+        if (!rQ || rQ === '-' || pendingDeleteQueues.has(rQ) || pendingDeleteQueues.has(rawRQ)) return;
         var remoteUploadDT = formatDateTimeDMY(remoteItem.uploadDateTime || remoteItem.timestamp || '', '');
         var remoteDeadline = (remoteItem.requestDeadline && remoteItem.requestDeadline !== '-') ? formatDateDMY(remoteItem.requestDeadline, '') : '';
         var remoteEstStart = (remoteItem.estimateStartDate && remoteItem.estimateStartDate !== '-') ? formatDateDMY(remoteItem.estimateStartDate, '') : '';
         var remoteEstEnd = (remoteItem.estimateEndDate && remoteItem.estimateEndDate !== '-') ? formatDateDMY(remoteItem.estimateEndDate, '') : '';
 
-        var localIdx = projectDatabase.findIndex(function(x) { return String(x.queueCode || '').trim() === rQ; });
+        var localIdx = projectDatabase.findIndex(function(x) {
+          return normalizeQueueCodeTo2027(String(x.queueCode || '').trim(), x.salesName) === rQ;
+        });
         if (localIdx !== -1) {
           var target = projectDatabase[localIdx];
-          if (target._dirtyOnline || pendingSyncQueues.has(rQ)) {
+          if (target._dirtyOnline || pendingSyncQueues.has(rQ) || pendingSyncQueues.has(rawRQ)) {
             return;
           }
+          target.queueCode = rQ;
           target._syncedToSheet = true;
           target._dirtyOnline = false;
           if (remoteUploadDT) target.uploadDateTime = remoteUploadDT;
@@ -8853,6 +8861,19 @@
           if (!Array.isArray(projectDatabase)) projectDatabase = [];
         } catch (e) {
           projectDatabase = [];
+        }
+        let migratedLegacyQueue = false;
+        projectDatabase.forEach(function(rec) {
+          if (rec && rec.queueCode) {
+            const normQ = normalizeQueueCodeTo2027(rec.queueCode, rec.salesName);
+            if (normQ !== rec.queueCode) {
+              rec.queueCode = normQ;
+              migratedLegacyQueue = true;
+            }
+          }
+        });
+        if (migratedLegacyQueue) {
+          saveDatabase();
         }
       } else {
         projectDatabase = [];
@@ -12088,6 +12109,27 @@
       return 'APS-SL2027';
     }
 
+    function normalizeQueueCodeTo2027(codeStr, salesName) {
+      const str = String(codeStr || '').trim();
+      if (!str || str === '-') return str;
+      if (/^APS-(?:RN|PU|SM|SL|GN)20\d{2}\d{4,}$/i.test(str)) {
+        return str.toUpperCase();
+      }
+      const legacy = str.match(/^(APS-(?:RN|PU|SM|SL|GN))(\d{1,6})$/i);
+      if (legacy) {
+        return legacy[1].toUpperCase() + '2027' + String(parseInt(legacy[2], 10)).padStart(4, '0');
+      }
+      const dashed = str.match(/^(APS-(?:RN|PU|SM|SL|GN))-(\d{1,6})$/i);
+      if (dashed) {
+        return dashed[1].toUpperCase() + '2027' + String(parseInt(dashed[2], 10)).padStart(4, '0');
+      }
+      if (salesName && /^APS-\d{1,6}$/i.test(str)) {
+        const seq = str.replace(/\D+/g, '');
+        return getSalesQueuePrefix(salesName) + String(parseInt(seq || '1', 10)).padStart(4, '0');
+      }
+      return str;
+    }
+
     function extractQueueSeqNumber(codeStr) {
       const str = String(codeStr || '').trim();
       if (!str || str === '-') return 0;
@@ -12535,9 +12577,10 @@
       const item = projectDatabase.find(x => x.id === id);
       if (!item) return;
 
+      const normEditQueue = normalizeQueueCodeTo2027(item.queueCode, item.salesName);
       document.getElementById('editSalesId').value = item.id;
-      document.getElementById('salesModalTitle').textContent = 'Edit Perubahan: ' + item.queueCode + ' - ' + item.projectName;
-      document.getElementById('salesInputQueue').value = item.queueCode;
+      document.getElementById('salesModalTitle').textContent = 'Edit Perubahan: ' + normEditQueue + ' - ' + item.projectName;
+      document.getElementById('salesInputQueue').value = normEditQueue;
       
       const salesSelect = document.getElementById('salesInputSalesName');
       salesSelect.value = item.salesName || '';
@@ -12683,13 +12726,14 @@
         }
 
         const queueInput = document.getElementById('salesInputQueue');
-        let queueCode = editId ? (queueInput ? queueInput.value.trim() : '') : '';
+        let queueCode = editId ? normalizeQueueCodeTo2027(queueInput ? queueInput.value.trim() : '', salesName) : '';
         const expectedPrefix = getSalesQueuePrefix(salesName);
         if (!queueCode || (!editId && !queueCode.startsWith(expectedPrefix))) {
           queueCode = (queueInput && queueInput.value.trim() && queueInput.value.trim().startsWith(expectedPrefix))
             ? queueInput.value.trim()
             : generateNextQueueCode(salesName);
         }
+        queueCode = normalizeQueueCodeTo2027(queueCode, salesName);
 
         const uploadTimeInput = document.getElementById('salesInputUploadTime');
         const rawUploadVal = uploadTimeInput ? (uploadTimeInput.value || '').trim() : '';
@@ -12739,6 +12783,7 @@
             }
             projectDatabase[idx] = {
               ...projectDatabase[idx],
+              queueCode: queueCode || normalizeQueueCodeTo2027(projectDatabase[idx].queueCode, salesName),
               salesName,
               uploadDateTime: uploadTime,
               customerName: customer,

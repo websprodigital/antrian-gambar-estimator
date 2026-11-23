@@ -862,7 +862,7 @@ function doPost(e) {
     if (action === "delete_row" && (data.queueCode || data.noAntrian)) {
       var ssDel = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
       var sheetDel = getOrCreateSheet(ssDel);
-      var delCode = (data.queueCode || data.noAntrian).toString().trim();
+      var delCode = normalizeQueueCodeTo2027Gas(data.queueCode || data.noAntrian);
       var delRowIdx = findRowIndexByQueue(sheetDel, delCode);
       if (delRowIdx > 0) {
         var oldRowVals = sheetDel.getRange(delRowIdx, 1, 1, HEADERS.length).getValues()[0];
@@ -908,7 +908,7 @@ function doPost(e) {
       var ssChat = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
       var sheetChat = getOrCreateSheet(ssChat);
       setupHeadersIfEmpty(sheetChat);
-      var chatQ = (data.queueCode || data.noAntrian || "").toString().trim();
+      var chatQ = normalizeQueueCodeTo2027Gas(data.queueCode || data.noAntrian || "", data.salesName || "");
       var chatRowIdx = findRowIndexByQueue(sheetChat, chatQ);
       var msgIn = (data.chatMessage && typeof data.chatMessage === "object") ? data.chatMessage : {};
       var chatTxt = (msgIn.text || data.text || "").toString().trim();
@@ -993,7 +993,7 @@ function doPost(e) {
 
     var salesName = (data.salesName || data.namaSales || "Sales").toString().trim();
     var customerName = (data.customerName || data.namaCustomer || "Customer").toString().trim();
-    var queueCode = (data.queueCode || data.noAntrian || "").toString().trim();
+    var queueCode = normalizeQueueCodeTo2027Gas(data.queueCode || data.noAntrian || "", salesName);
 
     // Tentukan Folder Sales Target
     var salesFolderId = getSalesFolderId(salesName);
@@ -1590,6 +1590,37 @@ function getOrCreateCustomerFolder(salesFolderId, customerName) {
 }
 
 /**
+ * Normalisasi kode antrian lama (APS-PU0001/SM0002/RN0003) ke format APS-XX2027xxxx
+ */
+function normalizeQueueCodeTo2027Gas(codeStr, salesName) {
+  var s = (codeStr || "").toString().trim();
+  if (!s || s === "-") return s;
+  if (/^APS-(?:RN|PU|SM|SL|GN)20\d{2}\d{4,}$/i.test(s)) {
+    return s.toUpperCase();
+  }
+  var m = s.match(/^(APS-(?:RN|PU|SM|SL|GN))(\d{1,6})$/i);
+  if (m) {
+    var seq = String(parseInt(m[2], 10) || 1);
+    while (seq.length < 4) seq = "0" + seq;
+    return m[1].toUpperCase() + "2027" + seq;
+  }
+  var md = s.match(/^(APS-(?:RN|PU|SM|SL|GN))-(\d{1,6})$/i);
+  if (md) {
+    var dSeq = String(parseInt(md[2], 10) || 1);
+    while (dSeq.length < 4) dSeq = "0" + dSeq;
+    return md[1].toUpperCase() + "2027" + dSeq;
+  }
+  if (salesName && /^APS-\d{1,6}$/i.test(s)) {
+    var sn = (salesName || "").toString().toLowerCase();
+    var pfx = sn.indexOf("rini") !== -1 ? "APS-RN2027" : (sn.indexOf("priyo") !== -1 ? "APS-PU2027" : (sn.indexOf("samuel") !== -1 ? "APS-SM2027" : "APS-SL2027"));
+    var numPart = String(parseInt(s.replace(/\D+/g, ""), 10) || 1);
+    while (numPart.length < 4) numPart = "0" + numPart;
+    return pfx + numPart;
+  }
+  return s;
+}
+
+/**
  * Mencari indeks baris berdasarkan kode antrian
  */
 function findRowIndexByQueue(sheet, queueCode) {
@@ -1597,9 +1628,10 @@ function findRowIndexByQueue(sheet, queueCode) {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return -1;
 
+  var targetNorm = normalizeQueueCodeTo2027Gas(queueCode);
   var queueValues = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
   for (var i = 0; i < queueValues.length; i++) {
-    if (queueValues[i][0] && queueValues[i][0].toString().trim() === queueCode) {
+    if (queueValues[i][0] && normalizeQueueCodeTo2027Gas(queueValues[i][0]) === targetNorm) {
       return i + 2;
     }
   }
@@ -1793,7 +1825,7 @@ function handleBatchSave(records, actorUsername, actorKey, deviceInfo) {
 
   for (var r = 0; r < records.length; r++) {
     var item = records[r];
-    var qCode = item.queueCode || "";
+    var qCode = normalizeQueueCodeTo2027Gas(item.queueCode || "", item.salesName || "");
     var existingIdx = findRowIndexByQueue(sheet, qCode);
     var isNewItem = (item.isNewInsert === true || item.isNewInsert === "true");
     if (existingIdx > 0 && isNewItem) {
@@ -1903,10 +1935,15 @@ function getAllRowsAsJSON(sheet) {
   for (var i = 0; i < values.length; i++) {
     var v = values[i];
     var qNoSheet = (v[33] && v[33].toString() !== "-") ? v[33].toString() : (v[36] ? v[36].toString() : (v[33] ? v[33].toString() : ""));
+    var rawQueueVal = v[1] ? v[1].toString().trim() : "";
+    var normQueueVal = normalizeQueueCodeTo2027Gas(rawQueueVal, v[3]);
+    if (rawQueueVal && normQueueVal && normQueueVal !== rawQueueVal) {
+      try { sheet.getRange(i + 2, 2).setValue(normQueueVal); } catch (eQ) {}
+    }
     records.push({
       id: "REC-" + (i + 1),
       uploadDateTime: formatGasDateTimeDMY(v[0] || v[2] || ""),
-      queueCode: v[1] ? v[1].toString() : "",
+      queueCode: normQueueVal,
       salesName: v[3] ? v[3].toString() : "",
       customerName: v[4] ? v[4].toString() : "",
       projectName: v[5] ? v[5].toString() : "",
