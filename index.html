@@ -9,7 +9,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Estimator">
   <link rel="manifest" href="manifest.webmanifest" id="pwaManifestLink">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='28' fill='%2320409a'/%3E%3Cpath d='M64 26c-16 0-28 12-28 28v22l-8 10v6h72v-6l-8-10V54c0-16-12-28-28-28zm0 78c6.6 0 12-5.4 12-12H52c0 6.6 5.4 12 12 12z' fill='%23ffffff'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="app-icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="app-icon-512.png">
+  <link rel="shortcut icon" type="image/png" href="app-icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="app-icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="app-icon-512.png">
   <title>ANTRIAN GAMBAR ESTIMATOR | Portal Operasional Proyek</title>
   
   <!-- Font Modern Google Fonts -->
@@ -2588,12 +2593,257 @@
       padding: 1.5rem;
       opacity: 0;
       visibility: hidden;
-      transition: opacity 0.22s ease, visibility 0.22s ease;
+      transition: opacity 0.22s ease, visibility 0s linear 0.22s;
     }
 
     .modal-backdrop.open {
       opacity: 1;
       visibility: visible;
+      transition: opacity 0.22s ease, visibility 0s linear 0s;
+    }
+
+    /* Halaman Aktivitas Chat Terhubung di Posisi Samping Kanan Bawah */
+    #modalNotesHistory.modal-backdrop {
+      justify-content: flex-end;
+      align-items: flex-end;
+      padding: 1rem 1.25rem 5.15rem 1.25rem;
+      background: rgba(15, 23, 42, 0.34);
+      backdrop-filter: blur(2px);
+      z-index: 10035;
+    }
+    #modalNotesHistory .modal-dialog.chat-bottom-right-dialog {
+      width: 440px;
+      max-width: calc(100vw - 1.5rem);
+      max-height: min(76vh, 630px);
+      margin: 0;
+      border-radius: 16px;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 22px 50px rgba(15, 23, 42, 0.34);
+      transform: translateY(18px) scale(0.97);
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease;
+    }
+    #modalNotesHistory.open .modal-dialog.chat-bottom-right-dialog {
+      transform: translateY(0) scale(1);
+    }
+
+    .chat-top-alert-banner {
+      background: #eff6ff;
+      border-bottom: 1px solid #bfdbfe;
+      padding: 0.65rem 1.05rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.28rem;
+      flex-shrink: 0;
+    }
+    .chat-top-banner-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .chat-top-status-tag {
+      font-size: 0.66rem;
+      font-weight: 800;
+      padding: 0.15rem 0.52rem;
+      border-radius: 9999px;
+      letter-spacing: 0.02em;
+    }
+    .chat-top-status-tag.incoming {
+      background: #ef4444;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35);
+    }
+    .chat-top-status-tag.active {
+      background: #20409a;
+      color: #ffffff;
+    }
+    .chat-top-queue-pill {
+      background: #ffffff;
+      color: #1e3a8a;
+      border: 1px solid #93c5fd;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 0.12rem 0.48rem;
+      border-radius: 6px;
+    }
+    .chat-top-sender-pill {
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 0.14rem 0.52rem;
+      border-radius: 9999px;
+      border: 1px solid transparent;
+    }
+    .chat-top-sender-pill.sender-pill-sales {
+      background: #dbeafe;
+      color: #1d4ed8;
+      border-color: #93c5fd;
+    }
+    .chat-top-sender-pill.sender-pill-estimator {
+      background: #d1fae5;
+      color: #047857;
+      border-color: #6ee7b7;
+    }
+    .chat-top-sender-pill.sender-pill-contract {
+      background: #fef3c7;
+      color: #b45309;
+      border-color: #fcd34d;
+    }
+    .chat-top-sender-pill.sender-pill-neutral {
+      background: #f1f5f9;
+      color: #475569;
+      border-color: #cbd5e1;
+    }
+    .chat-top-project-line {
+      font-size: 0.79rem;
+      color: #0f172a;
+      line-height: 1.3;
+    }
+    .chat-top-team-line {
+      font-size: 0.7rem;
+      color: #475569;
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+
+    .quick-chat-switch-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.38rem;
+      padding: 0.45rem 1.05rem;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      overflow-x: auto;
+      flex-shrink: 0;
+    }
+    .quick-chat-switch-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.32rem;
+      padding: 0.22rem 0.55rem;
+      border-radius: 9999px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #334155;
+      font-family: inherit;
+      font-size: 0.67rem;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .quick-chat-switch-pill.active {
+      background: #20409a;
+      color: #ffffff;
+      border-color: #20409a;
+    }
+    .quick-chat-switch-pill.has-unread {
+      border-color: #ef4444;
+      background: #fef2f2;
+      color: #991b1b;
+    }
+    .quick-chat-switch-pill.active.has-unread {
+      background: #20409a;
+      color: #ffffff;
+    }
+    .quick-chat-pill-dot {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 9999px;
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 0.6rem;
+      font-weight: 900;
+    }
+
+    /* Tombol Sticky Chat Proyek Kanan Bawah */
+    .sticky-chat-proyek-btn {
+      position: fixed;
+      right: 20px;
+      bottom: 18px;
+      z-index: 9985;
+      display: none;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.72rem 1.12rem;
+      border-radius: 9999px;
+      border: 2px solid #ffffff;
+      background: linear-gradient(135deg, #20409a 0%, #1d4ed8 100%);
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 0.86rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(32, 64, 154, 0.38), 0 4px 10px rgba(15, 23, 42, 0.18);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+    body.user-logged-in .sticky-chat-proyek-btn {
+      display: inline-flex;
+    }
+    body.chat-drawer-open .sticky-chat-proyek-btn {
+      z-index: 10040;
+    }
+    .sticky-chat-proyek-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 32px rgba(32, 64, 154, 0.45), 0 6px 12px rgba(15, 23, 42, 0.2);
+    }
+    .sticky-chat-proyek-btn.has-unread-chat {
+      border-color: #fecaca;
+      box-shadow: 0 12px 30px rgba(220, 38, 38, 0.4), 0 0 0 4px rgba(239, 68, 68, 0.25);
+      animation: stickyChatPulseRed 1.6s infinite;
+    }
+    @keyframes stickyChatPulseRed {
+      0%, 100% { box-shadow: 0 12px 28px rgba(220, 38, 38, 0.38), 0 0 0 0 rgba(239, 68, 68, 0.48); }
+      60% { box-shadow: 0 14px 32px rgba(220, 38, 38, 0.48), 0 0 0 10px rgba(239, 68, 68, 0); }
+    }
+    .sticky-chat-icon-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .sticky-chat-label {
+      white-space: nowrap;
+      line-height: 1;
+    }
+    .sticky-chat-red-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 6px;
+      border-radius: 9999px;
+      background: #ef4444;
+      color: #ffffff;
+      border: 2px solid #ffffff;
+      font-size: 0.72rem;
+      font-weight: 900;
+      line-height: 1;
+      box-shadow: 0 2px 6px rgba(185, 28, 28, 0.55);
+    }
+    @media (max-width: 640px) {
+      #modalNotesHistory.modal-backdrop {
+        padding: 0.65rem 0.65rem 4.65rem 0.65rem;
+      }
+      #modalNotesHistory .modal-dialog.chat-bottom-right-dialog {
+        width: 100%;
+        max-width: 100%;
+        max-height: 78vh;
+      }
+      .sticky-chat-proyek-btn {
+        right: 14px;
+        bottom: 14px;
+        padding: 0.6rem 0.92rem;
+        font-size: 0.78rem;
+        gap: 0.45rem;
+      }
     }
 
     #modalGasSettings,
@@ -7309,34 +7559,36 @@
     </div>
   </div>
 
-  <!-- MODAL HISTORY CHAT & CATATAN TERHUBUNG (SALES • ESTIMATOR • ADMIN KONTRAK) -->
+  <!-- MODAL HISTORY CHAT & CATATAN TERHUBUNG (POSISI SAMPING KANAN BAWAH) -->
   <div class="modal-backdrop" id="modalNotesHistory">
-    <div class="modal-dialog" style="max-width: 700px;">
-      <div class="modal-header" style="background: linear-gradient(135deg, #20409a 0%, #172b6b 100%); color: #ffffff; border-bottom: none;">
-        <h3 style="color: #ffffff; margin: 0; font-size: 1.05rem;">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ffffff" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-          <span id="notesHistoryModalTitle" style="color:#ffffff;">History Chat &amp; Catatan Proyek</span>
+    <div class="modal-dialog chat-bottom-right-dialog">
+      <div class="modal-header" style="background: linear-gradient(135deg, #20409a 0%, #172b6b 100%); color: #ffffff; border-bottom: none; padding: 0.78rem 1.05rem;">
+        <h3 style="color: #ffffff; margin: 0; font-size: 0.94rem;">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#ffffff" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <span id="notesHistoryModalTitle" style="color:#ffffff;">Chat Proyek Terhubung</span>
         </h3>
         <button type="button" class="modal-close-btn" onclick="closeModal('modalNotesHistory')" style="color: #ffffff; background: rgba(255,255,255,0.2);">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
-      <div class="modal-body" style="padding: 1.25rem 1.35rem; max-height: 50vh; overflow-y: auto;">
+      <div id="notesHistoryChatTopAlertBanner" class="chat-top-alert-banner"></div>
+      <div id="notesHistoryQuickSwitchBar" class="quick-chat-switch-bar" style="display: none;"></div>
+      <div class="modal-body" style="padding: 0.95rem 1.05rem; max-height: 44vh; overflow-y: auto;">
         <input type="hidden" id="notesHistoryRowId">
         <input type="hidden" id="notesHistorySourceContext">
-        <div id="notesHistoryProjectMeta" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.72rem 0.95rem; margin-bottom: 0.95rem; font-size: 0.82rem; font-weight: 700; color: #1e3a8a;">-</div>
+        <div id="notesHistoryProjectMeta" style="display: none;">-</div>
         <div id="notesHistoryTimelineList"></div>
       </div>
-      <div style="padding: 0.85rem 1.35rem; background: #f8fafc; border-top: 1px solid #e2e8f0;">
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem; flex-wrap: wrap;">
-          <label for="notesHistoryChatInput" style="font-size: 0.78rem; font-weight: 800; color: #1e3a8a; margin: 0;">
+      <div style="padding: 0.72rem 1.05rem; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.35rem; flex-wrap: wrap;">
+          <label for="notesHistoryChatInput" style="font-size: 0.75rem; font-weight: 800; color: #1e3a8a; margin: 0;">
             💬 Balas Chat Terhubung (<span id="chatSenderIdentityBadge">Tim Proyek</span>)
           </label>
           <span id="chatSendFeedback" style="font-size: 0.72rem; font-weight: 800; color: #059669; display: none;">✓ Chat terkirim!</span>
         </div>
-        <textarea class="form-control" id="notesHistoryChatInput" rows="2" placeholder="Ketik balasan chat di sini... Pesan akan tersambung otomatis di Sales, Estimator & Admin Kontrak." style="resize: vertical; font-size: 0.84rem;"></textarea>
+        <textarea class="form-control" id="notesHistoryChatInput" rows="2" placeholder="Ketik balasan chat di sini... Pesan tersambung di Sales, Estimator & Admin Kontrak." style="resize: vertical; font-size: 0.82rem;"></textarea>
       </div>
-      <div class="modal-footer" style="background: #f8fafc; justify-content: flex-end; gap: 0.65rem;">
+      <div class="modal-footer" style="background: #f8fafc; justify-content: flex-end; gap: 0.55rem; padding: 0.65rem 1.05rem;">
         <button type="button" class="btn btn-secondary" id="btnCloseNotesHistoryModal" onclick="closeModal('modalNotesHistory')">Tutup</button>
         <button type="button" class="btn btn-primary" id="btnSendNotesChat" onclick="submitConnectedChatReply()">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
@@ -7554,6 +7806,10 @@
 
     function showLoginScreen() {
       document.body.classList.remove('user-is-sales');
+      document.body.classList.remove('user-logged-in');
+      document.body.classList.remove('chat-drawer-open');
+      const chatModal = document.getElementById('modalNotesHistory');
+      if (chatModal) chatModal.classList.remove('open');
       const loginScreen = document.getElementById('loginScreen');
       if (loginScreen) loginScreen.style.display = 'flex';
       const userInput = document.getElementById('loginUsername');
@@ -8219,6 +8475,44 @@
         });
       }
 
+      if (window.__knownChatSeeded && window.__knownChatMsgIds && typeof registerIncomingProjectChatAlert === 'function') {
+        const baselineCut = (typeof notifBaselineMs === 'number' && notifBaselineMs > 0) ? notifBaselineMs : (Date.now() - 120000);
+        const allowPastBaseline = Boolean(window.__firstRemoteSyncCompleted);
+        projectDatabase.forEach(function(rec) {
+          if (!rec) return;
+          const uList = getUnifiedChatForRecord(rec);
+          uList.forEach(function(m) {
+            if (!m) return;
+            const mId = String(m.id || '');
+            const sig = String((rec.queueCode || rec.id || '') + '|' + (m.author || '') + '|' + (m.text || ''));
+            const seenBefore = (mId && window.__knownChatMsgIds.has(mId)) || window.__knownChatMsgIds.has(sig);
+            if (!seenBefore) {
+              if (mId) window.__knownChatMsgIds.add(mId);
+              window.__knownChatMsgIds.add(sig);
+              const msgMs = Number(m.createdAtMs || 0);
+              if (allowPastBaseline || msgMs >= baselineCut) {
+                registerIncomingProjectChatAlert({
+                  id: mId || ('SYNC-' + Date.now()),
+                  queueCode: rec.queueCode || '-',
+                  rowId: rec.id || '',
+                  projectName: rec.projectName || '-',
+                  customerName: rec.customerName || '-',
+                  salesName: rec.salesName || '-',
+                  estimatorName: rec.estimatorName || '-',
+                  actor: m.author || 'Tim Proyek',
+                  senderName: m.author || 'Tim Proyek',
+                  senderRoleLabel: m.roleLabel || getChatRoleMeta(m.role).roleLabel,
+                  lastText: m.text || '-',
+                  timestamp: m.timestamp || '',
+                  createdAtMs: msgMs || Date.now()
+                }, { isNewAlert: true });
+              }
+            }
+          });
+        });
+        window.__firstRemoteSyncCompleted = true;
+      }
+
       saveDatabase();
       return updatedCount;
     }
@@ -8674,6 +8968,9 @@
       pendingProfilePhotoUpload = { settings: null, modal: null };
       const loginScreen = document.getElementById('loginScreen');
       if (loginScreen) loginScreen.style.display = 'none';
+      document.body.classList.add('user-logged-in');
+      if (typeof loadUnreadProjectChatAlerts === 'function') loadUnreadProjectChatAlerts();
+      if (typeof renderStickyChatProyekButton === 'function') renderStickyChatProyekButton();
 
       // Update UI Sidebar Profil & Riwayat Online sesuai akun login
       refreshSidebarProfileDisplay();
@@ -10383,12 +10680,395 @@
       }, 20);
     }
 
-    function openNotesHistoryModal(rowId, type) {
-      let item = projectDatabase.find(x => x.id === rowId || x.queueCode === rowId);
+    const UNREAD_CHAT_STORAGE_KEY = 'ESTIMATOR_UNREAD_PROJECT_CHATS_V1';
+    window.__knownChatMsgIds = window.__knownChatMsgIds || new Set();
+    window.__knownChatSeeded = Boolean(window.__knownChatSeeded);
+    window.__unreadProjectChats = window.__unreadProjectChats || {};
+
+    function getProjectChatKey(queueCode, rowId) {
+      const q = String(queueCode || '').trim();
+      if (q && q !== '-' && q !== 'TEST-OK' && q !== 'SYSTEM') return q.toUpperCase();
+      const id = String(rowId || '').trim();
+      return id || '';
+    }
+
+    function loadUnreadProjectChatAlerts() {
+      try {
+        const raw = localStorage.getItem(UNREAD_CHAT_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            window.__unreadProjectChats = parsed;
+            return;
+          }
+        }
+      } catch (e) {}
+      if (!window.__unreadProjectChats || typeof window.__unreadProjectChats !== 'object') {
+        window.__unreadProjectChats = {};
+      }
+    }
+
+    function saveUnreadProjectChatAlerts() {
+      try {
+        localStorage.setItem(UNREAD_CHAT_STORAGE_KEY, JSON.stringify(window.__unreadProjectChats || {}));
+      } catch (e) {}
+    }
+
+    function seedKnownProjectChatIds() {
+      if (!window.__knownChatMsgIds) window.__knownChatMsgIds = new Set();
+      (Array.isArray(projectDatabase) ? projectDatabase : []).forEach(function(rec) {
+        if (!rec) return;
+        const list = getUnifiedChatForRecord(rec);
+        list.forEach(function(m) {
+          if (m && m.id) window.__knownChatMsgIds.add(String(m.id));
+          if (m && (m.author || m.text)) {
+            window.__knownChatMsgIds.add(String((rec.queueCode || rec.id || '') + '|' + (m.author || '') + '|' + (m.text || '')));
+          }
+        });
+      });
+      window.__knownChatSeeded = true;
+    }
+
+    function parseSenderInfoFromChatNotif(rawInfo, matchedRec) {
+      const info = rawInfo || {};
+      const actor = String(info.senderName || info.actor || '').trim() || 'Tim Proyek';
+      let roleLabel = String(info.senderRoleLabel || info.roleLabel || '').trim();
+      if (!roleLabel && info.title) {
+        const tm = String(info.title).match(/\((Sales|Estimator|Admin Kontrak)\)/i);
+        if (tm) roleLabel = tm[1];
+      }
+      if (!roleLabel && info.message) {
+        const mm = String(info.message).match(/\((Sales|Estimator|Admin Kontrak)\)/i);
+        if (mm) roleLabel = mm[1];
+      }
+      if (!roleLabel && typeof resolveUserAccount === 'function') {
+        const u = resolveUserAccount(actor);
+        if (u && u.role) {
+          roleLabel = getChatRoleMeta(u.role).roleLabel;
+        }
+      }
+      if (!roleLabel && info.role) {
+        roleLabel = getChatRoleMeta(info.role).roleLabel;
+      }
+      if (!roleLabel && matchedRec) {
+        if (matchedRec.salesName && actor.toLowerCase() === String(matchedRec.salesName).toLowerCase()) roleLabel = 'Sales';
+        else if (matchedRec.estimatorName && actor.toLowerCase() === String(matchedRec.estimatorName).toLowerCase()) roleLabel = 'Estimator';
+      }
+      return {
+        senderName: actor,
+        senderRoleLabel: roleLabel || 'Tim Proyek'
+      };
+    }
+
+    function getAccessibleProjectRecords() {
+      const all = Array.isArray(projectDatabase) ? projectDatabase.slice() : [];
+      if (currentUser && currentUser.role === 'sales') {
+        const sName = String(currentUser.salesName || currentUser.name || '').trim().toLowerCase();
+        return all.filter(function(r) {
+          return String(r && r.salesName ? r.salesName : '').trim().toLowerCase() === sName;
+        });
+      }
+      return all;
+    }
+
+    function isAlertAccessibleForCurrentUser(alertObj) {
+      if (!alertObj) return false;
+      if (!currentUser || currentUser.role !== 'sales') return true;
+      const mySales = String(currentUser.salesName || currentUser.name || '').trim().toLowerCase();
+      if (alertObj.salesName && String(alertObj.salesName).trim().toLowerCase() === mySales) return true;
+      const rec = projectDatabase.find(function(r) {
+        return (alertObj.queueCode && r.queueCode && r.queueCode.toUpperCase() === String(alertObj.queueCode).toUpperCase())
+          || (alertObj.rowId && r.id === alertObj.rowId);
+      });
+      return Boolean(rec && String(rec.salesName || '').trim().toLowerCase() === mySales);
+    }
+
+    function getAccessibleUnreadChatAlerts() {
+      const map = window.__unreadProjectChats || {};
+      return Object.values(map)
+        .filter(function(a) { return a && (Number(a.unreadCount || 0) > 0) && isAlertAccessibleForCurrentUser(a); })
+        .sort(function(a, b) { return Number(b.lastAtMs || 0) - Number(a.lastAtMs || 0); });
+    }
+
+    function getUnreadAlertForProject(queueCodeOrRowId) {
+      const key = getProjectChatKey(queueCodeOrRowId, queueCodeOrRowId);
+      if (!key) return null;
+      const map = window.__unreadProjectChats || {};
+      return map[key] || null;
+    }
+
+    function markProjectChatAsRead(queueCodeOrRowId, fallbackRowId) {
+      const map = window.__unreadProjectChats || {};
+      const k1 = getProjectChatKey(queueCodeOrRowId, fallbackRowId);
+      const k2 = getProjectChatKey(fallbackRowId, queueCodeOrRowId);
+      let changed = false;
+      if (k1 && map[k1]) { delete map[k1]; changed = true; }
+      if (k2 && map[k2]) { delete map[k2]; changed = true; }
+      if (changed) saveUnreadProjectChatAlerts();
+      renderStickyChatProyekButton();
+    }
+
+    function renderStickyChatProyekButton() {
+      const btn = document.getElementById('stickyChatProyekBtn');
+      const badge = document.getElementById('stickyChatRedBadge');
+      if (!btn || !badge) return;
+
+      const alerts = getAccessibleUnreadChatAlerts();
+      const totalUnread = alerts.reduce(function(sum, a) {
+        return sum + Math.max(1, Number(a.unreadCount || 1));
+      }, 0);
+
+      if (totalUnread > 0) {
+        btn.classList.add('has-unread-chat');
+        badge.style.display = 'inline-flex';
+        badge.textContent = totalUnread > 99 ? '99+' : String(totalUnread);
+        const topA = alerts[0];
+        btn.title = `Chat Masuk: ${topA.projectName || '-'} (${topA.queueCode || '-'}) dari ${topA.senderRoleLabel || 'Tim'}: ${topA.senderName || '-'}`;
+      } else {
+        btn.classList.remove('has-unread-chat');
+        badge.style.display = 'none';
+        badge.textContent = '0';
+        btn.title = 'Buka Chat Proyek (Sales • Estimator • Admin Kontrak)';
+      }
+    }
+
+    function registerIncomingProjectChatAlert(rawInfo, opts) {
+      if (!rawInfo || typeof rawInfo !== 'object') return;
+      const matchedRec = (Array.isArray(projectDatabase) ? projectDatabase : []).find(function(r) {
+        const rq = String(r.queueCode || '').trim().toUpperCase();
+        const iq = String(rawInfo.queueCode || '').trim().toUpperCase();
+        return (iq && iq !== '-' && rq === iq) || (rawInfo.rowId && r.id === rawInfo.rowId) || (rawInfo.recordId && r.id === rawInfo.recordId);
+      }) || null;
+
+      const queueCode = String((matchedRec && matchedRec.queueCode) || rawInfo.queueCode || '-').trim();
+      const rowId = String((matchedRec && matchedRec.id) || rawInfo.rowId || rawInfo.recordId || queueCode).trim();
+      const key = getProjectChatKey(queueCode, rowId);
+      if (!key) return;
+
+      const senderInfo = parseSenderInfoFromChatNotif(rawInfo, matchedRec);
+      const alertEventId = String(rawInfo.id || rawInfo.msgId || rawInfo.clientEventId || ('ALT-' + Date.now()));
+      const projectName = String((matchedRec && matchedRec.projectName) || rawInfo.projectName || 'Proyek').trim();
+      const customerName = String((matchedRec && matchedRec.customerName) || rawInfo.customerName || '-').trim();
+      const salesName = String((matchedRec && matchedRec.salesName) || rawInfo.salesName || '').trim() || (senderInfo.senderRoleLabel === 'Sales' ? senderInfo.senderName : '-');
+      const estimatorName = String((matchedRec && matchedRec.estimatorName) || rawInfo.estimatorName || '').trim() || (senderInfo.senderRoleLabel === 'Estimator' ? senderInfo.senderName : '-');
+      const lastAtMs = Number(rawInfo.createdAtMs || rawInfo.lastAtMs || Date.now());
+      const lastText = String(rawInfo.lastText || rawInfo.text || rawInfo.message || '-');
+
+      // Cek apakah jendela Chat Proyek untuk antrian ini sedang terbuka & aktif dilihat
+      const modalEl = document.getElementById('modalNotesHistory');
+      const openRowVal = document.getElementById('notesHistoryRowId')?.value || '';
+      const openRec = matchedRec || projectDatabase.find(function(r) { return r.id === openRowVal || r.queueCode === openRowVal; });
+      const isViewingThisProject = Boolean(
+        modalEl && modalEl.classList.contains('open') && !document.hidden &&
+        (openRowVal === rowId || openRowVal === queueCode || (openRec && getProjectChatKey(openRec.queueCode, openRec.id) === key))
+      );
+
+      if (isViewingThisProject) {
+        if (matchedRec) {
+          renderNotesHistoryModalTimeline(matchedRec);
+          renderNotesHistoryTopBanner(matchedRec, {
+            senderName: senderInfo.senderName,
+            senderRoleLabel: senderInfo.senderRoleLabel,
+            lastText: lastText,
+            timestamp: rawInfo.timestamp || formatLiveDateTimeSpaced(new Date(lastAtMs))
+          }, true);
+        }
+        return;
+      }
+
+      const map = window.__unreadProjectChats || {};
+      const prev = map[key];
+      if (prev && prev.lastAlertEventId === alertEventId) {
+        return;
+      }
+
+      map[key] = {
+        key: key,
+        queueCode: queueCode,
+        rowId: rowId,
+        projectName: projectName,
+        customerName: customerName,
+        salesName: salesName,
+        estimatorName: estimatorName,
+        senderName: senderInfo.senderName,
+        senderRoleLabel: senderInfo.senderRoleLabel,
+        lastText: lastText,
+        timestamp: rawInfo.timestamp || formatLiveDateTimeSpaced(new Date(lastAtMs)),
+        lastAtMs: lastAtMs,
+        lastAlertEventId: alertEventId,
+        unreadCount: (prev ? Number(prev.unreadCount || 0) : 0) + 1
+      };
+      window.__unreadProjectChats = map;
+      saveUnreadProjectChatAlerts();
+      renderStickyChatProyekButton();
+    }
+
+    function renderNotesHistoryQuickSwitchBar(currentItem) {
+      const barEl = document.getElementById('notesHistoryQuickSwitchBar');
+      if (!barEl) return;
+
+      const curKey = currentItem ? getProjectChatKey(currentItem.queueCode, currentItem.id) : '';
+      const unreadList = getAccessibleUnreadChatAlerts();
+      const accessible = getAccessibleProjectRecords().slice().sort(function(a, b) {
+        const aChats = getUnifiedChatForRecord(a);
+        const bChats = getUnifiedChatForRecord(b);
+        const aMax = aChats.length ? Number(aChats[aChats.length - 1].createdAtMs || 0) : 0;
+        const bMax = bChats.length ? Number(bChats[bChats.length - 1].createdAtMs || 0) : 0;
+        return bMax - aMax;
+      });
+
+      const itemsToShow = [];
+      const seenKeys = new Set();
+      unreadList.forEach(function(u) {
+        if (u && u.key && !seenKeys.has(u.key)) {
+          seenKeys.add(u.key);
+          itemsToShow.push({ key: u.key, queueCode: u.queueCode, projectName: u.projectName, unread: u.unreadCount });
+        }
+      });
+      accessible.forEach(function(r) {
+        const k = getProjectChatKey(r.queueCode, r.id);
+        if (!k || seenKeys.has(k)) return;
+        const hasChat = getUnifiedChatForRecord(r).length > 0 || k === curKey;
+        if (!hasChat && itemsToShow.length >= 6) return;
+        seenKeys.add(k);
+        const uObj = getUnreadAlertForProject(k);
+        itemsToShow.push({ key: k, queueCode: r.queueCode || '-', projectName: r.projectName || '-', unread: uObj ? uObj.unreadCount : 0 });
+      });
+
+      if (itemsToShow.length <= 1) {
+        barEl.style.display = 'none';
+        barEl.innerHTML = '';
+        return;
+      }
+
+      barEl.style.display = 'flex';
+      barEl.innerHTML = itemsToShow.slice(0, 8).map(function(it) {
+        const isActive = it.key === curKey;
+        const unreadBadge = it.unread > 0 ? `<span class="quick-chat-pill-dot">${it.unread}</span>` : '';
+        return `<button type="button" class="quick-chat-switch-pill${isActive ? ' active' : ''}${it.unread > 0 ? ' has-unread' : ''}" onclick="openNotesHistoryModal('${escapeHtml(it.queueCode || it.key)}', 'chat', { fromQuickSwitch: true })" title="${escapeHtml(it.projectName)}">${unreadBadge}<span>${escapeHtml(it.queueCode)} • ${escapeHtml(it.projectName)}</span></button>`;
+      }).join('');
+    }
+
+    function renderNotesHistoryTopBanner(item, alertOverride, isUnreadOpen) {
+      const bannerEl = document.getElementById('notesHistoryChatTopAlertBanner');
+      if (!bannerEl || !item) return;
+
+      const chatList = getUnifiedChatForRecord(item);
+      const lastEntry = chatList.length > 0 ? chatList[chatList.length - 1] : null;
+      let senderName = (alertOverride && alertOverride.senderName) ? alertOverride.senderName : (lastEntry ? (lastEntry.author || '-') : '-');
+      let senderRoleLabel = (alertOverride && alertOverride.senderRoleLabel)
+        ? alertOverride.senderRoleLabel
+        : (lastEntry ? (lastEntry.roleLabel || getChatRoleMeta(lastEntry.role).roleLabel) : '');
+
+      const roleLow = String(senderRoleLabel || '').toLowerCase();
+      let rolePillCls = 'sender-pill-sales';
+      if (roleLow.includes('estimator') || roleLow.includes('admin') && !roleLow.includes('kontrak')) rolePillCls = 'sender-pill-estimator';
+      else if (roleLow.includes('kontrak') || roleLow.includes('contract')) rolePillCls = 'sender-pill-contract';
+
+      const statusFlagHtml = isUnreadOpen
+        ? `<span class="chat-top-status-tag incoming">🔴 CHAT MASUK BARU</span>`
+        : `<span class="chat-top-status-tag active">💬 CHAT PROYEK</span>`;
+
+      const senderBadgeHtml = (senderName && senderName !== '-')
+        ? `<span class="chat-top-sender-pill ${rolePillCls}">👤 ${escapeHtml(senderRoleLabel || 'Tim')}: ${escapeHtml(senderName)}</span>`
+        : `<span class="chat-top-sender-pill sender-pill-neutral">Belum ada pengirim chat</span>`;
+
+      bannerEl.innerHTML = `
+        <div class="chat-top-banner-row">
+          ${statusFlagHtml}
+          <span class="chat-top-queue-pill">${escapeHtml(item.queueCode || '-')}</span>
+          ${senderBadgeHtml}
+        </div>
+        <div class="chat-top-project-line">
+          <strong>${escapeHtml(item.projectName || 'Nama Proyek')}</strong>
+          <span style="color:#475569; font-weight:600;"> • ${escapeHtml(item.customerName || '-')}</span>
+        </div>
+        <div class="chat-top-team-line">
+          <span>Sales: <strong>${escapeHtml(item.salesName || '-')}</strong></span>
+          <span>• Estimator: <strong>${escapeHtml(item.estimatorName && item.estimatorName !== '(Belum dipilih)' ? item.estimatorName : '-')}</strong></span>
+        </div>
+      `;
+    }
+
+    function handleStickyChatProyekClick() {
+      const modalEl = document.getElementById('modalNotesHistory');
+      const unreadAlerts = getAccessibleUnreadChatAlerts();
+      if (modalEl && modalEl.classList.contains('open')) {
+        const openRowVal = document.getElementById('notesHistoryRowId')?.value || '';
+        const openKey = getProjectChatKey(openRowVal, openRowVal);
+        if (unreadAlerts.length > 0 && unreadAlerts[0].key !== openKey) {
+          openNotesHistoryModal(unreadAlerts[0].queueCode || unreadAlerts[0].rowId, 'chat', {
+            incomingAlert: unreadAlerts[0],
+            isUnreadAlertOpen: true,
+            triggeredFromSticky: true
+          });
+          return;
+        }
+        closeModal('modalNotesHistory');
+        return;
+      }
+
+      if (unreadAlerts.length > 0) {
+        const topAlert = unreadAlerts[0];
+        openNotesHistoryModal(topAlert.queueCode || topAlert.rowId, 'chat', {
+          incomingAlert: topAlert,
+          isUnreadAlertOpen: true,
+          triggeredFromSticky: true
+        });
+        return;
+      }
+
+      const accessible = getAccessibleProjectRecords();
+      if (accessible.length === 0) {
+        if (typeof showSpreadsheetSyncToast === 'function') {
+          showSpreadsheetSyncToast('Belum ada proyek pada daftar untuk membuka Chat Proyek.');
+        }
+        return;
+      }
+
+      const sorted = accessible.slice().sort(function(a, b) {
+        const ac = getUnifiedChatForRecord(a);
+        const bc = getUnifiedChatForRecord(b);
+        const at = ac.length ? Number(ac[ac.length - 1].createdAtMs || 0) : 0;
+        const bt = bc.length ? Number(bc[bc.length - 1].createdAtMs || 0) : 0;
+        return bt - at;
+      });
+      const targetRec = sorted[0];
+      const ctxRole = currentUser ? (currentUser.role === 'sales' ? 'sales' : (currentUser.role === 'contract' ? 'contract' : 'estimator')) : 'sales';
+      openNotesHistoryModal(targetRec.id || targetRec.queueCode, ctxRole, { triggeredFromSticky: true });
+    }
+
+    function openNotesHistoryModal(rowId, type, opts) {
+      const options = opts || {};
+      const normKey = String(rowId || '').trim().toUpperCase();
+      let item = projectDatabase.find(x => x.id === rowId || x.queueCode === rowId || (x.queueCode && x.queueCode.toUpperCase() === normKey));
+      if (!item && options.incomingAlert) {
+        item = {
+          id: options.incomingAlert.rowId || options.incomingAlert.queueCode || rowId,
+          queueCode: options.incomingAlert.queueCode || rowId || '-',
+          customerName: options.incomingAlert.customerName || '-',
+          projectName: options.incomingAlert.projectName || 'Proyek',
+          salesName: options.incomingAlert.salesName || '-',
+          estimatorName: options.incomingAlert.estimatorName || '-',
+          unifiedChatHistory: [{
+            id: options.incomingAlert.lastAlertEventId || ('TMP-' + Date.now()),
+            createdAtMs: options.incomingAlert.lastAtMs || Date.now(),
+            timestamp: options.incomingAlert.timestamp || formatLiveDateTimeSpaced(new Date()),
+            author: options.incomingAlert.senderName || '-',
+            role: getChatRoleMeta(options.incomingAlert.senderRoleLabel).role,
+            roleLabel: options.incomingAlert.senderRoleLabel || 'Tim Proyek',
+            text: options.incomingAlert.lastText || '-'
+          }]
+        };
+      }
       if (!item) {
         alert('Simpan data formulir terlebih dahulu untuk membuka History Chat & Catatan.');
         return;
       }
+
+      const pendingUnreadAlert = options.incomingAlert || getUnreadAlertForProject(item.queueCode || item.id);
+      const isUnreadOpen = Boolean(options.isUnreadAlertOpen || pendingUnreadAlert);
+
       const titleEl = document.getElementById('notesHistoryModalTitle');
       const metaEl = document.getElementById('notesHistoryProjectMeta');
       const rowIdInput = document.getElementById('notesHistoryRowId');
@@ -10405,10 +11085,10 @@
       if (titleEl) {
         titleEl.textContent = (type === 'estimator')
           ? 'History Chat & Catatan Desain Estimator (Terhubung)'
-          : (type === 'contract' ? 'History Chat & Catatan Penawaran (Terhubung)' : 'History Chat & Catatan Dari Sales (Terhubung)');
+          : (type === 'contract' ? 'History Chat & Catatan Penawaran (Terhubung)' : 'History Chat & Chat Proyek Terhubung');
       }
       if (metaEl) {
-        metaEl.textContent = `${item.queueCode || '-'} • ${item.customerName || '-'} — ${item.projectName || '-'} (Sales: ${item.salesName || '-'}${item.estimatorName ? ' | Estimator: ' + item.estimatorName : ''})`;
+        metaEl.textContent = `${item.queueCode || '-'} • ${item.customerName || '-'} — ${item.projectName || '-'}`;
       }
       if (senderBadge) {
         if (currentUser) {
@@ -10419,7 +11099,10 @@
         }
       }
 
+      renderNotesHistoryTopBanner(item, pendingUnreadAlert, isUnreadOpen);
       renderNotesHistoryModalTimeline(item);
+      markProjectChatAsRead(item.queueCode || item.id, item.id);
+      renderNotesHistoryQuickSwitchBar(item);
       openModal('modalNotesHistory');
     }
 
@@ -10521,8 +11204,23 @@
       item._dirtyOnline = true;
       item._syncedToSheet = false;
 
+      if (window.__knownChatMsgIds && typeof window.__knownChatMsgIds.add === 'function') {
+        window.__knownChatMsgIds.add(String(msgId));
+      }
+      if (typeof markProjectChatAsRead === 'function') {
+        markProjectChatAsRead(item.queueCode || item.id);
+      }
+
       saveDatabase();
       renderNotesHistoryModalTimeline(item);
+      if (typeof renderNotesHistoryTopBanner === 'function') {
+        renderNotesHistoryTopBanner(item, {
+          senderName: authorName,
+          senderRoleLabel: roleMeta.roleLabel,
+          lastText: txt,
+          timestamp: newChatMsg.timestamp
+        }, false);
+      }
       if (inputEl) {
         inputEl.value = '';
         inputEl.focus();
@@ -12044,12 +12742,19 @@
       const modal = document.getElementById(id);
       if (modal) {
         modal.classList.add('open');
+        if (id === 'modalNotesHistory') {
+          document.body.classList.add('chat-drawer-open');
+        }
         const body = modal.querySelector('.modal-body');
         if (body) body.scrollTop = 0;
       }
     }
     function closeModal(id) {
-      document.getElementById(id).classList.remove('open');
+      const modal = document.getElementById(id);
+      if (modal) modal.classList.remove('open');
+      if (id === 'modalNotesHistory') {
+        document.body.classList.remove('chat-drawer-open');
+      }
     }
 
     // ==========================================================================
@@ -14542,14 +15247,18 @@
 
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        document.querySelectorAll('.modal-backdrop.open').forEach(m => m.classList.remove('open'));
+        document.querySelectorAll('.modal-backdrop.open').forEach(m => {
+          if (typeof closeModal === 'function' && m.id) closeModal(m.id);
+          else m.classList.remove('open');
+        });
       }
     });
 
     document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
       backdrop.addEventListener('click', (e) => {
         if (e.target === backdrop) {
-          backdrop.classList.remove('open');
+          if (typeof closeModal === 'function' && backdrop.id) closeModal(backdrop.id);
+          else backdrop.classList.remove('open');
         }
       });
     });
@@ -14927,7 +15636,8 @@
       const muted = isNotificationSoundMuted();
       const opts = {
         body: body,
-        icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='28' fill='%2320409a'/%3E%3Cpath d='M64 26c-16 0-28 12-28 28v22l-8 10v6h72v-6l-8-10V54c0-16-12-28-28-28zm0 78c6.6 0 12-5.4 12-12H52c0 6.6 5.4 12 12 12z' fill='%23ffffff'/%3E%3C/svg%3E",
+        icon: 'app-icon-192.png',
+        badge: 'app-icon-192.png',
         tag: notif.id || ('NTF-' + Date.now()),
         renotify: true,
         silent: Boolean(muted),
@@ -15347,6 +16057,10 @@
       markRealtimeNotificationSeen(notif.id);
       addNotificationToFeed(notif);
 
+      if (notif.eventType === 'project_chat' && !options.fromLocalAction && typeof registerIncomingProjectChatAlert === 'function') {
+        registerIncomingProjectChatAlert(notif, { isNewAlert: true });
+      }
+
       if (alreadySeen && !options.forceShow) return;
 
       notifUnreadCount = (notifUnreadCount || 0) + 1;
@@ -15384,6 +16098,9 @@
 
         const isRecentLive = (nt.createdAtMs >= notifBaselineMs);
         if (!isSilentSeed && isRecentLive) {
+          if (nt.eventType === 'project_chat' && typeof registerIncomingProjectChatAlert === 'function') {
+            registerIncomingProjectChatAlert(nt, { isNewAlert: true });
+          }
           notifUnreadCount = (notifUnreadCount || 0) + 1;
           showRealtimePopupToast(nt);
           playNotificationSound(nt.eventType);
@@ -15427,6 +16144,9 @@
 
     function initRealtimeNotificationSystem() {
       loadSeenNotificationIds();
+      if (typeof seedKnownProjectChatIds === 'function') seedKnownProjectChatIds();
+      if (typeof loadUnreadProjectChatAlerts === 'function') loadUnreadProjectChatAlerts();
+      if (typeof renderStickyChatProyekButton === 'function') renderStickyChatProyekButton();
       let savedBaseline = 0;
       try { savedBaseline = Number(localStorage.getItem(NOTIF_BASELINE_STORAGE_KEY) || '0') || 0; } catch (e) {}
       // Toleransi clock-skew & jeda singkat saat tab ditutup agar notifikasi terbaru tidak terlewat
@@ -15657,5 +16377,21 @@
       });
     });
   </script>
+
+  <!-- TOMBOL STICKY CHAT PROYEK (KANAN BAWAH) DENGAN TANDA MERAH CHAT MASUK -->
+  <button type="button"
+    id="stickyChatProyekBtn"
+    class="sticky-chat-proyek-btn"
+    onclick="handleStickyChatProyekClick()"
+    title="Buka Chat Proyek (Sales • Estimator • Admin Kontrak)"
+    aria-label="Chat Proyek">
+    <span class="sticky-chat-icon-wrap" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+    </span>
+    <span class="sticky-chat-label">Chat Proyek</span>
+    <span id="stickyChatRedBadge" class="sticky-chat-red-badge" style="display: none;">0</span>
+  </button>
 </body>
 </html>

@@ -1,8 +1,8 @@
-// Service Worker Notifikasi Latar Belakang & Tab Tertutup (Komputer & Handphone)
+// Service Worker Notifikasi Latar Belakang & Tab Tertutup (Komputer & Handphone) — v3 Logo A Estimator
 // Mendukung Web Push (VAPID), Periodic Background Sync, Background Sync, dan OS Sound/Vibration
 const SW_DB_NAME = 'EstimatorSwNotifStore_v1';
 const SW_STORE_NAME = 'kv';
-const NOTIF_ICON_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='28' fill='%2320409a'/%3E%3Cpath d='M64 26c-16 0-28 12-28 28v22l-8 10v6h72v-6l-8-10V54c0-16-12-28-28-28zm0 78c6.6 0 12-5.4 12-12H52c0 6.6 5.4 12 12 12z' fill='%23ffffff'/%3E%3Ccircle cx='96' cy='32' r='16' fill='%23ef4444'/%3E%3C/svg%3E";
+const NOTIF_ICON_URL = 'app-icon-192.png';
 
 function openSwDb() {
   return new Promise(function(resolve, reject) {
@@ -85,8 +85,8 @@ async function displayBackgroundOsNotification(notif, originClients) {
 
   const opts = {
     body: body,
-    icon: NOTIF_ICON_SVG,
-    badge: NOTIF_ICON_SVG,
+    icon: NOTIF_ICON_URL,
+    badge: NOTIF_ICON_URL,
     tag: String(notif.id || ('NTF-' + Date.now())),
     renotify: true,
     silent: Boolean(soundMuted),
