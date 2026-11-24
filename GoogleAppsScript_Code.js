@@ -386,6 +386,8 @@ function mergeNotesHistoryGas(existingRaw, incomingRaw) {
     if (roleLabel) obj.roleLabel = roleLabel;
     if (sourceMenu) obj.sourceMenu = sourceMenu;
     if (createdAtMs > 0) obj.createdAtMs = createdAtMs;
+    if (item.replyTo && typeof item.replyTo === "object") obj.replyTo = item.replyTo;
+    if (item.media && typeof item.media === "object") obj.media = item.media;
     merged.push(obj);
   }
   merged.sort(function(a, b) {
@@ -910,7 +912,11 @@ function doPost(e) {
       var chatQ = normalizeQueueCodeTo2027Gas(data.queueCode || data.noAntrian || "", data.salesName || "");
       var chatRowIdx = findRowIndexByQueue(sheetChat, chatQ);
       var msgIn = (data.chatMessage && typeof data.chatMessage === "object") ? data.chatMessage : {};
+      var chatMediaIn = (msgIn.media && typeof msgIn.media === "object") ? msgIn.media : null;
       var chatTxt = (msgIn.text || data.text || "").toString().trim();
+      if (!chatTxt && chatMediaIn) {
+        chatTxt = (chatMediaIn.type === "video") ? "🎥 Video" : "📷 Foto";
+      }
       if (!chatTxt) {
         return createJsonResponse({ status: "error", message: "Pesan chat kosong." });
       }
@@ -927,6 +933,23 @@ function doPost(e) {
         sourceMenu: (msgIn.sourceMenu || "").toString().trim(),
         text: chatTxt
       };
+      if (msgIn.replyTo && typeof msgIn.replyTo === "object") {
+        normalizedChatMsg.replyTo = msgIn.replyTo;
+      }
+      if (chatMediaIn) {
+        var cleanMediaGas = {
+          mediaId: (chatMediaIn.mediaId || "").toString(),
+          type: (chatMediaIn.type || "image").toString(),
+          name: (chatMediaIn.name || "chat_media").toString(),
+          mimeType: (chatMediaIn.mimeType || "application/octet-stream").toString(),
+          size: Number(chatMediaIn.size || 0)
+        };
+        if (chatMediaIn.url && chatMediaIn.url.toString().length <= 2000) cleanMediaGas.url = chatMediaIn.url.toString();
+        if (chatMediaIn.thumbUrl && chatMediaIn.thumbUrl.toString().length <= 12000) cleanMediaGas.thumbUrl = chatMediaIn.thumbUrl.toString();
+        var rawGasData = (chatMediaIn.dataUrl || chatMediaIn.base64 || "").toString();
+        if (rawGasData && rawGasData.length <= 12000) cleanMediaGas.dataUrl = rawGasData;
+        normalizedChatMsg.media = cleanMediaGas;
+      }
       var mergedChat = [normalizedChatMsg];
       var cCust = (data.customerName || "-").toString();
       var cProj = (data.projectName || "-").toString();
