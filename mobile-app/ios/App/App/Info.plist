@@ -67,7 +67,9 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Aplikasi membutuhkan akses kamera untuk memotret dokumen atau foto profil proyek.</string>
+	<string>Aplikasi membutuhkan akses kamera untuk memotret dokumen, foto chat, atau video proyek.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Aplikasi membutuhkan akses mikrofon saat merekam video pada chat proyek.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Aplikasi membutuhkan akses galeri untuk memilih gambar desain dan foto profil.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

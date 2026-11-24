@@ -604,12 +604,42 @@
   // Android Hardware Back Button state machine
   window.__estimatorHandleAndroidBack = function () {
     try {
-      const tautkanDrawer = document.getElementById('chatTautkanDrawer');
       const chatModal = document.getElementById('modalNotesHistory');
-      if (chatModal && chatModal.classList.contains('open') && tautkanDrawer && tautkanDrawer.style.display !== 'none') {
-        if (typeof window.toggleChatTautkanDrawer === 'function') {
-          window.toggleChatTautkanDrawer(false);
-          return 'handled';
+      if (chatModal && chatModal.classList.contains('open')) {
+        const mediaOverlay = document.getElementById('chatMediaPreviewOverlay');
+        if (mediaOverlay && mediaOverlay.style.display !== 'none' && mediaOverlay.style.display !== '') {
+          if (typeof window.closeChatMediaViewer === 'function') {
+            window.closeChatMediaViewer();
+            return 'handled';
+          }
+        }
+        const actionBar = document.getElementById('chatActionHeaderBar');
+        if (actionBar && actionBar.style.display !== 'none' && actionBar.style.display !== '') {
+          if (typeof window.clearChatLongPressSelection === 'function') {
+            window.clearChatLongPressSelection();
+            return 'handled';
+          }
+        }
+        const webcamBox = document.getElementById('chatWebcamBox');
+        if (webcamBox && webcamBox.style.display !== 'none' && webcamBox.style.display !== '') {
+          if (typeof window.closeChatWebcamCapture === 'function') {
+            window.closeChatWebcamCapture();
+            return 'handled';
+          }
+        }
+        const camPopover = document.getElementById('chatCameraMenuPopover');
+        if (camPopover && camPopover.style.display !== 'none' && camPopover.style.display !== '') {
+          if (typeof window.closeChatCameraMenu === 'function') {
+            window.closeChatCameraMenu();
+            return 'handled';
+          }
+        }
+        const tautkanDrawer = document.getElementById('chatTautkanDrawer');
+        if (tautkanDrawer && tautkanDrawer.style.display !== 'none') {
+          if (typeof window.toggleChatTautkanDrawer === 'function') {
+            window.toggleChatTautkanDrawer(false);
+            return 'handled';
+          }
         }
       }
 
@@ -796,25 +826,10 @@
       headerWrap.insertBefore(refreshBtn, headerWrap.firstChild);
     }
 
-    // 4. Refresh button inside Login Screen so updates work before login too
-    const loginCard = document.querySelector('#loginScreen .login-single-wrapper');
-    if (loginCard && !document.getElementById('btnLoginNativeRefresh')) {
-      const wrap = document.createElement('div');
-      wrap.className = 'native-login-refresh-wrap';
-      const loginRefreshBtn = document.createElement('button');
-      loginRefreshBtn.type = 'button';
-      loginRefreshBtn.id = 'btnLoginNativeRefresh';
-      loginRefreshBtn.className = 'btn-notif-pill btn-native-refresh';
-      loginRefreshBtn.title = 'Cek pembaruan HTML terbaru & muat ulang';
-      loginRefreshBtn.innerHTML =
-        '<span class="native-refresh-icon">🔄</span>' +
-        '<span class="native-refresh-label">Refresh & Cek Update HTML</span>' +
-        '<span class="native-refresh-dot" aria-hidden="true"></span>';
-      loginRefreshBtn.addEventListener('click', function () {
-        window.__estimatorRefreshApp();
-      });
-      wrap.appendChild(loginRefreshBtn);
-      loginCard.appendChild(wrap);
+    // 4. Keep login refresh trigger hidden from UI while background/pull-to-refresh/F5 remain active
+    const existingLoginRefresh = document.getElementById('btnLoginNativeRefresh');
+    if (existingLoginRefresh && existingLoginRefresh.parentElement) {
+      existingLoginRefresh.parentElement.style.display = 'none';
     }
 
     // 5. Desktop F5 / Ctrl+R shortcut fallback at DOM level

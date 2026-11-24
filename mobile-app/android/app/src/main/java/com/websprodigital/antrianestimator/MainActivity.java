@@ -280,38 +280,92 @@ public class MainActivity extends BridgeActivity {
             pendingCameraImageUri = null;
 
             String[] acceptTypes = fileChooserParams != null ? fileChooserParams.getAcceptTypes() : new String[0];
-            boolean onlyImages = true;
+            boolean captureEnabled = fileChooserParams != null && fileChooserParams.isCaptureEnabled();
+            boolean hasImage = false;
+            boolean hasVideo = false;
+            boolean hasOther = false;
             if (acceptTypes != null && acceptTypes.length > 0) {
-                for (String t : acceptTypes) {
-                    if (t != null && !t.trim().isEmpty() && !t.trim().startsWith("image/")) {
-                        onlyImages = false;
-                        break;
+                for (String rawT : acceptTypes) {
+                    if (rawT == null) continue;
+                    for (String part : rawT.split(",")) {
+                        String t = part.trim().toLowerCase(Locale.US);
+                        if (t.isEmpty()) continue;
+                        if (t.startsWith("image/") || ".jpg".equals(t) || ".jpeg".equals(t) || ".png".equals(t)) {
+                            hasImage = true;
+                        } else if (t.startsWith("video/") || ".mp4".equals(t) || ".webm".equals(t) || ".mov".equals(t)) {
+                            hasVideo = true;
+                        } else {
+                            hasOther = true;
+                        }
                     }
                 }
             } else {
-                onlyImages = false;
+                hasOther = true;
+            }
+
+            if (captureEnabled && hasVideo && !hasImage && !hasOther) {
+                try {
+                    Intent vidIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+                    vidIntent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 45);
+                    if (vidIntent.resolveActivity(getPackageManager()) != null) {
+                        customFilePickerLauncher.launch(vidIntent);
+                        return true;
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            if (captureEnabled && hasImage && !hasVideo && !hasOther) {
+                try {
+                    Intent camIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    if (camIntent.resolveActivity(getPackageManager()) != null) {
+                        pendingCameraImageUri = createCameraTempUri();
+                        camIntent.putExtra(MediaStore.EXTRA_OUTPUT, pendingCameraImageUri);
+                        camIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        customFilePickerLauncher.launch(camIntent);
+                        return true;
+                    }
+                } catch (Exception ignored) {}
             }
 
             Intent contentIntent = new Intent(Intent.ACTION_GET_CONTENT);
             contentIntent.addCategory(Intent.CATEGORY_OPENABLE);
-            // Allow all file types when CAD/archive extensions (.dwg, .dxf, .rar, .pdf) are accepted
-            contentIntent.setType(onlyImages ? "image/*" : "*/*");
+            if (!hasOther && hasImage && !hasVideo) {
+                contentIntent.setType("image/*");
+            } else if (!hasOther && hasVideo && !hasImage) {
+                contentIntent.setType("video/*");
+            } else if (!hasOther && hasImage && hasVideo) {
+                contentIntent.setType("*/*");
+                contentIntent.putExtra(Intent.EXTRA_MIME_TYPES, new String[] { "image/*", "video/*" });
+            } else {
+                contentIntent.setType("*/*");
+            }
             if (fileChooserParams != null && fileChooserParams.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE) {
                 contentIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
             }
 
             List<Intent> extraIntents = new ArrayList<>();
-            try {
-                Intent camIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                if (camIntent.resolveActivity(getPackageManager()) != null) {
-                    pendingCameraImageUri = createCameraTempUri();
-                    camIntent.putExtra(MediaStore.EXTRA_OUTPUT, pendingCameraImageUri);
-                    camIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    extraIntents.add(camIntent);
-                }
-            } catch (Exception ignored) {}
+            if (hasImage || hasOther) {
+                try {
+                    Intent camIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    if (camIntent.resolveActivity(getPackageManager()) != null) {
+                        pendingCameraImageUri = createCameraTempUri();
+                        camIntent.putExtra(MediaStore.EXTRA_OUTPUT, pendingCameraImageUri);
+                        camIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        extraIntents.add(camIntent);
+                    }
+                } catch (Exception ignored) {}
+            }
+            if (hasVideo) {
+                try {
+                    Intent vidIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+                    vidIntent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 45);
+                    if (vidIntent.resolveActivity(getPackageManager()) != null) {
+                        extraIntents.add(vidIntent);
+                    }
+                } catch (Exception ignored) {}
+            }
 
-            Intent chooser = Intent.createChooser(contentIntent, "Pilih Berkas / Foto Proyek");
+            Intent chooser = Intent.createChooser(contentIntent, hasVideo ? "Pilih / Rekam Foto & Video" : "Pilih Berkas / Foto Proyek");
             if (!extraIntents.isEmpty()) {
                 chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, extraIntents.toArray(new Intent[0]));
             }
