@@ -330,8 +330,9 @@ function mergeNotesHistoryArrays($existingHist, $incomingHist) {
         $roleLabel = trim((string)($item['roleLabel'] ?? ''));
         $sourceMenu = trim((string)($item['sourceMenu'] ?? ''));
         $createdAtMs = intval($item['createdAtMs'] ?? 0);
+        $isEditNotif = !empty($item['isEditNotif']) || (preg_match('/Telah Melakukan Edit Data (Penawaran|Estimator|Sales)/i', $txt) === 1);
         $sig = $ts . '|' . $author . '|' . $txt;
-        if (($msgId !== '' && isset($seenIds[$msgId])) || isset($seenSigs[$sig])) continue;
+        if (($msgId !== '' && isset($seenIds[$msgId])) || (($msgId === '' || !$isEditNotif) && isset($seenSigs[$sig]))) continue;
         if ($msgId !== '') $seenIds[$msgId] = true;
         $seenSigs[$sig] = true;
         $entry = [
@@ -340,6 +341,7 @@ function mergeNotesHistoryArrays($existingHist, $incomingHist) {
             'text' => $txt
         ];
         if ($msgId !== '') $entry['id'] = $msgId;
+        if ($isEditNotif) $entry['isEditNotif'] = true;
         if ($role !== '') $entry['role'] = $role;
         if ($roleLabel !== '') $entry['roleLabel'] = $roleLabel;
         if ($sourceMenu !== '') $entry['sourceMenu'] = $sourceMenu;
@@ -1371,6 +1373,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'status' => $oldRec['status'] ?? ''
                 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
             );
+            $delActor = ($actorUsername !== '' && $actorUsername !== 'Sistem') ? $actorUsername : ($oldRec['salesName'] ?: 'Sales');
+            appendRealtimeNotification(
+                $store,
+                'sales_form_edit',
+                'Edit Perubahan (Hapus Data) Sales',
+                $delActor . ': Telah Melakukan Edit Data Sales — Hapus ' . $delCode . ' - ' . ($oldRec['customerName'] ?? '-') . ' (' . ($oldRec['projectName'] ?? '-') . ')',
+                $delActor,
+                $delCode,
+                $oldRec['customerName'] ?? '-',
+                $oldRec['projectName'] ?? '-',
+                $oldRec['status'] ?? 'Dihapus',
+                ''
+            );
             $shouldSave = true;
             return ['success' => true, 'status' => 'success', 'message' => 'Data antrian ' . $delCode . ' berhasil dihapus & diarsipkan.'];
         }, true);
@@ -1778,12 +1793,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $clientEventId
                 );
             } elseif ($notifyEventType === 'sales_form_edit' || ($updatedBy === 'sales' && $operation === 'updated')) {
+                $salesActor = ($actorUsername !== '' && $actorUsername !== 'Sistem') ? $actorUsername : ($record['salesName'] ?: 'Sales');
                 $createdNotif = appendRealtimeNotification(
                     $store,
                     'sales_form_edit',
                     'Edit Perubahan Data Gambar Sales',
-                    $record['salesName'] . ' mengedit di Edit Perubahan: ' . $record['queueCode'] . ' - ' . $record['customerName'] . ' (' . $record['projectName'] . ')',
-                    $record['salesName'] ?: $actorUsername,
+                    $salesActor . ': Telah Melakukan Edit Data Sales — ' . $record['queueCode'] . ' - ' . $record['customerName'] . ' (' . $record['projectName'] . ')',
+                    $salesActor,
                     $record['queueCode'],
                     $record['customerName'],
                     $record['projectName'],
@@ -1791,12 +1807,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $clientEventId
                 );
             } elseif ($notifyEventType === 'estimator_edit' || $updatedBy === 'estimator') {
-                $estActor = ($record['estimatorName'] && $record['estimatorName'] !== '(Belum dipilih)') ? $record['estimatorName'] : $actorUsername;
+                $estActor = ($actorUsername !== '' && $actorUsername !== 'Sistem') ? $actorUsername : (($record['estimatorName'] && $record['estimatorName'] !== '(Belum dipilih)') ? $record['estimatorName'] : 'Estimator');
                 $createdNotif = appendRealtimeNotification(
                     $store,
                     'estimator_edit',
                     'Pembaruan Kelola Estimasi Estimator',
-                    $estActor . ' mengedit Kelola Estimasi (' . $record['status'] . '): ' . $record['queueCode'] . ' - ' . $record['customerName'] . ' (' . $record['projectName'] . ')',
+                    $estActor . ': Telah Melakukan Edit Data Estimator (' . $record['status'] . ') — ' . $record['queueCode'] . ' - ' . $record['customerName'] . ' (' . $record['projectName'] . ')',
                     $estActor,
                     $record['queueCode'],
                     $record['customerName'],
@@ -1805,12 +1821,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $clientEventId
                 );
             } elseif ($notifyEventType === 'contract_edit' || $updatedBy === 'contract') {
-                $contractActor = trim((string)($data['actorUsername'] ?? '')) ?: 'Admin Kontrak';
+                $contractActor = ($actorUsername !== '' && $actorUsername !== 'Sistem') ? $actorUsername : 'Admin Kontrak';
                 $createdNotif = appendRealtimeNotification(
                     $store,
                     'contract_edit',
                     'Pembaruan Penawaran Admin Kontrak',
-                    $contractActor . ' memperbarui Admin Kontrak (' . $record['status'] . '): ' . $record['queueCode'] . ' - ' . $record['customerName'] . ' (' . $record['projectName'] . ')',
+                    $contractActor . ': Telah Melakukan Edit Data Penawaran (' . $record['status'] . ') — ' . $record['queueCode'] . ' - ' . $record['customerName'] . ' (' . $record['projectName'] . ')',
                     $contractActor,
                     $record['queueCode'],
                     $record['customerName'],
