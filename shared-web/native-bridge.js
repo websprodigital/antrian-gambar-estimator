@@ -607,6 +607,13 @@
     try {
       const chatModal = document.getElementById('modalNotesHistory');
       if (chatModal && chatModal.classList.contains('open')) {
+        const liveCamOverlay = document.getElementById('chatLiveCameraOverlay');
+        if (liveCamOverlay && (liveCamOverlay.classList.contains('open') || (liveCamOverlay.style.display && liveCamOverlay.style.display !== 'none'))) {
+          if (typeof window.closeChatLiveCamera === 'function') {
+            window.closeChatLiveCamera();
+            return 'handled';
+          }
+        }
         const mediaViewer = document.getElementById('chatMediaInlineViewer');
         if (mediaViewer && (mediaViewer.classList.contains('open') || (mediaViewer.style.display && mediaViewer.style.display !== 'none'))) {
           if (typeof window.closeChatMediaViewer === 'function') {

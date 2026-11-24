@@ -726,6 +726,14 @@ function createMainWindow() {
 
   // Handle permissions automatically for local app origin
   const ses = mainWindow.webContents.session;
+  ses.setPermissionCheckHandler(function (_webContents, permission) {
+    return (
+      permission === 'notifications' ||
+      permission === 'media' ||
+      permission === 'clipboard-read' ||
+      permission === 'clipboard-sanitized-write'
+    );
+  });
   ses.setPermissionRequestHandler(function (webContents, permission, callback) {
     if (
       permission === 'notifications' ||

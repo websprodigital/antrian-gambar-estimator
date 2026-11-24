@@ -1,15 +1,18 @@
 package com.websprodigital.antrianestimator;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Message;
 import android.provider.MediaStore;
 import android.webkit.DownloadListener;
+import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -19,6 +22,7 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
@@ -38,6 +42,8 @@ public class MainActivity extends BridgeActivity {
     private ValueCallback<Uri[]> pendingFileCallback;
     private Uri pendingCameraImageUri;
     private ActivityResultLauncher<Intent> customFilePickerLauncher;
+    private PermissionRequest pendingWebPermissionRequest;
+    private ActivityResultLauncher<String[]> mediaPermissionLauncher;
     private EstimatorAndroidBridge nativeBridge;
     private long lastBackPressAt = 0L;
     private long lastLiveCheckAt = 0L;
@@ -62,6 +68,32 @@ public class MainActivity extends BridgeActivity {
             }
             return route;
         });
+
+        mediaPermissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestMultiplePermissions(),
+            grants -> {
+                if (pendingWebPermissionRequest == null) {
+                    return;
+                }
+                final PermissionRequest req = pendingWebPermissionRequest;
+                pendingWebPermissionRequest = null;
+                boolean camOk = ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+                boolean micOk = ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
+                List<String> grantedResources = new ArrayList<>();
+                for (String res : req.getResources()) {
+                    if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(res) && camOk) {
+                        grantedResources.add(res);
+                    } else if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(res) && micOk) {
+                        grantedResources.add(res);
+                    }
+                }
+                if (!grantedResources.isEmpty()) {
+                    req.grant(grantedResources.toArray(new String[0]));
+                } else {
+                    req.deny();
+                }
+            }
+        );
 
         customFilePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -344,7 +376,8 @@ public class MainActivity extends BridgeActivity {
             }
 
             List<Intent> extraIntents = new ArrayList<>();
-            if (hasImage || hasOther) {
+            boolean allowExtraCameraIntents = captureEnabled || hasOther || !(hasImage && hasVideo);
+            if (allowExtraCameraIntents && (hasImage || hasOther)) {
                 try {
                     Intent camIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                     if (camIntent.resolveActivity(getPackageManager()) != null) {
@@ -355,7 +388,7 @@ public class MainActivity extends BridgeActivity {
                     }
                 } catch (Exception ignored) {}
             }
-            if (hasVideo) {
+            if (allowExtraCameraIntents && hasVideo) {
                 try {
                     Intent vidIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
                     vidIntent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 45);
@@ -365,7 +398,7 @@ public class MainActivity extends BridgeActivity {
                 } catch (Exception ignored) {}
             }
 
-            Intent chooser = Intent.createChooser(contentIntent, hasVideo ? "Pilih / Rekam Foto & Video" : "Pilih Berkas / Foto Proyek");
+            Intent chooser = Intent.createChooser(contentIntent, hasVideo ? "Pilih File / Dokumen Foto & Video" : "Pilih Berkas / Foto Proyek");
             if (!extraIntents.isEmpty()) {
                 chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, extraIntents.toArray(new Intent[0]));
             }
@@ -379,6 +412,48 @@ public class MainActivity extends BridgeActivity {
                 return false;
             }
             return true;
+        }
+
+        @Override
+        public void onPermissionRequest(final PermissionRequest request) {
+            if (request == null) return;
+            runOnUiThread(() -> {
+                String[] resources = request.getResources();
+                if (resources == null || resources.length == 0) {
+                    request.deny();
+                    return;
+                }
+                List<String> neededPerms = new ArrayList<>();
+                List<String> immediateGrants = new ArrayList<>();
+                for (String res : resources) {
+                    if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(res)) {
+                        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                            immediateGrants.add(res);
+                        } else if (!neededPerms.contains(Manifest.permission.CAMERA)) {
+                            neededPerms.add(Manifest.permission.CAMERA);
+                        }
+                    } else if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(res)) {
+                        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                            immediateGrants.add(res);
+                        } else if (!neededPerms.contains(Manifest.permission.RECORD_AUDIO)) {
+                            neededPerms.add(Manifest.permission.RECORD_AUDIO);
+                        }
+                    }
+                }
+                if (neededPerms.isEmpty()) {
+                    if (!immediateGrants.isEmpty()) {
+                        request.grant(immediateGrants.toArray(new String[0]));
+                    } else {
+                        super.onPermissionRequest(request);
+                    }
+                } else {
+                    if (pendingWebPermissionRequest != null) {
+                        try { pendingWebPermissionRequest.deny(); } catch (Exception ignored) {}
+                    }
+                    pendingWebPermissionRequest = request;
+                    mediaPermissionLauncher.launch(neededPerms.toArray(new String[0]));
+                }
+            });
         }
 
         @Override
