@@ -4,6 +4,11 @@ Repositori branch `apps` berisi source code aplikasi **Mobile (Android & iOS)** 
 
 ## Fitur Unggulan Aplikasi Native
 
+### 0. Live Update HTML & Script Tanpa Install Ulang (`v1.1.0+`)
+- **Edit `index.html` di branch `gh-pages` -> Langsung Update di Aplikasi**:
+  - Baik **Windows Desktop**, **Android**, maupun **iOS** otomatis mengecek pembaruan `index.html` saat aplikasi dibuka / kembali aktif dan saat pengguna menekan tombol **Refresh** (`🔄 Refresh` di header / layar login, tarik layar ke bawah di Mobile, `F5`/`Ctrl+R` di Windows, atau menu System Tray *Refresh & Cek Update HTML*).
+  - HTML terbaru disimpan ke cache internal aplikasi (dengan injeksi otomatis `native-bridge.js`) sehingga **mode Offline-First, sesi login, & notifikasi native tetap berjalan** tanpa pernah perlu install ulang `.apk` atau `.exe` untuk perubahan HTML/JavaScript/CSS.
+
 ### 1. Aplikasi Desktop Windows (`windows-app/`)
 - **Dua format siap pakai**:
   - **Windows Installer (`Setup.exe`)**: Membuat shortcut di Desktop & Start Menu, mendukung Uninstaller resmi.
@@ -13,7 +18,7 @@ Repositori branch `apps` berisi source code aplikasi **Mobile (Android & iOS)** 
 - **Unduhan & Google Drive/Sheets Otomatis**: Ekspor CSV dan unduh PDF/gambar otomatis tersimpan ke folder `Downloads`, sementara link Google Drive / Spreadsheet terbuka di browser default dengan akun Google yang sudah login.
 
 ### 2. Aplikasi Mobile Android & iOS (`mobile-app/`)
-- **Android `.apk` Siap Pasang + Project Xcode iOS**: Dibangun dengan Capacitor 8 dengan skema origin aman (`https://localhost/`).
+- **Android `.apk` Siap Pasang + Project Xcode iOS**: Dibangun dengan Capacitor 8 dengan skema origin aman (`https://localhost/`) dan *RouteProcessor* / *Router* lokal untuk hot-update `index.html`.
 - **Notifikasi Native Android + Suara MP3 + WorkManager Background**:
   - Menggunakan channel notifikasi prioritas tinggi lengkap dengan suara `notif_sound.mp3` dan getaran.
   - Didukung `WorkManager` (`NotificationPollWorker`) untuk mengecek notifikasi baru secara berkala di latar belakang.

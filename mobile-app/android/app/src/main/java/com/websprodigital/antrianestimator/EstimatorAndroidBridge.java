@@ -226,6 +226,27 @@ public class EstimatorAndroidBridge {
         }).start();
     }
 
+    @JavascriptInterface
+    public void checkLiveUpdate() {
+        if (activity instanceof MainActivity) {
+            ((MainActivity) activity).runLiveUpdateSync(true, false);
+        }
+    }
+
+    @JavascriptInterface
+    public void checkAndRefresh() {
+        if (activity instanceof MainActivity) {
+            ((MainActivity) activity).runLiveUpdateSync(true, true);
+        } else {
+            activity.runOnUiThread(() -> activity.recreate());
+        }
+    }
+
+    @JavascriptInterface
+    public String getLiveUpdateStatus() {
+        return LiveHtmlUpdater.getStatusJson(activity).toString();
+    }
+
     private String sanitizeFileName(String raw) {
         String cleaned = (raw == null || raw.trim().isEmpty()) ? "Dokumen_Estimator" : raw.trim();
         return cleaned.replaceAll("[<>:\"/\\\\|?*\\x00-\\x1f]", "_");

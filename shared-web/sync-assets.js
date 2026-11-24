@@ -33,12 +33,15 @@ function buildInjectedHtml(rawHtml) {
       return '<meta name="viewport" content="' + content + ', viewport-fit=cover">';
     }
   );
-  // Inject native-bridge.js right before </body>
+  // Inject native-bridge.js right before the closing </body>
   if (!html.includes('native-bridge.js')) {
-    html = html.replace(
-      /<\/body>/i,
-      '  <script src="native-bridge.js"></script>\n</body>'
-    );
+    const closeIdx = html.toLowerCase().lastIndexOf('</body>');
+    if (closeIdx !== -1) {
+      html =
+        html.slice(0, closeIdx) +
+        '  <script src="native-bridge.js"></script>\n' +
+        html.slice(closeIdx);
+    }
   }
   return html;
 }

@@ -7,15 +7,21 @@ const {
   ipcMain,
   shell,
   dialog,
-  nativeImage
+  nativeImage,
+  net
 } = require('electron');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const APP_ID = 'com.websprodigital.antrianestimator';
 const APP_TITLE = 'Antrian Gambar Estimator | Portal Operasional Proyek';
 const PREFERRED_PORT = 48271;
+const LIVE_HTML_PRIMARY_URL =
+  'https://raw.githubusercontent.com/websprodigital/antrian-gambar-estimator/gh-pages/index.html';
+const LIVE_HTML_FALLBACK_URL =
+  'https://websprodigital.github.io/antrian-gambar-estimator/index.html';
 
 app.setAppUserModelId(APP_ID);
 app.setName('Antrian Gambar Estimator');
@@ -33,6 +39,8 @@ let localBaseUrl = '';
 let isQuitting = false;
 let hasShownTrayHint = false;
 let unreadCount = 0;
+let inFlightSyncPromise = null;
+let lastAutoCheckAt = 0;
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -49,6 +57,236 @@ const MIME_TYPES = {
   '.wav': 'audio/wav',
   '.woff2': 'font/woff2'
 };
+
+function getLiveWebPaths() {
+  const liveWebDir = path.join(app.getPath('userData'), 'live-web');
+  const bundledWwwDir = path.join(__dirname, 'www');
+  return {
+    liveWebDir: liveWebDir,
+    liveIndexPath: path.join(liveWebDir, 'index.html'),
+    liveMetaPath: path.join(liveWebDir, 'meta.json'),
+    bundledWwwDir: bundledWwwDir,
+    bundledIndexPath: path.join(bundledWwwDir, 'index.html')
+  };
+}
+
+function sha256Text(text) {
+  return crypto.createHash('sha256').update(String(text || ''), 'utf8').digest('hex');
+}
+
+function isValidPortalHtml(html) {
+  if (!html || typeof html !== 'string' || html.length < 20000) return false;
+  const lower = html.toLowerCase();
+  if (!lower.includes('<html') || !lower.includes('</body>') || !lower.includes('</html>')) return false;
+  return html.includes('GOOGLE_SCRIPT_WEB_APP_URL') || html.includes('loginScreen');
+}
+
+function transformLiveHtml(rawHtml) {
+  let html = String(rawHtml || '');
+  html = html.replace(
+    /<meta name="viewport" content="([^"]*)">/i,
+    function (_, content) {
+      if (content.includes('viewport-fit=cover')) return '<meta name="viewport" content="' + content + '">';
+      return '<meta name="viewport" content="' + content + ', viewport-fit=cover">';
+    }
+  );
+  if (!html.includes('native-bridge.js')) {
+    const closeIdx = html.toLowerCase().lastIndexOf('</body>');
+    if (closeIdx !== -1) {
+      html =
+        html.slice(0, closeIdx) +
+        '  <script src="native-bridge.js"></script>\n' +
+        html.slice(closeIdx);
+    }
+  }
+  return html;
+}
+
+function readLiveMeta() {
+  const { liveMetaPath } = getLiveWebPaths();
+  try {
+    if (fs.existsSync(liveMetaPath)) {
+      return JSON.parse(fs.readFileSync(liveMetaPath, 'utf8'));
+    }
+  } catch (e) {}
+  return {};
+}
+
+function writeLiveMeta(metaObj) {
+  const { liveWebDir, liveMetaPath } = getLiveWebPaths();
+  fs.mkdirSync(liveWebDir, { recursive: true });
+  const tmpMeta = liveMetaPath + '.tmp';
+  fs.writeFileSync(tmpMeta, JSON.stringify(metaObj, null, 2), 'utf8');
+  fs.renameSync(tmpMeta, liveMetaPath);
+}
+
+function getBundledIndexHash() {
+  const { bundledIndexPath } = getLiveWebPaths();
+  try {
+    return sha256Text(fs.readFileSync(bundledIndexPath, 'utf8'));
+  } catch (e) {
+    return '';
+  }
+}
+
+function ensureLiveCacheMatchesBinary() {
+  const { liveIndexPath } = getLiveWebPaths();
+  const bundledHash = getBundledIndexHash();
+  const meta = readLiveMeta();
+  if (bundledHash && meta.bundledHash && meta.bundledHash !== bundledHash) {
+    try {
+      if (fs.existsSync(liveIndexPath)) {
+        fs.unlinkSync(liveIndexPath);
+      }
+      writeLiveMeta({ bundledHash: bundledHash, liveHash: '', updatedAt: '' });
+    } catch (e) {}
+  } else if (bundledHash && !meta.bundledHash) {
+    try {
+      writeLiveMeta(Object.assign({}, meta, { bundledHash: bundledHash }));
+    } catch (e) {}
+  }
+}
+
+function getCurrentActiveHtmlHash() {
+  const { liveIndexPath, bundledIndexPath } = getLiveWebPaths();
+  try {
+    if (fs.existsSync(liveIndexPath)) {
+      return sha256Text(fs.readFileSync(liveIndexPath, 'utf8'));
+    }
+    if (fs.existsSync(bundledIndexPath)) {
+      return sha256Text(fs.readFileSync(bundledIndexPath, 'utf8'));
+    }
+  } catch (e) {}
+  return '';
+}
+
+async function fetchTextWithTimeout(url, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(function () {
+    controller.abort();
+  }, timeoutMs);
+  try {
+    const sep = url.includes('?') ? '&' : '?';
+    const bustUrl = url + sep + 'live_t=' + Date.now();
+    const res = await net.fetch(bustUrl, {
+      method: 'GET',
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache'
+      },
+      signal: controller.signal
+    });
+    if (!res || !res.ok) {
+      throw new Error('HTTP ' + (res ? res.status : 'error'));
+    }
+    return await res.text();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function syncLiveHtmlFromCloud(reason) {
+  if (inFlightSyncPromise) {
+    return inFlightSyncPromise;
+  }
+
+  inFlightSyncPromise = (async function () {
+    const { liveWebDir, liveIndexPath } = getLiveWebPaths();
+    const urls = [
+      { url: LIVE_HTML_PRIMARY_URL, timeout: 5500 },
+      { url: LIVE_HTML_FALLBACK_URL, timeout: 6500 }
+    ];
+
+    let rawHtml = '';
+    let usedUrl = '';
+    let lastError = null;
+
+    for (let i = 0; i < urls.length; i++) {
+      try {
+        const txt = await fetchTextWithTimeout(urls[i].url, urls[i].timeout);
+        if (isValidPortalHtml(txt)) {
+          rawHtml = txt;
+          usedUrl = urls[i].url;
+          break;
+        }
+        lastError = new Error('Respons HTML tidak lengkap');
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    if (!rawHtml) {
+      return {
+        ok: false,
+        status: 'offline',
+        updated: false,
+        reason: reason || 'manual',
+        error: lastError ? String(lastError.message || lastError) : 'Gagal menghubungi server'
+      };
+    }
+
+    const transformed = transformLiveHtml(rawHtml);
+    const nextHash = sha256Text(transformed);
+    const activeHash = getCurrentActiveHtmlHash();
+
+    if (nextHash && nextHash === activeHash) {
+      return {
+        ok: true,
+        status: 'up-to-date',
+        updated: false,
+        hash: nextHash,
+        reason: reason || 'manual',
+        sourceUrl: usedUrl
+      };
+    }
+
+    fs.mkdirSync(liveWebDir, { recursive: true });
+    const tmpIndex = liveIndexPath + '.tmp';
+    fs.writeFileSync(tmpIndex, transformed, 'utf8');
+    fs.renameSync(tmpIndex, liveIndexPath);
+
+    const updatedAt = new Date().toISOString();
+    writeLiveMeta({
+      bundledHash: getBundledIndexHash(),
+      liveHash: nextHash,
+      updatedAt: updatedAt,
+      sourceUrl: usedUrl
+    });
+
+    return {
+      ok: true,
+      status: 'updated',
+      updated: true,
+      hash: nextHash,
+      updatedAt: updatedAt,
+      reason: reason || 'manual',
+      sourceUrl: usedUrl
+    };
+  })();
+
+  try {
+    return await inFlightSyncPromise;
+  } finally {
+    inFlightSyncPromise = null;
+  }
+}
+
+async function performLiveRefresh(fromManual) {
+  const result = await syncLiveHtmlFromCloud(fromManual ? 'manual' : 'auto');
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (result.ok) {
+      mainWindow.webContents.reloadIgnoringCache();
+    } else {
+      mainWindow.webContents.send('main-action', 'live-refresh-status', {
+        status: result.status,
+        error: result.error,
+        fromManualRefresh: Boolean(fromManual)
+      });
+    }
+  }
+  return result;
+}
 
 function getWindowStatePath() {
   return path.join(app.getPath('userData'), 'window-state.json');
@@ -87,15 +325,28 @@ function saveWindowState() {
 
 function startLocalWebServer() {
   return new Promise(function (resolve, reject) {
-    const wwwDir = path.join(__dirname, 'www');
+    const { liveWebDir, liveIndexPath, bundledWwwDir, bundledIndexPath } = getLiveWebPaths();
     const server = http.createServer(function (req, res) {
       const reqUrl = (req.url || '/').split('?')[0].split('#')[0];
       let relPath = decodeURIComponent(reqUrl === '/' ? '/index.html' : reqUrl);
       relPath = path.normalize(relPath).replace(/^(\.\.(\/|\\|$))+/, '');
-      let filePath = path.join(wwwDir, relPath);
 
-      if (!filePath.startsWith(wwwDir) || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
-        filePath = path.join(wwwDir, 'index.html');
+      let filePath = '';
+      if (relPath === path.sep + 'index.html' || relPath === 'index.html' || relPath === '/index.html') {
+        filePath = fs.existsSync(liveIndexPath) ? liveIndexPath : bundledIndexPath;
+      } else if (relPath === path.sep + 'native-bridge.js' || relPath === 'native-bridge.js' || relPath === '/native-bridge.js') {
+        // Keep native Electron bridge aligned with desktop shell version
+        filePath = path.join(bundledWwwDir, 'native-bridge.js');
+      } else {
+        const liveCandidate = path.join(liveWebDir, relPath);
+        const bundledCandidate = path.join(bundledWwwDir, relPath);
+        if (liveCandidate.startsWith(liveWebDir) && fs.existsSync(liveCandidate) && !fs.statSync(liveCandidate).isDirectory()) {
+          filePath = liveCandidate;
+        } else if (bundledCandidate.startsWith(bundledWwwDir) && fs.existsSync(bundledCandidate) && !fs.statSync(bundledCandidate).isDirectory()) {
+          filePath = bundledCandidate;
+        } else {
+          filePath = fs.existsSync(liveIndexPath) ? liveIndexPath : bundledIndexPath;
+        }
       }
 
       const ext = path.extname(filePath).toLowerCase();
@@ -109,7 +360,8 @@ function startLocalWebServer() {
         }
         res.writeHead(200, {
           'Content-Type': contentType,
-          'Cache-Control': 'no-cache'
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          Pragma: 'no-cache'
         });
         res.end(data);
       });
@@ -143,6 +395,21 @@ function getAppIconPath(preferIco) {
   return fs.existsSync(pngPath) ? pngPath : icoPath;
 }
 
+async function triggerBackgroundUpdateCheck(force) {
+  const now = Date.now();
+  if (!force && now - lastAutoCheckAt < 30000) return null;
+  lastAutoCheckAt = now;
+  try {
+    const res = await syncLiveHtmlFromCloud('auto');
+    if (res && res.ok && res.updated && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('main-action', 'live-update-available', res);
+    }
+    return res;
+  } catch (e) {
+    return null;
+  }
+}
+
 function showMainWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) {
     createMainWindow();
@@ -155,6 +422,7 @@ function showMainWindow() {
     mainWindow.show();
   }
   mainWindow.focus();
+  triggerBackgroundUpdateCheck(false);
 }
 
 function updateTrayTooltip() {
@@ -169,20 +437,25 @@ function buildAppMenu() {
       label: 'Aplikasi',
       submenu: [
         {
-          label: 'Sinkronkan Data Sekarang',
+          label: 'Refresh & Cek Update HTML',
           accelerator: 'F5',
           click: function () {
-            if (mainWindow && !mainWindow.isDestroyed()) {
-              mainWindow.webContents.send('main-action', 'force-sync');
-            }
+            performLiveRefresh(true);
           }
         },
         {
-          label: 'Muat Ulang Tampilan',
+          label: 'Muat Ulang Paksa (Tanpa Cache)',
           accelerator: 'CmdOrCtrl+Shift+R',
           click: function () {
+            performLiveRefresh(true);
+          }
+        },
+        {
+          label: 'Sinkronkan Data Sekarang',
+          accelerator: 'CmdOrCtrl+Shift+S',
+          click: function () {
             if (mainWindow && !mainWindow.isDestroyed()) {
-              mainWindow.reload();
+              mainWindow.webContents.send('main-action', 'force-sync');
             }
           }
         },
@@ -239,6 +512,10 @@ function buildAppMenu() {
         {
           label: 'Tentang Antrian Gambar Estimator',
           click: function () {
+            const meta = readLiveMeta();
+            const liveInfo = meta && meta.updatedAt
+              ? '\nPembaruan HTML Live terakhir: ' + meta.updatedAt
+              : '\nMode HTML Live Auto-Update saat Refresh aktif.';
             dialog.showMessageBox(mainWindow, {
               type: 'info',
               title: 'Tentang Aplikasi',
@@ -246,7 +523,8 @@ function buildAppMenu() {
               detail:
                 'Versi Desktop Windows ' +
                 app.getVersion() +
-                '\nPortal operasional terintegrasi Sales, Estimator & Admin Kontrak dengan sinkronisasi Google Spreadsheet, Google Drive, dan notifikasi System Tray real-time.'
+                '\nPortal operasional terintegrasi Sales, Estimator & Admin Kontrak dengan sinkronisasi Google Spreadsheet, Google Drive, System Tray real-time, dan Live Update HTML saat Refresh.' +
+                liveInfo
             });
           }
         }
@@ -277,6 +555,13 @@ function createTray() {
         label: 'Buka Antrian Gambar Estimator',
         click: function () {
           showMainWindow();
+        }
+      },
+      {
+        label: 'Refresh & Cek Update HTML',
+        click: function () {
+          showMainWindow();
+          performLiveRefresh(true);
         }
       },
       {
@@ -379,10 +664,25 @@ function createMainWindow() {
     mainWindow.show();
   });
 
+  mainWindow.webContents.on('did-finish-load', function () {
+    triggerBackgroundUpdateCheck(false);
+  });
+
+  mainWindow.webContents.on('before-input-event', function (event, input) {
+    if (input && input.type === 'keyDown') {
+      const keyLower = (input.key || '').toLowerCase();
+      if (input.key === 'F5' || ((input.control || input.meta) && keyLower === 'r')) {
+        event.preventDefault();
+        performLiveRefresh(true);
+      }
+    }
+  });
+
   mainWindow.on('resize', saveWindowState);
   mainWindow.on('move', saveWindowState);
   mainWindow.on('focus', function () {
     mainWindow.flashFrame(false);
+    triggerBackgroundUpdateCheck(false);
   });
 
   mainWindow.on('close', function (event) {
@@ -470,6 +770,7 @@ app.on('second-instance', function () {
 });
 
 app.whenReady().then(async function () {
+  ensureLiveCacheMatchesBinary();
   await startLocalWebServer();
   buildAppMenu();
   createTray();
@@ -527,4 +828,23 @@ ipcMain.on('set-unread-count', function (_event, count) {
 
 ipcMain.on('sync-config', function () {
   // Reserved for future background daemon telemetry
+});
+
+ipcMain.handle('check-live-update', async function () {
+  return await syncLiveHtmlFromCloud('manual-check');
+});
+
+ipcMain.handle('check-and-refresh', async function () {
+  return await performLiveRefresh(true);
+});
+
+ipcMain.handle('get-live-update-status', function () {
+  const { liveIndexPath } = getLiveWebPaths();
+  return {
+    usingLiveCache: fs.existsSync(liveIndexPath),
+    activeHash: getCurrentActiveHtmlHash(),
+    meta: readLiveMeta(),
+    primaryUrl: LIVE_HTML_PRIMARY_URL,
+    fallbackUrl: LIVE_HTML_FALLBACK_URL
+  };
 });

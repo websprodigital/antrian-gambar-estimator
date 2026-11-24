@@ -23,6 +23,7 @@ import androidx.core.content.FileProvider;
 import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebChromeClient;
+import com.getcapacitor.ProcessedRoute;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -39,10 +40,29 @@ public class MainActivity extends BridgeActivity {
     private ActivityResultLauncher<Intent> customFilePickerLauncher;
     private EstimatorAndroidBridge nativeBridge;
     private long lastBackPressAt = 0L;
+    private long lastLiveCheckAt = 0L;
+    private boolean hasCompletedInitialResume = false;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        LiveHtmlUpdater.ensureLiveCacheMatchesBinary(this);
+        bridgeBuilder.setRouteProcessor((basePath, path) -> {
+            ProcessedRoute route = new ProcessedRoute();
+            File liveIndex = LiveHtmlUpdater.getLiveIndexFile(MainActivity.this);
+            if (liveIndex.exists() && liveIndex.length() > 20000L && ("/".equals(path) || "/index.html".equals(path))) {
+                route.setPath(liveIndex.getAbsolutePath());
+                route.setAsset(false);
+                route.setIgnoreAssetPath(true);
+            } else {
+                String effectivePath = "/".equals(path) ? "/index.html" : path;
+                route.setPath((basePath != null && !basePath.isEmpty()) ? (basePath + effectivePath) : effectivePath);
+                route.setAsset(true);
+                route.setIgnoreAssetPath(false);
+            }
+            return route;
+        });
+
         customFilePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
@@ -107,6 +127,8 @@ public class MainActivity extends BridgeActivity {
                     }
                 }
             });
+
+            webView.postDelayed(() -> triggerAutoLiveUpdateCheck(), 1500);
         }
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -139,6 +161,68 @@ public class MainActivity extends BridgeActivity {
         });
 
         handleNotificationIntent(getIntent());
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (!hasCompletedInitialResume) {
+            hasCompletedInitialResume = true;
+            return;
+        }
+        triggerAutoLiveUpdateCheck();
+    }
+
+    public void triggerAutoLiveUpdateCheck() {
+        long now = System.currentTimeMillis();
+        if (now - lastLiveCheckAt < 30000L) {
+            return;
+        }
+        lastLiveCheckAt = now;
+        runLiveUpdateSync(false, false);
+    }
+
+    public void runLiveUpdateSync(boolean fromManual, boolean reloadOnOk) {
+        new Thread(() -> {
+            LiveHtmlUpdater.SyncResult res = LiveHtmlUpdater.checkAndSync(getApplicationContext());
+            runOnUiThread(() -> {
+                if (this.bridge == null || this.bridge.getWebView() == null) {
+                    return;
+                }
+                WebView wv = this.bridge.getWebView();
+                if (reloadOnOk) {
+                    if (res.ok) {
+                        wv.clearCache(false);
+                        this.bridge.reload();
+                    } else {
+                        JSONObject payload = res.toJson();
+                        try { payload.put("fromManualRefresh", fromManual); } catch (Exception ignored) {}
+                        wv.evaluateJavascript(
+                            "if (typeof window.__estimatorOnLiveRefreshStatus === 'function') { window.__estimatorOnLiveRefreshStatus("
+                                + payload.toString() + "); }",
+                            null
+                        );
+                    }
+                    return;
+                }
+
+                if (res.ok && res.updated) {
+                    wv.evaluateJavascript(
+                        "if (typeof window.__estimatorOnLiveUpdateAvailable === 'function') { window.__estimatorOnLiveUpdateAvailable("
+                            + res.toJson().toString() + "); }",
+                        null
+                    );
+                } else if (fromManual) {
+                    JSONObject payload = res.toJson();
+                    try { payload.put("fromManualRefresh", true); } catch (Exception ignored) {}
+                    wv.evaluateJavascript(
+                        "if (typeof window.__estimatorOnLiveRefreshStatus === 'function') { window.__estimatorOnLiveRefreshStatus("
+                            + payload.toString() + "); }",
+                        null
+                    );
+                }
+            });
+        }).start();
     }
 
     @Override

@@ -17,6 +17,15 @@ contextBridge.exposeInMainWorld('EstimatorDesktop', {
   syncConfig: function (config) {
     ipcRenderer.send('sync-config', config || {});
   },
+  checkLiveUpdate: function () {
+    return ipcRenderer.invoke('check-live-update');
+  },
+  checkAndRefresh: function () {
+    return ipcRenderer.invoke('check-and-refresh');
+  },
+  getLiveUpdateStatus: function () {
+    return ipcRenderer.invoke('get-live-update-status');
+  },
   onMainAction: function (callback) {
     if (typeof callback !== 'function') return;
     ipcRenderer.on('main-action', function (_event, action, data) {
