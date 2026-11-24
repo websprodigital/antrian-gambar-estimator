@@ -344,6 +344,12 @@ function mergeNotesHistoryArrays($existingHist, $incomingHist) {
         if ($roleLabel !== '') $entry['roleLabel'] = $roleLabel;
         if ($sourceMenu !== '') $entry['sourceMenu'] = $sourceMenu;
         if ($createdAtMs > 0) $entry['createdAtMs'] = $createdAtMs;
+        if (isset($item['replyTo']) && is_array($item['replyTo'])) {
+            $entry['replyTo'] = $item['replyTo'];
+        }
+        if (isset($item['media']) && is_array($item['media'])) {
+            $entry['media'] = $item['media'];
+        }
         $merged[] = $entry;
     }
     usort($merged, function ($a, $b) {
@@ -755,7 +761,7 @@ function saveUploadedBase64File($uploadDir, $prefix, $origName, $mimeType, $base
         return null;
     }
 
-    $allowedExts = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'dwg', 'dxf', 'xlsx', 'xls', 'csv', 'doc', 'docx'];
+    $allowedExts = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'mp4', 'webm', 'mov', 'm4v', '3gp', 'ogg', 'dwg', 'dxf', 'xlsx', 'xls', 'csv', 'doc', 'docx'];
     $ext = strtolower(pathinfo((string)$origName, PATHINFO_EXTENSION));
     if (!in_array($ext, $allowedExts, true)) {
         $m = strtolower((string)$mimeType);
@@ -764,6 +770,10 @@ function saveUploadedBase64File($uploadDir, $prefix, $origName, $mimeType, $base
         elseif (strpos($m, 'jpeg') !== false || strpos($m, 'jpg') !== false) $ext = 'jpg';
         elseif (strpos($m, 'webp') !== false) $ext = 'webp';
         elseif (strpos($m, 'gif') !== false) $ext = 'gif';
+        elseif (strpos($m, 'webm') !== false) $ext = 'webm';
+        elseif (strpos($m, 'quicktime') !== false || strpos($m, 'mov') !== false) $ext = 'mov';
+        elseif (strpos($m, '3gpp') !== false) $ext = '3gp';
+        elseif (strpos($m, 'mp4') !== false || strpos($m, 'video') !== false) $ext = 'mp4';
         else $ext = 'bin';
     }
     if (!in_array($ext, $allowedExts, true) && $ext !== 'bin') {
@@ -916,7 +926,13 @@ if ($action === 'file') {
         'jpeg' => 'image/jpeg',
         'webp' => 'image/webp',
         'gif' => 'image/gif',
-        'bmp' => 'image/bmp'
+        'bmp' => 'image/bmp',
+        'mp4' => 'video/mp4',
+        'm4v' => 'video/mp4',
+        'webm' => 'video/webm',
+        'mov' => 'video/quicktime',
+        '3gp' => 'video/3gpp',
+        'ogg' => 'video/ogg'
     ];
     $contentType = $mimeMap[$ext] ?? 'application/octet-stream';
     $isDownload = !empty($_GET['dl']);
@@ -1410,10 +1426,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // --- D2. SEND_PROJECT_CHAT (Balasan chat terhubung lintas Sales, Estimator & Admin Kontrak) ---
     if ($postAction === 'send_project_chat') {
-        $res = withDatabaseStore(function (&$store, &$shouldSave) use ($data, $actorUsername, $actorKey, $deviceInfo) {
+        $res = withDatabaseStore(function (&$store, &$shouldSave) use ($data, $actorUsername, $actorKey, $deviceInfo, $uploadDir) {
             $queueCode = normalizeQueueCodeTo2027($data['queueCode'] ?? $data['noAntrian'] ?? '', $data['salesName'] ?? '');
             $chatMsg = is_array($data['chatMessage'] ?? null) ? $data['chatMessage'] : [];
+            $chatMediaIn = is_array($chatMsg['media'] ?? null) ? $chatMsg['media'] : null;
             $chatText = trim((string)($chatMsg['text'] ?? ($data['text'] ?? '')));
+            if ($chatText === '' && $chatMediaIn) {
+                $chatText = (($chatMediaIn['type'] ?? '') === 'video') ? '🎥 Video' : '📷 Foto';
+            }
             if ($chatText === '') {
                 return ['success' => false, 'status' => 'error', 'message' => 'Pesan chat kosong.'];
             }
@@ -1463,6 +1483,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'sourceMenu' => trim((string)($chatMsg['sourceMenu'] ?? '')),
                 'text' => $chatText
             ];
+            if (isset($chatMsg['replyTo']) && is_array($chatMsg['replyTo'])) {
+                $normalizedMsg['replyTo'] = $chatMsg['replyTo'];
+            }
+            if ($chatMediaIn) {
+                $mediaName = trim((string)($chatMediaIn['name'] ?? 'chat_media'));
+                $mediaMime = trim((string)($chatMediaIn['mimeType'] ?? 'application/octet-stream'));
+                $mediaType = trim((string)($chatMediaIn['type'] ?? (strpos(strtolower($mediaMime), 'video') !== false ? 'video' : 'image')));
+                $storedUrl = trim((string)($chatMediaIn['url'] ?? ''));
+                $rawDataUrl = $chatMediaIn['dataUrl'] ?? ($chatMediaIn['base64'] ?? '');
+                if ($rawDataUrl && is_string($rawDataUrl)) {
+                    $savedMedia = saveUploadedBase64File($uploadDir, 'chatmed', $mediaName, $mediaMime, $rawDataUrl);
+                    if ($savedMedia && !empty($savedMedia['url'])) {
+                        $storedUrl = $savedMedia['url'];
+                    }
+                }
+                $cleanMedia = [
+                    'mediaId' => trim((string)($chatMediaIn['mediaId'] ?? '')),
+                    'type' => $mediaType,
+                    'name' => $mediaName,
+                    'mimeType' => $mediaMime,
+                    'size' => intval($chatMediaIn['size'] ?? 0)
+                ];
+                if ($storedUrl !== '') {
+                    $cleanMedia['url'] = $storedUrl;
+                } elseif (is_string($rawDataUrl) && strlen($rawDataUrl) > 0 && strlen($rawDataUrl) <= 350000) {
+                    $cleanMedia['dataUrl'] = $rawDataUrl;
+                }
+                if (!empty($chatMediaIn['thumbUrl']) && is_string($chatMediaIn['thumbUrl']) && strlen($chatMediaIn['thumbUrl']) <= 60000) {
+                    $cleanMedia['thumbUrl'] = $chatMediaIn['thumbUrl'];
+                }
+                $normalizedMsg['media'] = $cleanMedia;
+            }
             $rec['unifiedChatHistory'] = mergeNotesHistoryArrays($rec['unifiedChatHistory'] ?? [], [$normalizedMsg]);
             if ($msgRole === 'sales') {
                 $rec['salesNotes'] = $chatText;

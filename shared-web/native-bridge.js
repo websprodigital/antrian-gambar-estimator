@@ -124,9 +124,10 @@
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
       }
-      .native-login-refresh-wrap {
+      .native-login-refresh-wrap,
+      #btnLoginNativeRefresh {
         margin-top: 0.75rem;
-        display: flex;
+        display: none !important;
         justify-content: center;
       }
       .native-live-update-banner {
@@ -606,36 +607,29 @@
     try {
       const chatModal = document.getElementById('modalNotesHistory');
       if (chatModal && chatModal.classList.contains('open')) {
-        const mediaOverlay = document.getElementById('chatMediaPreviewOverlay');
-        if (mediaOverlay && mediaOverlay.style.display !== 'none' && mediaOverlay.style.display !== '') {
+        const mediaViewer = document.getElementById('chatMediaInlineViewer');
+        if (mediaViewer && (mediaViewer.classList.contains('open') || (mediaViewer.style.display && mediaViewer.style.display !== 'none'))) {
           if (typeof window.closeChatMediaViewer === 'function') {
             window.closeChatMediaViewer();
             return 'handled';
           }
         }
-        const actionBar = document.getElementById('chatActionHeaderBar');
-        if (actionBar && actionBar.style.display !== 'none' && actionBar.style.display !== '') {
-          if (typeof window.clearChatLongPressSelection === 'function') {
-            window.clearChatLongPressSelection();
+        const topReplyBar = document.getElementById('chatTopReplyActionBar');
+        if (topReplyBar && (topReplyBar.classList.contains('open') || (topReplyBar.style.display && topReplyBar.style.display !== 'none'))) {
+          if (typeof window.clearChatSelectionMode === 'function') {
+            window.clearChatSelectionMode();
             return 'handled';
           }
         }
-        const webcamBox = document.getElementById('chatWebcamBox');
-        if (webcamBox && webcamBox.style.display !== 'none' && webcamBox.style.display !== '') {
-          if (typeof window.closeChatWebcamCapture === 'function') {
-            window.closeChatWebcamCapture();
-            return 'handled';
-          }
-        }
-        const camPopover = document.getElementById('chatCameraMenuPopover');
-        if (camPopover && camPopover.style.display !== 'none' && camPopover.style.display !== '') {
-          if (typeof window.closeChatCameraMenu === 'function') {
-            window.closeChatCameraMenu();
+        const camMenu = document.getElementById('chatCameraMenu');
+        if (camMenu && (camMenu.classList.contains('open') || (camMenu.style.display && camMenu.style.display !== 'none'))) {
+          if (typeof window.toggleChatCameraMenu === 'function') {
+            window.toggleChatCameraMenu(false);
             return 'handled';
           }
         }
         const tautkanDrawer = document.getElementById('chatTautkanDrawer');
-        if (tautkanDrawer && tautkanDrawer.style.display !== 'none') {
+        if (tautkanDrawer && tautkanDrawer.style.display !== 'none' && tautkanDrawer.style.display !== '') {
           if (typeof window.toggleChatTautkanDrawer === 'function') {
             window.toggleChatTautkanDrawer(false);
             return 'handled';
