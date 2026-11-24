@@ -8579,6 +8579,14 @@
       return { role: 'system', roleLabel: 'Tim Proyek', cssClass: 'chat-role-system' };
     }
 
+    function sanitizeChatMessageText(rawText) {
+      let s = String(rawText || '');
+      s = s.replace(/\s*•\s*Estimator:\s*\(Belum dipilih\)/gi, '');
+      s = s.replace(/Estimator:\s*\(Belum dipilih\)\s*•\s*/gi, '');
+      s = s.replace(/\r?\n?\s*📎\s*(?:Tautan Data:\s*)?Estimator:\s*\(Belum dipilih\)/gi, '');
+      return s.trim();
+    }
+
     function mergeNotesHistoryClient(listA, listB, defaultMeta) {
       const merged = [];
       const seenIds = new Set();
@@ -8586,7 +8594,7 @@
       const combined = [].concat(Array.isArray(listA) ? listA : [], Array.isArray(listB) ? listB : []);
       combined.forEach(function(item) {
         if (!item || typeof item !== 'object') return;
-        const txt = String(item.text || '').trim();
+        const txt = sanitizeChatMessageText(item.text || '');
         if (!txt || txt === '-') return;
         const msgId = String(item.id || '').trim();
         const ts = String(item.timestamp || '').trim();
@@ -8621,7 +8629,7 @@
 
     function appendNoteToHistoryClient(existingArr, noteText, authorName, extraMeta) {
       const base = mergeNotesHistoryClient(existingArr, []);
-      const cleanTxt = String(noteText || '').trim();
+      const cleanTxt = sanitizeChatMessageText(noteText || '');
       if (!cleanTxt || cleanTxt === '-') return base;
       const meta = extraMeta || {};
       const skipDedup = Boolean(meta.allowDuplicateConsecutive);
@@ -8662,7 +8670,7 @@
       ];
       const extraFallbacks = [];
       fallbacks.forEach(function(fb) {
-        const clean = String(fb.val || '').trim();
+        const clean = sanitizeChatMessageText(fb.val || '');
         if (clean && clean !== '-' && !combined.some(m => m.text === clean)) {
           extraFallbacks.push({
             timestamp: fb.ts,
@@ -11396,6 +11404,8 @@
     window.__chatTautkanFileMap = window.__chatTautkanFileMap || {};
     window.__chatTautkanPendingReads = window.__chatTautkanPendingReads || new Set();
     window.__chatTautkanStaged = null;
+    window.__chatTautkanTouched = false;
+    window.__chatTautkanBaselineScope = '';
 
     async function waitForChatTautkanPendingReads() {
       if (window.__chatTautkanPendingReads && window.__chatTautkanPendingReads.size > 0) {
@@ -11408,6 +11418,7 @@
     function clearChatTautkanStaged() {
       window.__chatTautkanStaged = null;
       window.__chatTautkanFileMap = {};
+      window.__chatTautkanTouched = false;
       if (window.__chatTautkanPendingReads && typeof window.__chatTautkanPendingReads.clear === 'function') {
         window.__chatTautkanPendingReads.clear();
       }
@@ -11434,6 +11445,7 @@
 
     function handleChatTautkanFilePick(inputEl, mapKey, metaInfo, labelTargetId) {
       if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
+      window.__chatTautkanTouched = true;
       const file = inputEl.files[0];
       const lbl = document.getElementById(labelTargetId);
       if (lbl) {
@@ -11523,9 +11535,18 @@
 
       const role = currentUser ? currentUser.role : 'sales';
       window.__chatTautkanFileMap = {};
+      window.__chatTautkanTouched = false;
+      window.__chatTautkanBaselineScope = '';
+
+      if (!drawerEl.dataset.touchBound) {
+        drawerEl.dataset.touchBound = '1';
+        drawerEl.addEventListener('input', function() { window.__chatTautkanTouched = true; });
+        drawerEl.addEventListener('change', function() { window.__chatTautkanTouched = true; });
+      }
 
       if (role === 'admin') {
-        const estVal = item.estimatorName || '';
+        const rawEst = String(item.estimatorName || '').trim();
+        const estVal = (rawEst && rawEst !== '-' && rawEst !== '(Belum dipilih)') ? rawEst : '';
         const estStatusVal = normalizeEstimatorStatusValue(item.status || 'Masih Antrian Gambar');
         const estOpts = ['', 'Pak Setiawan', 'Bayu', 'Pajal'].map(function(n) {
           const sel = (n === estVal) ? ' selected' : '';
@@ -11705,6 +11726,7 @@
             }
           });
         }
+        window.__chatTautkanBaselineScope = getCompiledChatTautkanScope();
       }
     }
 
@@ -11713,6 +11735,10 @@
       if (!drawerEl || !item) return null;
       const role = currentUser ? currentUser.role : 'sales';
       const files = Object.values(window.__chatTautkanFileMap || {});
+      const isDrawerVisible = drawerEl.style.display !== 'none' && drawerEl.style.display !== '';
+      if (!isDrawerVisible && !window.__chatTautkanTouched && files.length === 0) {
+        return null;
+      }
       const updates = {};
       const summaryLines = [];
       let hasChanges = files.length > 0;
@@ -11722,12 +11748,17 @@
         const stSel = document.getElementById('chatTautkanEstStatus');
         const newEst = estSel ? estSel.value : '';
         const newSt = stSel ? stSel.value : '';
-        if (estSel && newEst !== (item.estimatorName || '')) {
+        const rawPrevEst = String(item.estimatorName || '').trim();
+        const prevEstNorm = (rawPrevEst && rawPrevEst !== '-' && rawPrevEst !== '(Belum dipilih)') ? rawPrevEst : '';
+        if (estSel && newEst !== prevEstNorm) {
           updates.estimatorName = newEst || '(Belum dipilih)';
-          summaryLines.push('Estimator: ' + updates.estimatorName);
+          if (newEst && newEst !== '(Belum dipilih)') {
+            summaryLines.push('Estimator: ' + newEst);
+          }
           hasChanges = true;
         }
-        if (stSel && newSt && newSt !== normalizeEstimatorStatusValue(item.status || '')) {
+        const prevStatusNorm = normalizeEstimatorStatusValue(item.status || 'Masih Antrian Gambar');
+        if (stSel && newSt && newSt !== prevStatusNorm) {
           updates.status = newSt;
           summaryLines.push('Status Desain: ' + newSt);
           hasChanges = true;
@@ -11737,14 +11768,14 @@
           const v = inp ? inp.value.trim() : '';
           if (inp && v !== String(item['revGambar' + i] || '').trim()) {
             updates['revGambar' + i] = v;
-            if (v) summaryLines.push('Revisi Desain ' + i + ': ' + v);
+            if (v && v !== '-') summaryLines.push('Revisi Desain ' + i + ': ' + v);
             hasChanges = true;
           }
         }
       } else if (role === 'contract') {
         const qNoEl = document.getElementById('chatTautkanQuoteNo');
         const qNo = qNoEl ? qNoEl.value.trim() : '';
-        const prevQNo = (item.quoteNumber && item.quoteNumber !== '-') ? item.quoteNumber : '';
+        const prevQNo = String((item.quoteNumber && item.quoteNumber !== '-') ? item.quoteNumber : '').trim();
         if (qNoEl && qNo !== prevQNo) {
           updates.quoteNumber = qNo;
           if (qNo) summaryLines.push('No. Penawaran: ' + qNo);
@@ -11755,7 +11786,7 @@
           const v = inp ? inp.value.trim() : '';
           if (inp && v !== String(item['quoteRev' + i] || '').trim()) {
             updates['quoteRev' + i] = v;
-            if (v) summaryLines.push('Revisi Penawaran ' + i + ': ' + v);
+            if (v && v !== '-') summaryLines.push('Revisi Penawaran ' + i + ': ' + v);
             hasChanges = true;
           }
         }
@@ -11763,12 +11794,13 @@
         const fDoc = fDocEl ? fDocEl.value.trim() : '';
         if (fDocEl && fDoc !== String(item.quoteFinalDoc || '').trim()) {
           updates.quoteFinalDoc = fDoc;
-          if (fDoc) summaryLines.push('Dok Penawaran Selesai: ' + fDoc);
+          if (fDoc && fDoc !== '-') summaryLines.push('Dok Penawaran Selesai: ' + fDoc);
           hasChanges = true;
         }
       } else {
         const newScope = getCompiledChatTautkanScope();
-        if (newScope && newScope !== String(item.scopeOfWork || '').trim()) {
+        const baseScope = String(window.__chatTautkanBaselineScope || '').trim();
+        if (newScope && newScope !== baseScope && newScope !== String(item.scopeOfWork || '').trim()) {
           updates.scopeOfWork = newScope;
           summaryLines.push('Skop Material: ' + newScope);
           hasChanges = true;
@@ -11778,14 +11810,17 @@
           const v = inp ? inp.value.trim() : '';
           if (inp && v !== String(item['extraImg' + i] || '').trim()) {
             updates['extraImg' + i] = v;
-            if (v) summaryLines.push('Gambar Tambahan ' + i + ': ' + v);
+            if (v && v !== '-') summaryLines.push('Gambar Tambahan ' + i + ': ' + v);
             hasChanges = true;
           }
         }
       }
 
       if (!hasChanges) return null;
-      return { role, updates, files, summaryLines, hasChanges: true };
+      const cleanSummaryLines = summaryLines.filter(function(l) {
+        return l && !/Estimator:\s*\(Belum dipilih\)/i.test(l);
+      });
+      return { role, updates, files, summaryLines: cleanSummaryLines, hasChanges: true };
     }
 
     async function commitChatTautkanUpload() {
@@ -16728,13 +16763,17 @@
     function normalizeNotificationEntry(raw) {
       if (!raw || typeof raw !== 'object') return null;
       const createdAtMs = Number(raw.createdAtMs || Date.now());
+      const rawMsg = String(raw.message || '-');
+      const cleanMsg = (typeof sanitizeChatMessageText === 'function')
+        ? (sanitizeChatMessageText(rawMsg) || '-')
+        : rawMsg;
       return {
         id: String(raw.id || ('NTF-' + createdAtMs + '-' + Math.random().toString(36).slice(2, 6))),
         createdAtMs: createdAtMs,
         timestamp: String(raw.timestamp || formatLiveDateTimeSpaced(new Date(createdAtMs))),
         eventType: String(raw.eventType || 'sales_form_new'),
         title: String(raw.title || 'Notifikasi Aktivitas Proyek'),
-        message: String(raw.message || '-'),
+        message: cleanMsg,
         actor: String(raw.actor || 'Sistem'),
         queueCode: String(raw.queueCode || '-'),
         customerName: String(raw.customerName || '-'),
