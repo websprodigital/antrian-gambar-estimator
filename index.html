@@ -8674,7 +8674,8 @@
             <div id="chatLiveCameraErrorMsg" class="chat-live-camera-error-msg">Mengaktifkan kamera...</div>
             <div class="chat-live-camera-error-actions">
               <button type="button" class="chat-live-cam-btn chat-live-cam-btn-primary" onclick="retryChatLiveCamera()">🔄 Coba Kamera Lagi</button>
-              <button type="button" class="chat-live-cam-btn chat-live-cam-btn-secondary" onclick="useFileFallbackFromLiveCamera()">📁 Pilih dari File</button>
+              <button type="button" class="chat-live-cam-btn chat-live-cam-btn-confirm" id="btnChatLiveAndroidNativeCam" onclick="triggerAndroidNativeCameraFromOverlay()" style="display: none;">📱 Kamera Perangkat</button>
+              <button type="button" class="chat-live-cam-btn chat-live-cam-btn-secondary" id="btnChatLiveErrorClose" onclick="closeChatLiveCamera()">Tutup</button>
             </div>
           </div>
         </div>
@@ -12079,6 +12080,57 @@
       }
     }
 
+    async function waitForChatLiveVideoMetadata(videoEl) {
+      if (!videoEl || (videoEl.videoWidth > 0 && videoEl.videoHeight > 0)) return;
+      await new Promise(function(resolve) {
+        let done = false;
+        const finish = function() {
+          if (done) return;
+          done = true;
+          videoEl.removeEventListener('loadedmetadata', finish);
+          videoEl.removeEventListener('canplay', finish);
+          resolve();
+        };
+        videoEl.addEventListener('loadedmetadata', finish, { once: true });
+        videoEl.addEventListener('canplay', finish, { once: true });
+        setTimeout(finish, 1200);
+      });
+    }
+
+    function triggerAndroidNativeCameraFromOverlay() {
+      const st = window.__chatLiveCameraState;
+      const mode = (st && st.mode === 'video') ? 'video' : 'photo';
+      closeChatLiveCamera();
+      if (window.EstimatorAndroid && typeof window.EstimatorAndroid.openNativeCameraCapture === 'function') {
+        window.EstimatorAndroid.openNativeCameraCapture(mode);
+      }
+    }
+
+    window.__onNativeCameraMediaCaptured = async function(urlOrDataUrl, fileName, mimeType, kind) {
+      try {
+        const res = await fetch(urlOrDataUrl);
+        const blob = await res.blob();
+        const isVideo = kind === 'video' || String(mimeType || '').startsWith('video/');
+        const finalName = fileName || (isVideo ? ('kamera_video_' + Date.now() + '.mp4') : ('kamera_foto_' + Date.now() + '.jpg'));
+        const finalMime = mimeType || blob.type || (isVideo ? 'video/mp4' : 'image/jpeg');
+        let fileObj = blob;
+        try {
+          if (typeof File === 'function') {
+            fileObj = new File([blob], finalName, { type: finalMime });
+          }
+        } catch (e) {
+          fileObj = blob;
+        }
+        stageChatCameraFileObject(fileObj, { name: finalName, mimeType: finalMime });
+      } catch (e) {
+        alert('Gagal memproses hasil kamera: ' + (e && e.message ? e.message : e));
+      }
+    };
+    window.__onNativeCameraMediaCancelled = function() {};
+    window.__onNativeCameraMediaError = function(msg) {
+      alert(msg || 'Gagal membuka kamera perangkat.');
+    };
+
     async function startChatLiveCameraStream(expectedSeq) {
       const st = window.__chatLiveCameraState;
       const overlay = document.getElementById('chatLiveCameraOverlay');
@@ -12087,7 +12139,15 @@
       stopChatLiveStreamTracks();
       revokeChatLiveCapturedPreview();
 
+      const hasAndroidCam = Boolean(window.EstimatorAndroid && typeof window.EstimatorAndroid.openNativeCameraCapture === 'function');
+      const androidBtn = document.getElementById('btnChatLiveAndroidNativeCam');
+      if (androidBtn) androidBtn.style.display = hasAndroidCam ? 'inline-flex' : 'none';
+
       if (typeof navigator === 'undefined' || !navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+        if (hasAndroidCam) {
+          triggerAndroidNativeCameraFromOverlay();
+          return;
+        }
         setChatLiveCameraPhase('error', 'Browser/perangkat tidak mendukung akses kamera langsung (gunakan HTTPS/aplikasi terpasang).');
         return;
       }
@@ -12096,12 +12156,12 @@
       const facing = st.facingMode || 'environment';
       const candidates = (mode === 'video')
         ? [
-            { video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true },
+            { video: { facingMode: { ideal: facing } }, audio: true },
             { video: { facingMode: { ideal: facing } }, audio: false },
             { video: true, audio: false }
           ]
         : [
-            { video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+            { video: { facingMode: { ideal: facing } }, audio: false },
             { video: true, audio: false }
           ];
 
@@ -12124,6 +12184,10 @@
       if (!acquiredStream) {
         if (expectedSeq !== st.openSessionSeq || !overlay.classList.contains('open')) return;
         const errName = String((lastErr && lastErr.name) || '');
+        if (hasAndroidCam && errName !== 'NotAllowedError' && errName !== 'PermissionDeniedError') {
+          triggerAndroidNativeCameraFromOverlay();
+          return;
+        }
         const msg = (errName === 'NotAllowedError' || errName === 'PermissionDeniedError')
           ? 'Izin akses kamera belum diaktifkan. Mohon izinkan akses Kamera lalu tekan "Coba Kamera Lagi".'
           : (errName === 'NotFoundError' || errName === 'DevicesNotFoundError')
@@ -12149,6 +12213,7 @@
         try {
           await videoEl.play();
         } catch (e) {}
+        await waitForChatLiveVideoMetadata(videoEl);
       }
     }
 
@@ -12181,14 +12246,18 @@
       startChatLiveCameraStream(st.openSessionSeq);
     }
 
-    function captureChatLivePhoto() {
+    async function captureChatLivePhoto() {
       const st = window.__chatLiveCameraState;
       const videoEl = document.getElementById('chatLiveCameraVideo');
       const capImg = document.getElementById('chatLiveCameraCapturedImg');
       if (!st || !videoEl || !st.stream) return;
 
-      const vw = Number(videoEl.videoWidth || 0) || 1280;
-      const vh = Number(videoEl.videoHeight || 0) || 720;
+      await waitForChatLiveVideoMetadata(videoEl);
+      const trackSettings = (st.stream.getVideoTracks && st.stream.getVideoTracks()[0] && st.stream.getVideoTracks()[0].getSettings)
+        ? st.stream.getVideoTracks()[0].getSettings()
+        : {};
+      const vw = Number(videoEl.videoWidth || 0) || Number(trackSettings.width || 0) || 1280;
+      const vh = Number(videoEl.videoHeight || 0) || Number(trackSettings.height || 0) || 720;
       const cv = document.createElement('canvas');
       cv.width = vw;
       cv.height = vh;
