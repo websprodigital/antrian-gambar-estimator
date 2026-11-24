@@ -372,8 +372,9 @@ function mergeNotesHistoryGas(existingRaw, incomingRaw) {
     var roleLabel = (item.roleLabel || "").toString().trim();
     var sourceMenu = (item.sourceMenu || "").toString().trim();
     var createdAtMs = Number(item.createdAtMs || 0);
+    var isEditNotif = Boolean(item.isEditNotif) || /Telah Melakukan Edit Data (Penawaran|Estimator|Sales)/i.test(txt);
     var sig = ts + "|" + author + "|" + txt;
-    if ((msgId && seenIds[msgId]) || seenSigs[sig]) continue;
+    if ((msgId && seenIds[msgId]) || ((!msgId || !isEditNotif) && seenSigs[sig])) continue;
     if (msgId) seenIds[msgId] = true;
     seenSigs[sig] = true;
     var obj = {
@@ -382,6 +383,7 @@ function mergeNotesHistoryGas(existingRaw, incomingRaw) {
       text: txt
     };
     if (msgId) obj.id = msgId;
+    if (isEditNotif) obj.isEditNotif = true;
     if (role) obj.role = role;
     if (roleLabel) obj.roleLabel = roleLabel;
     if (sourceMenu) obj.sourceMenu = sourceMenu;
@@ -888,6 +890,18 @@ function doPost(e) {
           "Dihapus dari Aktif (Arsip History)",
           JSON.stringify(snapSummary)
         );
+        appendRealtimeNotificationGas(
+          ssDel,
+          "sales_form_edit",
+          "Edit Perubahan (Hapus Data) Sales",
+          (actorUsername || snapSummary.salesName || "Sales") + ": Telah Melakukan Edit Data Sales — Hapus " + delCode + " - " + (snapSummary.customerName || "-") + " (" + (snapSummary.projectName || "-") + ")",
+          actorUsername || snapSummary.salesName || "Sales",
+          delCode,
+          snapSummary.customerName || "-",
+          snapSummary.projectName || "-",
+          snapSummary.status || "Dihapus",
+          ""
+        );
         return createJsonResponse({
           status: "success",
           message: "Data antrian " + delCode + " berhasil dihapus dari Sheet1 & diarsipkan di History_Data."
@@ -1370,12 +1384,13 @@ function doPost(e) {
         gasClientEventId
       );
     } else if (gasNotifyType === "sales_form_edit" || (data.updatedBy === "sales" && operationType === "updated")) {
+      var gasSalesActor = (actorUsername && actorUsername !== "Sistem") ? actorUsername : (rowValues[3] || "Sales");
       createdGasNotif = appendRealtimeNotificationGas(
         ss,
         "sales_form_edit",
         "Edit Perubahan Data Gambar Sales",
-        rowValues[3] + " mengedit di Edit Perubahan: " + queueCode + " - " + rowValues[4] + " (" + rowValues[5] + ")",
-        rowValues[3] || actorUsername,
+        gasSalesActor + ": Telah Melakukan Edit Data Sales — " + queueCode + " - " + rowValues[4] + " (" + rowValues[5] + ")",
+        gasSalesActor,
         queueCode || "-",
         rowValues[4] || "-",
         rowValues[5] || "-",
@@ -1383,12 +1398,12 @@ function doPost(e) {
         gasClientEventId
       );
     } else if (gasNotifyType === "estimator_edit" || data.updatedBy === "estimator") {
-      var gasEstActor = (rowValues[21] && rowValues[21] !== "(Belum dipilih)") ? rowValues[21] : actorUsername;
+      var gasEstActor = (actorUsername && actorUsername !== "Sistem") ? actorUsername : ((rowValues[21] && rowValues[21] !== "(Belum dipilih)") ? rowValues[21] : "Estimator");
       createdGasNotif = appendRealtimeNotificationGas(
         ss,
         "estimator_edit",
         "Pembaruan Kelola Estimasi Estimator",
-        gasEstActor + " mengedit Kelola Estimasi (" + rowValues[20] + "): " + queueCode + " - " + rowValues[4] + " (" + rowValues[5] + ")",
+        gasEstActor + ": Telah Melakukan Edit Data Estimator (" + rowValues[20] + ") — " + queueCode + " - " + rowValues[4] + " (" + rowValues[5] + ")",
         gasEstActor,
         queueCode || "-",
         rowValues[4] || "-",
@@ -1397,12 +1412,12 @@ function doPost(e) {
         gasClientEventId
       );
     } else if (gasNotifyType === "contract_edit" || data.updatedBy === "contract") {
-      var gasContractActor = actorUsername || "Admin Kontrak";
+      var gasContractActor = (actorUsername && actorUsername !== "Sistem") ? actorUsername : "Admin Kontrak";
       createdGasNotif = appendRealtimeNotificationGas(
         ss,
         "contract_edit",
         "Pembaruan Penawaran Admin Kontrak",
-        gasContractActor + " memperbarui Admin Kontrak (" + rowValues[20] + "): " + queueCode + " - " + rowValues[4] + " (" + rowValues[5] + ")",
+        gasContractActor + ": Telah Melakukan Edit Data Penawaran (" + rowValues[20] + ") — " + queueCode + " - " + rowValues[4] + " (" + rowValues[5] + ")",
         gasContractActor,
         queueCode || "-",
         rowValues[4] || "-",

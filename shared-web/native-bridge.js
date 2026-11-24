@@ -615,7 +615,7 @@
           }
         }
         const topReplyBar = document.getElementById('chatTopReplyActionBar');
-        if (topReplyBar && (topReplyBar.classList.contains('open') || (topReplyBar.style.display && topReplyBar.style.display !== 'none'))) {
+        if (topReplyBar && (topReplyBar.classList.contains('visible') || topReplyBar.classList.contains('open') || (topReplyBar.style.display && topReplyBar.style.display !== 'none'))) {
           if (typeof window.clearChatSelectionMode === 'function') {
             window.clearChatSelectionMode();
             return 'handled';
