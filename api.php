@@ -317,7 +317,8 @@ function mergeNotesHistoryArrays($existingHist, $incomingHist) {
     $listA = is_array($existingHist) ? $existingHist : [];
     $listB = is_array($incomingHist) ? $incomingHist : [];
     $seenIds = [];
-    $seenSigs = [];
+    $seenNoIdSigs = [];
+    $seenAllSigs = [];
     $merged = [];
     foreach (array_merge($listA, $listB) as $item) {
         if (!is_array($item)) continue;
@@ -330,22 +331,26 @@ function mergeNotesHistoryArrays($existingHist, $incomingHist) {
         $roleLabel = trim((string)($item['roleLabel'] ?? ''));
         $sourceMenu = trim((string)($item['sourceMenu'] ?? ''));
         $createdAtMs = intval($item['createdAtMs'] ?? 0);
-        $isEditNotif = !empty($item['isEditNotif']) || (preg_match('/Telah Melakukan Edit Data (Penawaran|Estimator|Sales)/i', $txt) === 1);
         $sig = $ts . '|' . $author . '|' . $txt;
-        if (($msgId !== '' && isset($seenIds[$msgId])) || (($msgId === '' || !$isEditNotif) && isset($seenSigs[$sig]))) continue;
-        if ($msgId !== '') $seenIds[$msgId] = true;
-        $seenSigs[$sig] = true;
+        if ($msgId !== '') {
+            if (isset($seenIds[$msgId]) || isset($seenNoIdSigs[$sig])) continue;
+            $seenIds[$msgId] = true;
+        } else {
+            if (isset($seenAllSigs[$sig])) continue;
+            $seenNoIdSigs[$sig] = true;
+        }
+        $seenAllSigs[$sig] = true;
         $entry = [
             'timestamp' => $ts ?: date('d/m/Y H : i : s'),
             'author' => $author ?: '-',
             'text' => $txt
         ];
         if ($msgId !== '') $entry['id'] = $msgId;
-        if ($isEditNotif) $entry['isEditNotif'] = true;
         if ($role !== '') $entry['role'] = $role;
         if ($roleLabel !== '') $entry['roleLabel'] = $roleLabel;
         if ($sourceMenu !== '') $entry['sourceMenu'] = $sourceMenu;
         if ($createdAtMs > 0) $entry['createdAtMs'] = $createdAtMs;
+        if (!empty($item['isEditAudit'])) $entry['isEditAudit'] = true;
         if (isset($item['replyTo']) && is_array($item['replyTo'])) {
             $entry['replyTo'] = $item['replyTo'];
         }
@@ -1378,7 +1383,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $store,
                 'sales_form_edit',
                 'Edit Perubahan (Hapus Data) Sales',
-                $delActor . ': Telah Melakukan Edit Data Sales — Hapus ' . $delCode . ' - ' . ($oldRec['customerName'] ?? '-') . ' (' . ($oldRec['projectName'] ?? '-') . ')',
+                $delActor . ' (Sales): Telah Melakukan Edit Data Sales — Hapus ' . $delCode . ' - ' . ($oldRec['customerName'] ?? '-') . ' (' . ($oldRec['projectName'] ?? '-') . ')',
                 $delActor,
                 $delCode,
                 $oldRec['customerName'] ?? '-',
@@ -1697,9 +1702,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'unifiedChatHistory' => mergeNotesHistoryArrays($existing['unifiedChatHistory'] ?? [], $incomingUnifiedChat)
             ];
 
+            $clearedExtraSlots = ($isSalesSide && is_array($data['clearedExtraSlots'] ?? null))
+                ? array_map('intval', $data['clearedExtraSlots'])
+                : [];
             for ($s = 1; $s <= 8; $s++) {
                 $val = $slotDocMap[$s] ?? trim((string)($data['extraImg' . $s] ?? ''));
-                if ($val === '' && !empty($existing['extraImg' . $s])) {
+                if ($val === '' && !in_array($s, $clearedExtraSlots, true) && !empty($existing['extraImg' . $s])) {
                     $val = $existing['extraImg' . $s];
                 }
                 $record['extraImg' . $s] = $val;
@@ -1798,7 +1806,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $store,
                     'sales_form_edit',
                     'Edit Perubahan Data Gambar Sales',
-                    $salesActor . ': Telah Melakukan Edit Data Sales — ' . $record['queueCode'] . ' - ' . $record['customerName'] . ' (' . $record['projectName'] . ')',
+                    $salesActor . ' (Sales): Telah Melakukan Edit Data Sales — ' . $record['queueCode'] . ' - ' . $record['customerName'] . ' (' . $record['projectName'] . ')',
                     $salesActor,
                     $record['queueCode'],
                     $record['customerName'],
@@ -1812,7 +1820,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $store,
                     'estimator_edit',
                     'Pembaruan Kelola Estimasi Estimator',
-                    $estActor . ': Telah Melakukan Edit Data Estimator (' . $record['status'] . ') — ' . $record['queueCode'] . ' - ' . $record['customerName'] . ' (' . $record['projectName'] . ')',
+                    $estActor . ' (Estimator): Telah Melakukan Edit Data Estimator (' . $record['status'] . ') — ' . $record['queueCode'] . ' - ' . $record['customerName'] . ' (' . $record['projectName'] . ')',
                     $estActor,
                     $record['queueCode'],
                     $record['customerName'],
@@ -1826,7 +1834,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $store,
                     'contract_edit',
                     'Pembaruan Penawaran Admin Kontrak',
-                    $contractActor . ': Telah Melakukan Edit Data Penawaran (' . $record['status'] . ') — ' . $record['queueCode'] . ' - ' . $record['customerName'] . ' (' . $record['projectName'] . ')',
+                    $contractActor . ' (Admin Kontrak): Telah Melakukan Edit Data Penawaran (' . $record['status'] . ') — ' . $record['queueCode'] . ' - ' . $record['customerName'] . ' (' . $record['projectName'] . ')',
                     $contractActor,
                     $record['queueCode'],
                     $record['customerName'],

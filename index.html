@@ -2329,21 +2329,47 @@
     .notes-timeline-item.role-sales { border-left-color: #2563eb; }
     .notes-timeline-item.role-estimator { border-left-color: #059669; }
     .notes-timeline-item.role-contract { border-left-color: #7c3aed; }
-    .notes-timeline-item.is-edit-notif {
-      background: #fffbeb;
-      border-top-color: #fde68a;
-      border-right-color: #fde68a;
-      border-bottom-color: #fde68a;
+    .notes-chat-entry.is-edit-audit {
+      padding: 0.2rem 0.36rem;
+      border-radius: 5px;
+      border-left: 3px solid #2563eb;
+      background: #eff6ff;
+      margin: 0.08rem 0;
     }
-    .notes-chat-entry.is-edit-notif {
-      background: #fffbeb;
-      border: 1px solid #fde68a;
-      border-radius: 6px;
-      padding: 0.25rem 0.35rem;
+    .notes-chat-entry.is-edit-audit.role-estimator {
+      border-left-color: #059669;
+      background: #ecfdf5;
     }
-    .chat-edit-notif-text {
+    .notes-chat-entry.is-edit-audit.role-contract {
+      border-left-color: #7c3aed;
+      background: #f5f3ff;
+    }
+    .notes-chat-entry.is-edit-audit .notes-history-text {
       font-weight: 700;
-      color: #92400e;
+      color: #0f172a;
+    }
+    .notes-timeline-item.is-edit-audit {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      border-left-color: #2563eb;
+    }
+    .notes-timeline-item.is-edit-audit.role-estimator {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      border-left-color: #059669;
+    }
+    .notes-timeline-item.is-edit-audit.role-contract {
+      background: #f5f3ff;
+      border-color: #ddd6fe;
+      border-left-color: #7c3aed;
+    }
+    .notes-timeline-item.is-edit-audit .notes-timeline-body {
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .notes-timeline-item.is-edit-audit .notes-timeline-body::before {
+      content: '✏️ ';
+      font-size: 0.72rem;
     }
     .notes-timeline-header {
       display: flex;
@@ -9050,7 +9076,8 @@
     function mergeNotesHistoryClient(listA, listB, defaultMeta) {
       const merged = [];
       const seenById = new Map();
-      const seenBySig = new Map();
+      const seenNoIdBySig = new Map();
+      const seenAllBySig = new Map();
       const combined = [].concat(Array.isArray(listA) ? listA : [], Array.isArray(listB) ? listB : []);
       combined.forEach(function(item) {
         if (!item || typeof item !== 'object') return;
@@ -9063,13 +9090,16 @@
         const msgId = String(item.id || '').trim();
         const ts = String(item.timestamp || '').trim();
         const author = String(item.author || '-').trim();
-        const isEditNotif = Boolean(item.isEditNotif) || /Telah Melakukan Edit Data (Penawaran|Estimator|Sales)/i.test(txt);
         const mediaTag = hasMedia ? String(item.media.mediaId || item.media.url || item.media.name || 'media') : '';
         const sig = ts + '|' + author + '|' + txt + (mediaTag ? ('|' + mediaTag) : '');
 
-        const existingTarget = (msgId && seenById.get(msgId)) || ((!msgId || !isEditNotif) ? seenBySig.get(sig) : null) || null;
+        const existingTarget = msgId
+          ? (seenById.get(msgId) || seenNoIdBySig.get(sig) || null)
+          : (seenAllBySig.get(sig) || null);
         if (existingTarget) {
-          if (isEditNotif) existingTarget.isEditNotif = true;
+          if (item.isEditAudit && !existingTarget.isEditAudit) {
+            existingTarget.isEditAudit = true;
+          }
           if (item.replyTo && typeof item.replyTo === 'object' && !existingTarget.replyTo) {
             existingTarget.replyTo = item.replyTo;
           }
@@ -9082,6 +9112,7 @@
         const roleMeta = getChatRoleMeta(item.role || (defaultMeta && defaultMeta.role) || '');
         const resolvedRole = String(item.role || (defaultMeta && defaultMeta.role) || roleMeta.role || '').trim();
         const resolvedLabel = String(item.roleLabel || (defaultMeta && defaultMeta.roleLabel) || roleMeta.roleLabel || 'Tim Proyek').trim();
+        const isEditNoticeTxt = Boolean(item.isEditAudit) || /^Telah Melakukan Edit Data (Penawaran|Estimator|Sales)$/i.test(txt);
         const obj = {
           timestamp: ts || (typeof formatLiveDateTimeSpaced === 'function' ? formatLiveDateTimeSpaced(new Date()) : new Date().toLocaleString()),
           author: author || '-',
@@ -9092,11 +9123,15 @@
           text: txt
         };
         if (msgId) obj.id = msgId;
-        if (isEditNotif) obj.isEditNotif = true;
+        if (isEditNoticeTxt) obj.isEditAudit = true;
         if (item.replyTo && typeof item.replyTo === 'object') obj.replyTo = item.replyTo;
         if (hasMedia) obj.media = Object.assign({}, item.media);
-        if (msgId) seenById.set(msgId, obj);
-        seenBySig.set(sig, obj);
+        if (msgId) {
+          seenById.set(msgId, obj);
+        } else {
+          seenNoIdBySig.set(sig, obj);
+        }
+        seenAllBySig.set(sig, obj);
         merged.push(obj);
       });
       merged.sort(function(a, b) {
@@ -9123,7 +9158,7 @@
         ? formatLiveDateTimeSpaced(new Date(nowMs))
         : new Date(nowMs).toLocaleString();
       const roleMeta = getChatRoleMeta(meta.role || '');
-      base.push({
+      const entryObj = {
         id: meta.id || ('MSG-' + nowMs + '-' + Math.random().toString(36).slice(2, 6)),
         createdAtMs: nowMs,
         timestamp: tsStr,
@@ -9132,8 +9167,46 @@
         roleLabel: meta.roleLabel || roleMeta.roleLabel,
         sourceMenu: meta.sourceMenu || '',
         text: cleanTxt
-      });
+      };
+      if (meta.isEditAudit) entryObj.isEditAudit = true;
+      base.push(entryObj);
       return base.length > 150 ? base.slice(-150) : base;
+    }
+
+    function appendEditAuditChatMessage(record, cfg) {
+      if (!record || !cfg || !cfg.text) return null;
+      const existingUnified = getUnifiedChatForRecord(record);
+      const maxExistingMs = existingUnified.reduce(function(mx, m) {
+        return Math.max(mx, Number(m && m.createdAtMs ? m.createdAtMs : 0));
+      }, 0);
+      const nowMs = Math.max(Date.now(), maxExistingMs + 1);
+      const tsStr = (typeof formatLiveDateTimeSpaced === 'function')
+        ? formatLiveDateTimeSpaced(new Date(nowMs))
+        : new Date(nowMs).toLocaleString();
+      const roleMeta = getChatRoleMeta(cfg.role || '');
+      const msgObj = {
+        id: 'MSG-' + nowMs + '-' + Math.random().toString(36).slice(2, 6),
+        createdAtMs: nowMs,
+        timestamp: tsStr,
+        author: String(cfg.author || '-').trim() || '-',
+        role: cfg.role || roleMeta.role,
+        roleLabel: cfg.roleLabel || roleMeta.roleLabel,
+        sourceMenu: cfg.sourceMenu || '',
+        isEditAudit: true,
+        text: String(cfg.text).trim()
+      };
+      record.unifiedChatHistory = mergeNotesHistoryClient(record.unifiedChatHistory, [msgObj]);
+      if (cfg.historyField) {
+        record[cfg.historyField] = mergeNotesHistoryClient(record[cfg.historyField], [msgObj], {
+          role: msgObj.role,
+          roleLabel: msgObj.roleLabel,
+          sourceMenu: msgObj.sourceMenu
+        });
+      }
+      if (window.__knownChatMsgIds && typeof window.__knownChatMsgIds.add === 'function') {
+        window.__knownChatMsgIds.add(String(msgObj.id));
+      }
+      return msgObj;
     }
 
     function getUnifiedChatForRecord(record) {
@@ -9172,88 +9245,6 @@
 
     function getNotesHistoryForRecord(record, type) {
       return getUnifiedChatForRecord(record);
-    }
-
-    function getRoleEditNotifMessage(roleKey) {
-      const norm = String(roleKey || '').trim().toLowerCase();
-      if (norm === 'contract' || norm === 'admin kontrak' || norm === 'penawaran') {
-        return 'Telah Melakukan Edit Data Penawaran';
-      }
-      if (norm === 'admin' || norm === 'estimator') {
-        return 'Telah Melakukan Edit Data Estimator';
-      }
-      return 'Telah Melakukan Edit Data Sales';
-    }
-
-    function isEditNotifChatEntry(entry, parsedBody) {
-      if (entry && entry.isEditNotif) return true;
-      const bodyStr = String(parsedBody !== undefined ? parsedBody : (entry && entry.text) || '').trim();
-      return /Telah Melakukan Edit Data (Penawaran|Estimator|Sales)/i.test(bodyStr);
-    }
-
-    function appendRoleEditChatNotification(record, roleKey, actorName, customNoteText, prevNoteText) {
-      if (!record || typeof record !== 'object') return null;
-      const normRole = String(roleKey || '').trim().toLowerCase();
-      const meta = (normRole === 'contract' || normRole === 'admin kontrak')
-        ? { role: 'contract', roleLabel: 'Admin Kontrak', sourceMenu: 'Catatan Penawaran', histProp: 'quoteNotesHistory' }
-        : ((normRole === 'admin' || normRole === 'estimator')
-          ? { role: 'admin', roleLabel: 'Estimator', sourceMenu: 'Catatan Desain Estimator', histProp: 'estimatorNotesHistory' }
-          : { role: 'sales', roleLabel: 'Sales', sourceMenu: 'Catatan Dari Sales', histProp: 'salesNotesHistory' });
-
-      const authorClean = String(actorName || (currentUser && currentUser.name) || meta.roleLabel || 'Tim Proyek').trim() || meta.roleLabel;
-      const existingUnified = getUnifiedChatForRecord(record);
-      const maxExistingMs = existingUnified.reduce(function(mx, m) {
-        return Math.max(mx, Number(m && m.createdAtMs ? m.createdAtMs : 0));
-      }, 0);
-      const nowMs = Math.max(Date.now(), maxExistingMs + 1);
-      const notifMsgId = 'MSG-EDIT-' + nowMs + '-' + Math.random().toString(36).slice(2, 6);
-      const notifText = getRoleEditNotifMessage(meta.role);
-      const notifTs = (typeof formatLiveDateTimeSpaced === 'function')
-        ? formatLiveDateTimeSpaced(new Date(nowMs))
-        : new Date(nowMs).toLocaleString();
-
-      const notifEntry = {
-        id: notifMsgId,
-        createdAtMs: nowMs,
-        timestamp: notifTs,
-        author: authorClean,
-        role: meta.role,
-        roleLabel: meta.roleLabel,
-        sourceMenu: meta.sourceMenu,
-        isEditNotif: true,
-        text: notifText
-      };
-
-      const entriesToAdd = [notifEntry];
-      const cleanCustom = sanitizeChatMessageText(customNoteText || '');
-      const cleanPrev = sanitizeChatMessageText(prevNoteText || '');
-      if (cleanCustom && cleanCustom !== '-' && cleanCustom !== cleanPrev && cleanCustom !== notifText) {
-        const noteMs = nowMs + 1;
-        const noteId = 'MSG-NOTE-' + noteMs + '-' + Math.random().toString(36).slice(2, 6);
-        entriesToAdd.push({
-          id: noteId,
-          createdAtMs: noteMs,
-          timestamp: (typeof formatLiveDateTimeSpaced === 'function')
-            ? formatLiveDateTimeSpaced(new Date(noteMs))
-            : new Date(noteMs).toLocaleString(),
-          author: authorClean,
-          role: meta.role,
-          roleLabel: meta.roleLabel,
-          sourceMenu: meta.sourceMenu,
-          text: cleanCustom
-        });
-      }
-
-      if (window.__knownChatMsgIds && typeof window.__knownChatMsgIds.add === 'function') {
-        entriesToAdd.forEach(function(ent) {
-          window.__knownChatMsgIds.add(String(ent.id));
-          window.__knownChatMsgIds.add(String((record.queueCode || record.id || '') + '|' + ent.author + '|' + ent.text));
-        });
-      }
-
-      record.unifiedChatHistory = mergeNotesHistoryClient(record.unifiedChatHistory, entriesToAdd);
-      record[meta.histProp] = mergeNotesHistoryClient(record[meta.histProp], entriesToAdd, meta);
-      return notifEntry;
     }
 
     function applyRemoteRecordsToDatabase(remoteRecords) {
@@ -9346,7 +9337,12 @@
           if (remoteItem.quoteFinalDoc) target.quoteFinalDoc = remoteItem.quoteFinalDoc;
           if (remoteItem.docsText && remoteItem.docsText !== '-') target.driveLink = remoteItem.docsText;
           for (var s = 1; s <= 8; s++) {
-            if (remoteItem['extraImg' + s]) target['extraImg' + s] = remoteItem['extraImg' + s];
+            if (remoteItem['extraImg' + s] !== undefined) {
+              var pendingClearedList = Array.isArray(target._pendingClearedExtraSlots) ? target._pendingClearedExtraSlots : [];
+              if (!pendingClearedList.includes(s)) {
+                target['extraImg' + s] = remoteItem['extraImg' + s] || '';
+              }
+            }
           }
           updatedCount++;
         } else {
@@ -9425,10 +9421,12 @@
             if (!m) return;
             const mId = String(m.id || '');
             const sig = String((rec.queueCode || rec.id || '') + '|' + (m.author || '') + '|' + (m.text || ''));
-            const seenBefore = (mId && window.__knownChatMsgIds.has(mId)) || window.__knownChatMsgIds.has(sig);
+            const seenBefore = mId
+              ? window.__knownChatMsgIds.has(mId)
+              : window.__knownChatMsgIds.has(sig);
             if (!seenBefore) {
               if (mId) window.__knownChatMsgIds.add(mId);
-              window.__knownChatMsgIds.add(sig);
+              else window.__knownChatMsgIds.add(sig);
               const msgMs = Number(m.createdAtMs || 0);
               if (allowPastBaseline || msgMs >= baselineCut) {
                 registerIncomingProjectChatAlert({
@@ -11568,14 +11566,15 @@
       } else {
         chatBodyHtml = `<div class="notes-chat-stack">` + chatList.map(entry => {
           const roleMeta = getChatRoleMeta(entry.role || type);
-          const isEditNotif = isEditNotifChatEntry(entry, entry.text);
+          const isEditNotice = Boolean(entry.isEditAudit) || /^Telah Melakukan Edit Data (Penawaran|Estimator|Sales)$/i.test(String(entry.text || '').trim());
+          const editCls = isEditNotice ? (' is-edit-audit ' + (roleMeta.role === 'sales' ? 'role-sales' : (roleMeta.role === 'admin' ? 'role-estimator' : (roleMeta.role === 'contract' ? 'role-contract' : '')))) : '';
           return `
-            <div class="notes-chat-entry${isEditNotif ? ' is-edit-notif' : ''}">
+            <div class="notes-chat-entry${editCls}">
               <div class="chat-sender-line">
                 <span class="chat-role-pill ${roleMeta.cssClass}">${escapeHtml(entry.roleLabel || roleMeta.roleLabel)}</span>
                 <span>${escapeHtml(entry.author || '-')}</span>
               </div>
-              <div class="notes-history-text${isEditNotif ? ' chat-edit-notif-text' : ''}">${isEditNotif ? '🔔 ' : ''}${escapeHtml(entry.text || '')}</div>
+              <div class="notes-history-text">${escapeHtml(entry.text || '')}</div>
             </div>
           `;
         }).join('') + `</div>`;
@@ -12060,7 +12059,7 @@
         longPressTriggered = false;
         cancelTimers();
         longPressTimer = setTimeout(function() {
-          if (!activeCard || swipingRight) return;
+          if (!activeCard || !activeCard.isConnected || swipingRight) return;
           longPressTriggered = true;
           const idx = Number(activeCard.getAttribute('data-chat-idx'));
           if (!Number.isNaN(idx)) {
@@ -12144,13 +12143,22 @@
       });
     }
 
-    function renderNotesHistoryModalTimeline(item) {
+    function renderNotesHistoryModalTimeline(item, renderOpts) {
       const listEl = document.getElementById('notesHistoryTimelineList');
       if (!listEl || !item) return;
       bindChatTimelineReplyGestures(listEl);
-      clearChatSelectionMode();
 
       const chatList = getUnifiedChatForRecord(item);
+      const timelineSig = String(item.queueCode || item.id || '') + '::' + chatList.map(function(m) {
+        const med = (m && m.media) ? (m.media.url || m.media.thumbUrl || m.media.dataUrl || m.media.mediaId || m.media.name || '') : '';
+        return (m.id || '') + '|' + (m.text || '') + '|' + (m.replyTo ? (m.replyTo.id || '') : '') + '|' + med;
+      }).join(';;');
+      if (renderOpts && renderOpts.preserveIfSameSig && listEl.dataset.renderedTimelineSig === timelineSig) {
+        window.__lastRenderedChatList = chatList;
+        return;
+      }
+      listEl.dataset.renderedTimelineSig = timelineSig;
+      clearChatSelectionMode();
       window.__lastRenderedChatList = chatList;
       if (chatList.length === 0) {
         listEl.innerHTML = `<div style="text-align:center; padding: 1.25rem; color: #64748b; font-style: italic; font-size: 0.78rem;">Belum ada percakapan chat pada proyek ini. Ketik balasan di bawah untuk memulai chat!</div>`;
@@ -12200,10 +12208,11 @@
           `;
         }
 
-        const isEditNotif = isEditNotifChatEntry(entry, entry.text);
+        const isEditAudit = Boolean(entry.isEditAudit) || /^Telah Melakukan Edit Data (Penawaran|Estimator|Sales)$/i.test(String(entry.text || '').trim());
+        const auditCls = isEditAudit ? ' is-edit-audit' : '';
         const safeMsgId = escapeHtml(entry.id || ('idx-' + idx));
         return `
-          <div class="notes-timeline-item ${itemCls}${isEditNotif ? ' is-edit-notif' : ''}" data-chat-idx="${idx}" data-chat-msg-id="${safeMsgId}">
+          <div class="notes-timeline-item ${itemCls}${auditCls}" data-chat-idx="${idx}" data-chat-msg-id="${safeMsgId}">
             <div class="chat-msg-swipe-hint" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
             </div>
@@ -12222,7 +12231,7 @@
             </div>
             ${replyHtml}
             ${mediaHtml}
-            <div class="notes-timeline-body${isEditNotif ? ' chat-edit-notif-text' : ''}">${isEditNotif ? '🔔 ' : ''}${escapeHtml(entry.text || '-')}</div>
+            <div class="notes-timeline-body">${escapeHtml(entry.text || '-')}</div>
           </div>
         `;
       }).join('');
@@ -13171,7 +13180,7 @@
               const modalEl = document.getElementById('modalNotesHistory');
               const openId = document.getElementById('notesHistoryRowId')?.value || '';
               if (modalEl && modalEl.classList.contains('open') && (openId === record.id || openId === record.queueCode)) {
-                renderNotesHistoryModalTimeline(record);
+                renderNotesHistoryModalTimeline(record, { preserveIfSameSig: true });
               }
             }
           }
@@ -13276,13 +13285,10 @@
         }
         summaryText = (tautkanPayload.summaryLines || []).join(' • ')
           || ((tautkanPayload.files || []).length > 0 ? ((tautkanPayload.files || []).length + ' file Tautkan diupload') : '');
-        const tautkanNotifPhrase = getRoleEditNotifMessage(tautkanPayload.role);
         if (!txt && summaryText) {
-          txt = tautkanNotifPhrase + '\n📎 ' + summaryText;
+          txt = '📎 ' + summaryText;
         } else if (txt && summaryText) {
-          txt = txt + '\n' + tautkanNotifPhrase + ' (📎 ' + summaryText + ')';
-        } else if (!txt) {
-          txt = tautkanNotifPhrase;
+          txt = txt + '\n📎 Tautan Data: ' + summaryText;
         }
       }
 
@@ -13298,9 +13304,6 @@
       };
       if (replyTarget) {
         newChatMsg.replyTo = replyTarget;
-      }
-      if (tautkanPayload && tautkanPayload.hasChanges) {
-        newChatMsg.isEditNotif = true;
       }
       let cloudChatMsg = newChatMsg;
       if (cameraMedia) {
@@ -15598,8 +15601,10 @@
 
       // Populate 8 Slot Upload Dokumen
       currentUploadedBase64 = item.imageFile || null;
+      window.__salesInitialExtraSlots = {};
       for (let i = 1; i <= 8; i++) {
         const val = item['extraImg' + i] || '';
+        window.__salesInitialExtraSlots[i] = val;
         const statusEl = document.getElementById('slotStatus' + i);
         const infoEl = document.getElementById('slotFileInfo' + i);
         const hiddenEl = document.getElementById('extraImg' + i);
@@ -15735,11 +15740,20 @@
 
         let targetSavedRecord = null;
         if (editId) {
-          const idx = projectDatabase.findIndex(x => x.id === editId);
+          let idx = projectDatabase.findIndex(x => x.id === editId);
+          if (idx === -1 && queueCode) {
+            idx = projectDatabase.findIndex(x => x.queueCode === queueCode);
+          }
           if (idx !== -1) {
             const prevSalesNote = String(projectDatabase[idx].salesNotes || '').trim();
-            projectDatabase[idx] = {
-              ...projectDatabase[idx],
+            let nextSalesHist = mergeNotesHistoryClient(projectDatabase[idx].salesNotesHistory, [], { role: 'sales', roleLabel: 'Sales', sourceMenu: 'Catatan Dari Sales' });
+            let nextUnifiedChat = mergeNotesHistoryClient(projectDatabase[idx].unifiedChatHistory, []);
+            if (salesNotes && salesNotes !== '-' && salesNotes !== prevSalesNote) {
+              const sNoteId = 'MSG-NOTE-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+              nextSalesHist = appendNoteToHistoryClient(nextSalesHist, salesNotes, salesAuthorName, { id: sNoteId, role: 'sales', roleLabel: 'Sales', sourceMenu: 'Catatan Dari Sales' });
+              nextUnifiedChat = appendNoteToHistoryClient(nextUnifiedChat, salesNotes, salesAuthorName, { id: sNoteId, role: 'sales', roleLabel: 'Sales', sourceMenu: 'Catatan Dari Sales' });
+            }
+            Object.assign(projectDatabase[idx], {
               queueCode: queueCode || normalizeQueueCodeTo2027(projectDatabase[idx].queueCode, salesName),
               salesName,
               uploadDateTime: uploadTime,
@@ -15759,10 +15773,35 @@
               extraImg8: extra8,
               projectMaterial: document.getElementById('salesInputProjectMaterial') ? document.getElementById('salesInputProjectMaterial').value : '',
               salesNotes,
+              salesNotesHistory: nextSalesHist,
+              unifiedChatHistory: nextUnifiedChat,
               status: projectDatabase[idx].status || 'Masih Antrian Gambar'
-            };
-            appendRoleEditChatNotification(projectDatabase[idx], 'sales', salesAuthorName, salesNotes, prevSalesNote);
+            });
             targetSavedRecord = projectDatabase[idx];
+            appendEditAuditChatMessage(targetSavedRecord, {
+              role: 'sales',
+              roleLabel: 'Sales',
+              sourceMenu: 'Catatan Dari Sales',
+              historyField: 'salesNotesHistory',
+              author: salesAuthorName,
+              text: 'Telah Melakukan Edit Data Sales'
+            });
+            const clearedSet = new Set(Array.isArray(targetSavedRecord._pendingClearedExtraSlots) ? targetSavedRecord._pendingClearedExtraSlots : []);
+            const prevSlots = (window.__salesInitialExtraSlots && typeof window.__salesInitialExtraSlots === 'object') ? window.__salesInitialExtraSlots : {};
+            [extra1, extra2, extra3, extra4, extra5, extra6, extra7, extra8].forEach(function(slotVal, slotPos) {
+              const sNum = slotPos + 1;
+              if (slotVal && String(slotVal).trim() !== '') {
+                clearedSet.delete(sNum);
+              } else if (prevSlots[sNum] && String(prevSlots[sNum]).trim() !== '') {
+                clearedSet.add(sNum);
+              }
+            });
+            if (clearedSet.size > 0) {
+              targetSavedRecord._pendingClearedExtraSlots = Array.from(clearedSet);
+            } else {
+              delete targetSavedRecord._pendingClearedExtraSlots;
+            }
+            window.__salesInitialExtraSlots = {};
           }
         } else {
           const initSalesHist = appendNoteToHistoryClient([], salesNotes, salesAuthorName, { role: 'sales', roleLabel: 'Sales', sourceMenu: 'Catatan Dari Sales' });
@@ -15850,7 +15889,7 @@
             eventType: notifyEventType,
             title: editId ? 'Edit Perubahan Data Gambar Sales' : 'Form Gambar Proyek Baru Diinput Sales',
             message: editId
-              ? `${salesAuthorName}: Telah Melakukan Edit Data Sales — ${targetSavedRecord.queueCode} - ${targetSavedRecord.customerName} (${targetSavedRecord.projectName})`
+              ? `${salesAuthorName} (Sales): Telah Melakukan Edit Data Sales — ${targetSavedRecord.queueCode} - ${targetSavedRecord.customerName} (${targetSavedRecord.projectName})`
               : `${salesName} mengisi Form Gambar Proyek: ${targetSavedRecord.queueCode} - ${targetSavedRecord.customerName} (${targetSavedRecord.projectName})`,
             actor: salesAuthorName,
             queueCode: targetSavedRecord.queueCode,
@@ -15863,13 +15902,17 @@
         // Otomatis kirim data formulir sales ke Google Spreadsheet & Google Drive Customer Folder
         if (targetSavedRecord) {
           const filesToSend = Object.values(slotFilesData);
+          const clearedForDispatch = Array.isArray(targetSavedRecord._pendingClearedExtraSlots)
+            ? targetSavedRecord._pendingClearedExtraSlots.slice()
+            : [];
           slotFilesData = {};
           const dispatchSaveToCloud = function() {
             sendRecordToGoogleSpreadsheet(targetSavedRecord, false, filesToSend, [], [], {
               isNewInsert: !editId,
               updatedBy: !editId ? 'sales_new' : 'sales',
               clientEventId: clientEventId,
-              notifyEventType: notifyEventType
+              notifyEventType: notifyEventType,
+              clearedExtraSlots: clearedForDispatch
             });
           };
           if (!getGoogleScriptUrl() && typeof shouldProbePhpCloudApi === 'function' && shouldProbePhpCloudApi() && typeof ensureCloudApiDetected === 'function') {
@@ -15920,10 +15963,6 @@
 
       const deletedItem = projectDatabase.find(x => x.id === pendingDeleteId);
       const delQCode = deletedItem && deletedItem.queueCode ? deletedItem.queueCode.trim() : '';
-      const delActor = (currentUser && currentUser.name) ? currentUser.name : ((deletedItem && deletedItem.salesName) ? deletedItem.salesName : 'Sales');
-      if (deletedItem) {
-        appendRoleEditChatNotification(deletedItem, 'sales', delActor, '', '');
-      }
       if (delQCode && typeof pendingDeleteQueues !== 'undefined') {
         pendingDeleteQueues.set(delQCode, Date.now());
       }
@@ -15933,17 +15972,20 @@
       renderAllTables();
       closeModal('modalDeleteConfirm');
 
-      if (deletedItem && typeof emitRealtimeNotification === 'function') {
+      const delActor = (currentUser && currentUser.name) ? currentUser.name : ((deletedItem && deletedItem.salesName) || 'Sales');
+      const delCust = (deletedItem && deletedItem.customerName) ? deletedItem.customerName : '-';
+      const delProj = (deletedItem && deletedItem.projectName) ? deletedItem.projectName : '-';
+      if (typeof emitRealtimeNotification === 'function') {
         emitRealtimeNotification({
-          id: 'EVT-DEL-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+          id: 'DEL-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
           eventType: 'sales_form_edit',
-          title: 'Edit Perubahan (Hapus Data) Sales',
-          message: `${delActor}: Telah Melakukan Edit Data Sales — Hapus ${delQCode || '-'} - ${deletedItem.customerName || '-'} (${deletedItem.projectName || '-'})`,
+          title: 'Edit Perubahan Data Gambar Sales',
+          message: `${delActor} (Sales): Telah Melakukan Edit Data Sales — Hapus Data ${delQCode || '-'} - ${delCust} (${delProj})`,
           actor: delActor,
           queueCode: delQCode || '-',
-          customerName: deletedItem.customerName || '-',
-          projectName: deletedItem.projectName || '-',
-          status: deletedItem.status || 'Masih Antrian Gambar'
+          customerName: delCust,
+          projectName: delProj,
+          status: 'Dihapus'
         }, { fromLocalAction: true });
       }
 
@@ -15953,14 +15995,12 @@
           try {
             fetch(gasUrl, {
               method: 'POST',
-              mode: 'no-cors',
+              redirect: 'follow',
               headers: { 'Content-Type': 'text/plain;charset=utf-8' },
               body: JSON.stringify({
                 action: 'delete_row',
                 queueCode: delQCode,
-                actorUsername: delActor,
-                actorUserKey: currentUser ? getProfileStorageKey(currentUser) : getProfileStorageKey(delActor),
-                notifyEventType: 'sales_form_edit'
+                actorUsername: delActor
               })
             }).then(() => {
               setTimeout(() => { syncFromGoogleSpreadsheet(true); }, 800);
@@ -16088,7 +16128,19 @@
       const estNoteVal = (document.getElementById('estInputNotes')?.value || '').trim() || '-';
       const estAuthor = (currentUser && currentUser.name) ? currentUser.name : (projectDatabase[idx].estimatorName || 'Estimator');
       projectDatabase[idx].estimatorNotes = estNoteVal;
-      appendRoleEditChatNotification(projectDatabase[idx], 'estimator', estAuthor, estNoteVal, prevEstNote);
+      if (estNoteVal && estNoteVal !== '-' && estNoteVal !== prevEstNote) {
+        const estNoteId = 'MSG-NOTE-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+        projectDatabase[idx].estimatorNotesHistory = appendNoteToHistoryClient(projectDatabase[idx].estimatorNotesHistory, estNoteVal, estAuthor, { id: estNoteId, role: 'admin', roleLabel: 'Estimator', sourceMenu: 'Catatan Desain Estimator' });
+        projectDatabase[idx].unifiedChatHistory = appendNoteToHistoryClient(projectDatabase[idx].unifiedChatHistory, estNoteVal, estAuthor, { id: estNoteId, role: 'admin', roleLabel: 'Estimator', sourceMenu: 'Catatan Desain Estimator' });
+      }
+      appendEditAuditChatMessage(projectDatabase[idx], {
+        role: 'admin',
+        roleLabel: 'Estimator',
+        sourceMenu: 'Catatan Desain Estimator',
+        historyField: 'estimatorNotesHistory',
+        author: estAuthor,
+        text: 'Telah Melakukan Edit Data Estimator'
+      });
       
       // Update status pengerjaan desain: Masih Antrian Gambar, Cek Kelengkapan Desain, Sedang Desain, Revisi Desain, atau Desain Selesai
       projectDatabase[idx].status = normalizeEstimatorStatusValue(document.getElementById('estInputStatus')?.value || 'Masih Antrian Gambar');
@@ -16116,7 +16168,7 @@
           id: clientEventId,
           eventType: 'estimator_edit',
           title: 'Pembaruan Kelola Estimasi Estimator',
-          message: `${estAuthor}: Telah Melakukan Edit Data Estimator (${projectDatabase[idx].status}) — ${projectDatabase[idx].queueCode} - ${projectDatabase[idx].customerName} (${projectDatabase[idx].projectName})`,
+          message: `${estAuthor} (Estimator): Telah Melakukan Edit Data Estimator (${projectDatabase[idx].status}) — ${projectDatabase[idx].queueCode} - ${projectDatabase[idx].customerName} (${projectDatabase[idx].projectName})`,
           actor: estAuthor,
           queueCode: projectDatabase[idx].queueCode,
           customerName: projectDatabase[idx].customerName,
@@ -16251,9 +16303,21 @@
       projectDatabase[idx].quoteFinalDoc = document.getElementById('rosaInputFinalDoc')?.value?.trim() || '';
       const prevQuoteNote = String(projectDatabase[idx].quoteNotes || '').trim();
       const notesRaw = document.getElementById('rosaInputNotes')?.value?.trim() || '';
-      const rosaAuthor = (currentUser && currentUser.name) ? currentUser.name : 'Admin Kontrak';
+      const rosaAuthor = (currentUser && currentUser.name) ? currentUser.name : 'Rosa';
       projectDatabase[idx].quoteNotes = notesRaw || '-';
-      appendRoleEditChatNotification(projectDatabase[idx], 'contract', rosaAuthor, notesRaw, prevQuoteNote);
+      if (notesRaw && notesRaw !== '-' && notesRaw !== prevQuoteNote) {
+        const qNoteId = 'MSG-NOTE-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+        projectDatabase[idx].quoteNotesHistory = appendNoteToHistoryClient(projectDatabase[idx].quoteNotesHistory, notesRaw, rosaAuthor, { id: qNoteId, role: 'contract', roleLabel: 'Admin Kontrak', sourceMenu: 'Catatan Penawaran' });
+        projectDatabase[idx].unifiedChatHistory = appendNoteToHistoryClient(projectDatabase[idx].unifiedChatHistory, notesRaw, rosaAuthor, { id: qNoteId, role: 'contract', roleLabel: 'Admin Kontrak', sourceMenu: 'Catatan Penawaran' });
+      }
+      appendEditAuditChatMessage(projectDatabase[idx], {
+        role: 'contract',
+        roleLabel: 'Admin Kontrak',
+        sourceMenu: 'Catatan Penawaran',
+        historyField: 'quoteNotesHistory',
+        author: rosaAuthor,
+        text: 'Telah Melakukan Edit Data Penawaran'
+      });
       projectDatabase[idx]._dirtyOnline = true;
       projectDatabase[idx]._syncedToSheet = false;
 
@@ -16272,14 +16336,14 @@
       openModal('modalRosaSaveSuccess');
 
       const contractRec = projectDatabase[idx];
-      const contractActor = rosaAuthor;
+      const contractActor = currentUser ? currentUser.name : 'Admin Kontrak';
       const contractEventId = 'CTR-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
       if (typeof emitRealtimeNotification === 'function') {
         emitRealtimeNotification({
           id: contractEventId,
           eventType: 'contract_edit',
           title: 'Pembaruan Penawaran Admin Kontrak',
-          message: `${contractActor}: Telah Melakukan Edit Data Penawaran — ${contractRec.queueCode || '-'} - ${contractRec.customerName || '-'} (${contractRec.projectName || '-'})`,
+          message: `${contractActor} (Admin Kontrak): Telah Melakukan Edit Data Penawaran (${contractRec.status || '-'}) — ${contractRec.queueCode || '-'} - ${contractRec.customerName || '-'} (${contractRec.projectName || '-'})`,
           actor: contractActor,
           queueCode: contractRec.queueCode || '-',
           customerName: contractRec.customerName || '-',
@@ -16908,6 +16972,11 @@
         extraImg6: record.extraImg6 || '',
         extraImg7: record.extraImg7 || '',
         extraImg8: record.extraImg8 || '',
+        clearedExtraSlots: (extraMeta && Array.isArray(extraMeta.clearedExtraSlots))
+          ? extraMeta.clearedExtraSlots
+          : (Array.isArray(record._pendingClearedExtraSlots)
+            ? record._pendingClearedExtraSlots.slice()
+            : (Array.isArray(record._clearedExtraSlots) ? record._clearedExtraSlots.slice() : [])),
         files: (uploadedFilesList && Array.isArray(uploadedFilesList)) ? uploadedFilesList : [],
         revFiles: (revFilesList && Array.isArray(revFilesList)) ? revFilesList : [],
         quoteFiles: (quoteFilesList && Array.isArray(quoteFilesList)) ? quoteFilesList : [],
@@ -16924,6 +16993,7 @@
         keteranganSumberGambar: record.sourceDesc || '-',
         dokumenGambar: docsText
       };
+      if (record._clearedExtraSlots) delete record._clearedExtraSlots;
 
       const qCodeTrim = (record.queueCode || '').trim();
       if (qCodeTrim) {
@@ -16992,6 +17062,11 @@
               parsedRes.quoteFilesUploaded.forEach(function(qf) {
                 if (qf && qf.fieldKey && qf.url) localRec[qf.fieldKey] = qf.url;
               });
+            }
+            if (Array.isArray(localRec._pendingClearedExtraSlots) && Array.isArray(payload.clearedExtraSlots) && payload.clearedExtraSlots.length > 0) {
+              const clearedDone = new Set(payload.clearedExtraSlots.map(Number));
+              localRec._pendingClearedExtraSlots = localRec._pendingClearedExtraSlots.filter(s => !clearedDone.has(Number(s)));
+              if (localRec._pendingClearedExtraSlots.length === 0) delete localRec._pendingClearedExtraSlots;
             }
             localRec._syncedToSheet = true;
             localRec._dirtyOnline = false;
@@ -17257,7 +17332,7 @@
             const openRowId = document.getElementById('notesHistoryRowId')?.value || '';
             const openItem = projectDatabase.find(x => x.id === openRowId || x.queueCode === openRowId);
             if (openItem && typeof renderNotesHistoryModalTimeline === 'function') {
-              renderNotesHistoryModalTimeline(openItem);
+              renderNotesHistoryModalTimeline(openItem, { preserveIfSameSig: true });
             }
           }
           if (currentUser && typeof syncOnlineProfileAndHistory === 'function') {

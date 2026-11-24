@@ -357,7 +357,8 @@ function mergeNotesHistoryGas(existingRaw, incomingRaw) {
   var listA = parseNotesHistoryJsonGas(existingRaw);
   var listB = parseNotesHistoryJsonGas(incomingRaw);
   var seenIds = {};
-  var seenSigs = {};
+  var seenNoIdSigs = {};
+  var seenAllSigs = {};
   var merged = [];
   var combined = listA.concat(listB);
   for (var i = 0; i < combined.length; i++) {
@@ -372,22 +373,26 @@ function mergeNotesHistoryGas(existingRaw, incomingRaw) {
     var roleLabel = (item.roleLabel || "").toString().trim();
     var sourceMenu = (item.sourceMenu || "").toString().trim();
     var createdAtMs = Number(item.createdAtMs || 0);
-    var isEditNotif = Boolean(item.isEditNotif) || /Telah Melakukan Edit Data (Penawaran|Estimator|Sales)/i.test(txt);
     var sig = ts + "|" + author + "|" + txt;
-    if ((msgId && seenIds[msgId]) || ((!msgId || !isEditNotif) && seenSigs[sig])) continue;
-    if (msgId) seenIds[msgId] = true;
-    seenSigs[sig] = true;
+    if (msgId) {
+      if (seenIds[msgId] || seenNoIdSigs[sig]) continue;
+      seenIds[msgId] = true;
+    } else {
+      if (seenAllSigs[sig]) continue;
+      seenNoIdSigs[sig] = true;
+    }
+    seenAllSigs[sig] = true;
     var obj = {
       timestamp: ts || Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH : mm : ss"),
       author: author || "-",
       text: txt
     };
     if (msgId) obj.id = msgId;
-    if (isEditNotif) obj.isEditNotif = true;
     if (role) obj.role = role;
     if (roleLabel) obj.roleLabel = roleLabel;
     if (sourceMenu) obj.sourceMenu = sourceMenu;
     if (createdAtMs > 0) obj.createdAtMs = createdAtMs;
+    if (item.isEditAudit) obj.isEditAudit = true;
     if (item.replyTo && typeof item.replyTo === "object") obj.replyTo = item.replyTo;
     if (item.media && typeof item.media === "object") obj.media = item.media;
     merged.push(obj);
@@ -890,12 +895,13 @@ function doPost(e) {
           "Dihapus dari Aktif (Arsip History)",
           JSON.stringify(snapSummary)
         );
+        var gasDelActor = (actorUsername && actorUsername !== "Sistem") ? actorUsername : (snapSummary.salesName || "Sales");
         appendRealtimeNotificationGas(
           ssDel,
           "sales_form_edit",
           "Edit Perubahan (Hapus Data) Sales",
-          (actorUsername || snapSummary.salesName || "Sales") + ": Telah Melakukan Edit Data Sales — Hapus " + delCode + " - " + (snapSummary.customerName || "-") + " (" + (snapSummary.projectName || "-") + ")",
-          actorUsername || snapSummary.salesName || "Sales",
+          gasDelActor + " (Sales): Telah Melakukan Edit Data Sales — Hapus " + delCode + " - " + (snapSummary.customerName || "-") + " (" + (snapSummary.projectName || "-") + ")",
+          gasDelActor,
           delCode,
           snapSummary.customerName || "-",
           snapSummary.projectName || "-",
@@ -1266,9 +1272,10 @@ function doPost(e) {
       if ((!docsSummary || docsSummary === "-") && existingRowData[11] && existingRowData[11] !== "-") {
         rowValues[11] = existingRowData[11];
       }
+      var clearedExtraSlotsGas = (isSalesSide && data.clearedExtraSlots && Array.isArray(data.clearedExtraSlots)) ? data.clearedExtraSlots.map(Number) : [];
       for (var sIdx = 1; sIdx <= 8; sIdx++) {
         var colIndex = 11 + sIdx;
-        if (!rowValues[colIndex] && existingRowData[colIndex]) {
+        if (!rowValues[colIndex] && existingRowData[colIndex] && clearedExtraSlotsGas.indexOf(sIdx) === -1) {
           rowValues[colIndex] = existingRowData[colIndex];
         }
       }
@@ -1389,7 +1396,7 @@ function doPost(e) {
         ss,
         "sales_form_edit",
         "Edit Perubahan Data Gambar Sales",
-        gasSalesActor + ": Telah Melakukan Edit Data Sales — " + queueCode + " - " + rowValues[4] + " (" + rowValues[5] + ")",
+        gasSalesActor + " (Sales): Telah Melakukan Edit Data Sales — " + queueCode + " - " + rowValues[4] + " (" + rowValues[5] + ")",
         gasSalesActor,
         queueCode || "-",
         rowValues[4] || "-",
@@ -1403,7 +1410,7 @@ function doPost(e) {
         ss,
         "estimator_edit",
         "Pembaruan Kelola Estimasi Estimator",
-        gasEstActor + ": Telah Melakukan Edit Data Estimator (" + rowValues[20] + ") — " + queueCode + " - " + rowValues[4] + " (" + rowValues[5] + ")",
+        gasEstActor + " (Estimator): Telah Melakukan Edit Data Estimator (" + rowValues[20] + ") — " + queueCode + " - " + rowValues[4] + " (" + rowValues[5] + ")",
         gasEstActor,
         queueCode || "-",
         rowValues[4] || "-",
@@ -1417,7 +1424,7 @@ function doPost(e) {
         ss,
         "contract_edit",
         "Pembaruan Penawaran Admin Kontrak",
-        gasContractActor + ": Telah Melakukan Edit Data Penawaran (" + rowValues[20] + ") — " + queueCode + " - " + rowValues[4] + " (" + rowValues[5] + ")",
+        gasContractActor + " (Admin Kontrak): Telah Melakukan Edit Data Penawaran (" + rowValues[20] + ") — " + queueCode + " - " + rowValues[4] + " (" + rowValues[5] + ")",
         gasContractActor,
         queueCode || "-",
         rowValues[4] || "-",
