@@ -3399,32 +3399,237 @@
     }
     .chat-media-bubble-card {
       margin: 0.24rem 0 0.26rem calc(28px + 0.48rem);
-      max-width: 220px;
+      display: inline-block;
+      width: auto;
+      max-width: min(260px, calc(100% - 28px - 0.55rem));
       border-radius: 9px;
       overflow: hidden;
       border: 1px solid #cbd5e1;
       background: #0f172a;
       cursor: pointer;
       position: relative;
+      vertical-align: top;
     }
     .chat-media-bubble-card img,
     .chat-media-bubble-card video {
       display: block;
-      width: 100%;
-      max-height: 132px;
-      object-fit: cover;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: 320px;
+      object-fit: contain;
       background: #020617;
     }
     .chat-media-bubble-overlay {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.35rem;
+      flex-wrap: wrap;
+      gap: 0.3rem;
       padding: 0.24rem 0.45rem;
       background: rgba(15, 23, 42, 0.88);
       color: #f8fafc;
-      font-size: 0.6rem;
+      font-size: 0.58rem;
       font-weight: 700;
+    }
+    .chat-live-camera-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 42;
+      background: #020617;
+      color: #f8fafc;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      border-radius: inherit;
+    }
+    .chat-live-camera-overlay.open {
+      display: flex;
+    }
+    .chat-live-camera-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.45rem;
+      padding: 0.48rem 0.72rem;
+      background: #0f172a;
+      border-bottom: 1px solid #1e293b;
+      flex-shrink: 0;
+    }
+    .chat-live-camera-head-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      min-width: 0;
+    }
+    .chat-live-camera-title {
+      font-size: 0.74rem;
+      font-weight: 800;
+      color: #f8fafc;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .chat-live-camera-rec-badge {
+      display: none;
+      align-items: center;
+      gap: 0.22rem;
+      padding: 0.14rem 0.42rem;
+      border-radius: 9999px;
+      background: #dc2626;
+      color: #ffffff;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+    .chat-live-camera-rec-badge.recording {
+      display: inline-flex;
+      animation: chatRecPulse 1s ease-in-out infinite;
+    }
+    @keyframes chatRecPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+    .chat-live-camera-head-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-shrink: 0;
+    }
+    .chat-live-camera-icon-btn {
+      padding: 0.24rem 0.5rem;
+      border-radius: 7px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #e2e8f0;
+      font-family: inherit;
+      font-size: 0.66rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .chat-live-camera-icon-btn:hover:not(:disabled) {
+      background: #334155;
+    }
+    .chat-live-camera-icon-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .chat-live-camera-close-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      border: 1px solid #475569;
+      background: #334155;
+      color: #ffffff;
+      font-size: 1rem;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .chat-live-camera-stage {
+      flex: 1 1 auto;
+      min-height: 0;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000000;
+      overflow: hidden;
+      padding: 0.35rem;
+    }
+    .chat-live-camera-stage video,
+    .chat-live-camera-stage img {
+      max-width: 100%;
+      max-height: 100%;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 6px;
+      background: #000000;
+    }
+    .chat-live-camera-error-box {
+      position: absolute;
+      inset: 1rem;
+      margin: auto;
+      max-width: 320px;
+      max-height: fit-content;
+      background: rgba(15, 23, 42, 0.94);
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 0.85rem 0.95rem;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.6rem;
+      z-index: 4;
+    }
+    .chat-live-camera-error-box.visible {
+      display: flex;
+    }
+    .chat-live-camera-error-msg {
+      font-size: 0.74rem;
+      line-height: 1.45;
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+    .chat-live-camera-error-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.42rem;
+    }
+    .chat-live-camera-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem;
+      padding: 0.58rem 0.75rem;
+      background: #0f172a;
+      border-top: 1px solid #1e293b;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .chat-live-cam-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.32rem;
+      padding: 0.42rem 0.95rem;
+      border-radius: 9999px;
+      border: 1px solid transparent;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .chat-live-cam-btn-shutter,
+    .chat-live-cam-btn-primary {
+      background: #2563eb;
+      border-color: #60a5fa;
+      color: #ffffff;
+    }
+    .chat-live-cam-btn-rec {
+      background: #dc2626;
+      border-color: #f87171;
+      color: #ffffff;
+    }
+    .chat-live-cam-btn-stop {
+      background: #991b1b;
+      border-color: #fca5a5;
+      color: #ffffff;
+    }
+    .chat-live-cam-btn-confirm {
+      background: #059669;
+      border-color: #34d399;
+      color: #ffffff;
+    }
+    .chat-live-cam-btn-secondary {
+      background: #334155;
+      border-color: #475569;
+      color: #f8fafc;
     }
     .chat-media-inline-viewer {
       position: absolute;
@@ -3460,23 +3665,33 @@
       min-width: 0;
       flex: 1 1 auto;
     }
+    .chat-media-viewer-footer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.55rem 0.78rem;
+      background: #1e293b;
+      border-top: 1px solid #334155;
+      flex-shrink: 0;
+    }
     .chat-media-viewer-actions {
       display: inline-flex;
       align-items: center;
-      gap: 0.38rem;
+      justify-content: center;
+      gap: 0.55rem;
       flex-shrink: 0;
     }
     .chat-media-dl-btn {
       display: inline-flex;
       align-items: center;
-      gap: 0.26rem;
-      padding: 0.26rem 0.62rem;
-      border-radius: 7px;
+      gap: 0.28rem;
+      padding: 0.34rem 0.85rem;
+      border-radius: 8px;
       border: 1px solid #34d399;
       background: #059669;
       color: #ffffff;
       font-family: inherit;
-      font-size: 0.68rem;
+      font-size: 0.74rem;
       font-weight: 800;
       cursor: pointer;
     }
@@ -3484,18 +3699,22 @@
       background: #047857;
     }
     .chat-media-close-btn {
-      width: 26px;
-      height: 26px;
-      border-radius: 7px;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
       border: 1px solid #475569;
       background: #334155;
       color: #ffffff;
-      font-size: 0.95rem;
+      font-size: 1.05rem;
+      font-weight: 800;
       line-height: 1;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
+    }
+    .chat-media-close-btn:hover {
+      background: #475569;
     }
     .chat-media-viewer-stage {
       flex: 1 1 auto;
@@ -8414,9 +8633,9 @@
             <span id="chatSendFeedback" style="font-size: 0.7rem; font-weight: 800; color: #059669; display: none; margin-right: auto;">✓ Terkirim!</span>
             <div class="chat-camera-control-wrap" id="chatCameraControlWrap">
               <div class="chat-camera-menu" id="chatCameraMenu">
-                <button type="button" class="chat-camera-menu-btn" onclick="triggerChatCameraInput('photo')">📷 Ambil Foto</button>
-                <button type="button" class="chat-camera-menu-btn" onclick="triggerChatCameraInput('video')">🎥 Rekam Video</button>
-                <button type="button" class="chat-camera-menu-btn" onclick="triggerChatCameraInput('gallery')">🖼️ Pilih Foto / Video</button>
+                <button type="button" class="chat-camera-menu-btn" id="btnMenuChatLivePhoto" onclick="openChatLiveCamera('photo')">📷 Ambil Foto</button>
+                <button type="button" class="chat-camera-menu-btn" id="btnMenuChatLiveVideo" onclick="openChatLiveCamera('video')">🎥 Rekam Video</button>
+                <button type="button" class="chat-camera-menu-btn" id="btnMenuChatPickFile" onclick="triggerChatCameraInput('gallery')">🖼️ Pilih Foto / Video</button>
               </div>
               <input type="file" id="chatCameraPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleChatCameraFilePick(this)">
               <input type="file" id="chatCameraVideoInput" accept="video/*" capture="environment" style="display:none;" onchange="handleChatCameraFilePick(this)">
@@ -8436,18 +8655,51 @@
           </div>
         </div>
       </div>
+      <div id="chatLiveCameraOverlay" class="chat-live-camera-overlay" aria-hidden="true" data-camera-mode="photo">
+        <div class="chat-live-camera-head">
+          <div class="chat-live-camera-head-left">
+            <span id="chatLiveCameraTitle" class="chat-live-camera-title">📷 Kamera Foto Langsung</span>
+            <span id="chatLiveCameraRecBadge" class="chat-live-camera-rec-badge">● <span id="chatLiveCameraRecTimer">00:00</span></span>
+          </div>
+          <div class="chat-live-camera-head-actions">
+            <button type="button" class="chat-live-camera-icon-btn" id="btnChatCamSwitchFacing" onclick="toggleChatLiveCameraFacing()" title="Putar Kamera Depan/Belakang">🔄 Putar</button>
+            <button type="button" class="chat-live-camera-close-btn" id="btnCloseChatLiveCamera" onclick="closeChatLiveCamera()" title="Tutup Kamera" aria-label="Tutup Kamera">&times;</button>
+          </div>
+        </div>
+        <div class="chat-live-camera-stage" id="chatLiveCameraStage">
+          <video id="chatLiveCameraVideo" autoplay playsinline muted></video>
+          <img id="chatLiveCameraCapturedImg" alt="Hasil Foto Kamera" style="display: none;">
+          <video id="chatLiveCameraRecordedVideo" controls playsinline style="display: none;"></video>
+          <div id="chatLiveCameraErrorBox" class="chat-live-camera-error-box">
+            <div id="chatLiveCameraErrorMsg" class="chat-live-camera-error-msg">Mengaktifkan kamera...</div>
+            <div class="chat-live-camera-error-actions">
+              <button type="button" class="chat-live-cam-btn chat-live-cam-btn-primary" onclick="retryChatLiveCamera()">🔄 Coba Kamera Lagi</button>
+              <button type="button" class="chat-live-cam-btn chat-live-cam-btn-secondary" onclick="useFileFallbackFromLiveCamera()">📁 Pilih dari File</button>
+            </div>
+          </div>
+        </div>
+        <div class="chat-live-camera-controls" id="chatLiveCameraControls">
+          <button type="button" class="chat-live-cam-btn chat-live-cam-btn-shutter" id="btnChatLiveSnapPhoto" onclick="captureChatLivePhoto()">📸 Ambil Foto</button>
+          <button type="button" class="chat-live-cam-btn chat-live-cam-btn-rec" id="btnChatLiveStartRec" onclick="startChatLiveVideoRec()" style="display: none;">⏺ Mulai Rekam</button>
+          <button type="button" class="chat-live-cam-btn chat-live-cam-btn-stop" id="btnChatLiveStopRec" onclick="stopChatLiveVideoRec()" style="display: none;">⏹ Stop Rekam</button>
+          <button type="button" class="chat-live-cam-btn chat-live-cam-btn-secondary" id="btnChatLiveRetake" onclick="retakeChatLiveMedia()" style="display: none;">↺ Ulangi</button>
+          <button type="button" class="chat-live-cam-btn chat-live-cam-btn-confirm" id="btnChatLiveConfirm" onclick="confirmChatLiveMedia()" style="display: none;">✓ Gunakan Foto</button>
+        </div>
+      </div>
       <div id="chatMediaInlineViewer" class="chat-media-inline-viewer" aria-hidden="true">
         <div class="chat-media-viewer-head">
           <span class="chat-media-viewer-title" id="chatMediaViewerTitle">Media Chat</span>
+        </div>
+        <div class="chat-media-viewer-stage" id="chatMediaViewerStage"></div>
+        <div class="chat-media-viewer-footer">
           <div class="chat-media-viewer-actions">
             <button type="button" class="chat-media-dl-btn" id="chatMediaDownloadBtn" onclick="downloadActiveChatMedia()">
               <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
               <span>Download</span>
             </button>
-            <button type="button" class="chat-media-close-btn" id="btnCloseChatMediaViewer" onclick="closeChatMediaViewer()" title="Tutup tampilan media">&times;</button>
+            <button type="button" class="chat-media-close-btn" id="btnCloseChatMediaViewer" onclick="closeChatMediaViewer()" title="Tutup tampilan media" aria-label="Tutup tampilan media">&times;</button>
           </div>
         </div>
-        <div class="chat-media-viewer-stage" id="chatMediaViewerStage"></div>
       </div>
     </div>
   </div>
@@ -11700,9 +11952,444 @@
 
     function triggerChatCameraInput(mode) {
       toggleChatCameraMenu(false);
-      const id = (mode === 'photo') ? 'chatCameraPhotoInput' : (mode === 'video' ? 'chatCameraVideoInput' : 'chatCameraGalleryInput');
-      const inp = document.getElementById(id);
+      if (mode === 'photo' || mode === 'video') {
+        openChatLiveCamera(mode);
+        return;
+      }
+      const inp = document.getElementById('chatCameraGalleryInput');
       if (inp) inp.click();
+    }
+
+    window.__chatLiveCameraState = {
+      mode: 'photo',
+      facingMode: 'environment',
+      stream: null,
+      mediaRecorder: null,
+      recordedChunks: [],
+      recTimerInterval: null,
+      recStartedAt: 0,
+      capturedBlob: null,
+      capturedFileName: '',
+      capturedMime: '',
+      capturedPreviewUrl: '',
+      capturedIsVideo: false,
+      openSessionSeq: 0
+    };
+
+    function formatChatLiveRecDuration(totalSec) {
+      const s = Math.max(0, Math.floor(Number(totalSec) || 0));
+      const mm = String(Math.floor(s / 60)).padStart(2, '0');
+      const ss = String(s % 60).padStart(2, '0');
+      return mm + ':' + ss;
+    }
+
+    function clearChatLiveRecTimer() {
+      const st = window.__chatLiveCameraState;
+      if (st && st.recTimerInterval) {
+        clearInterval(st.recTimerInterval);
+        st.recTimerInterval = null;
+      }
+    }
+
+    function stopChatLiveStreamTracks() {
+      const st = window.__chatLiveCameraState;
+      if (st && st.stream) {
+        try {
+          st.stream.getTracks().forEach(function(t) {
+            try { t.stop(); } catch (e) {}
+          });
+        } catch (e) {}
+        st.stream = null;
+      }
+      const videoEl = document.getElementById('chatLiveCameraVideo');
+      if (videoEl) {
+        try { videoEl.pause(); } catch (e) {}
+        try { videoEl.srcObject = null; } catch (e) {}
+      }
+    }
+
+    function revokeChatLiveCapturedPreview() {
+      const st = window.__chatLiveCameraState;
+      if (st && st.capturedPreviewUrl && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+        try { URL.revokeObjectURL(st.capturedPreviewUrl); } catch (e) {}
+      }
+      if (st) {
+        st.capturedPreviewUrl = '';
+        st.capturedBlob = null;
+        st.capturedFileName = '';
+        st.capturedMime = '';
+        st.capturedIsVideo = false;
+      }
+      const capImg = document.getElementById('chatLiveCameraCapturedImg');
+      if (capImg) {
+        capImg.style.display = 'none';
+        capImg.removeAttribute('src');
+      }
+      const recVid = document.getElementById('chatLiveCameraRecordedVideo');
+      if (recVid) {
+        try { recVid.pause(); } catch (e) {}
+        recVid.style.display = 'none';
+        recVid.removeAttribute('src');
+      }
+    }
+
+    function setChatLiveCameraPhase(phase, messageText) {
+      const st = window.__chatLiveCameraState;
+      const mode = (st && st.mode === 'video') ? 'video' : 'photo';
+      const videoEl = document.getElementById('chatLiveCameraVideo');
+      const capImg = document.getElementById('chatLiveCameraCapturedImg');
+      const recVid = document.getElementById('chatLiveCameraRecordedVideo');
+      const errBox = document.getElementById('chatLiveCameraErrorBox');
+      const errMsg = document.getElementById('chatLiveCameraErrorMsg');
+      const recBadge = document.getElementById('chatLiveCameraRecBadge');
+      const recTimer = document.getElementById('chatLiveCameraRecTimer');
+
+      const btnSnap = document.getElementById('btnChatLiveSnapPhoto');
+      const btnStartRec = document.getElementById('btnChatLiveStartRec');
+      const btnStopRec = document.getElementById('btnChatLiveStopRec');
+      const btnRetake = document.getElementById('btnChatLiveRetake');
+      const btnConfirm = document.getElementById('btnChatLiveConfirm');
+      const btnFacing = document.getElementById('btnChatCamSwitchFacing');
+
+      if (errBox) errBox.classList.remove('visible');
+      if (recBadge) recBadge.classList.remove('recording');
+      if (videoEl) videoEl.style.display = (phase === 'stream' || phase === 'recording') ? 'block' : 'none';
+      if (capImg) capImg.style.display = (phase === 'preview-photo') ? 'block' : 'none';
+      if (recVid) recVid.style.display = (phase === 'preview-video') ? 'block' : 'none';
+
+      if (btnSnap) btnSnap.style.display = (phase === 'stream' && mode === 'photo') ? 'inline-flex' : 'none';
+      if (btnStartRec) btnStartRec.style.display = (phase === 'stream' && mode === 'video') ? 'inline-flex' : 'none';
+      if (btnStopRec) btnStopRec.style.display = (phase === 'recording') ? 'inline-flex' : 'none';
+      if (btnRetake) btnRetake.style.display = (phase === 'preview-photo' || phase === 'preview-video') ? 'inline-flex' : 'none';
+      if (btnConfirm) {
+        btnConfirm.style.display = (phase === 'preview-photo' || phase === 'preview-video') ? 'inline-flex' : 'none';
+        btnConfirm.textContent = (mode === 'video') ? '✓ Gunakan Video' : '✓ Gunakan Foto';
+      }
+      if (btnFacing) {
+        btnFacing.disabled = (phase === 'recording' || phase === 'preview-photo' || phase === 'preview-video');
+      }
+
+      if (phase === 'recording') {
+        if (recBadge) recBadge.classList.add('recording');
+        if (recTimer) recTimer.textContent = '00:00';
+      }
+      if (phase === 'error') {
+        if (errMsg) errMsg.textContent = messageText || 'Kamera tidak tersedia pada perangkat ini.';
+        if (errBox) errBox.classList.add('visible');
+      }
+    }
+
+    async function startChatLiveCameraStream(expectedSeq) {
+      const st = window.__chatLiveCameraState;
+      const overlay = document.getElementById('chatLiveCameraOverlay');
+      if (!overlay || !overlay.classList.contains('open') || expectedSeq !== st.openSessionSeq) return;
+
+      stopChatLiveStreamTracks();
+      revokeChatLiveCapturedPreview();
+
+      if (typeof navigator === 'undefined' || !navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+        setChatLiveCameraPhase('error', 'Browser/perangkat tidak mendukung akses kamera langsung (gunakan HTTPS/aplikasi terpasang).');
+        return;
+      }
+
+      const mode = st.mode === 'video' ? 'video' : 'photo';
+      const facing = st.facingMode || 'environment';
+      const candidates = (mode === 'video')
+        ? [
+            { video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true },
+            { video: { facingMode: { ideal: facing } }, audio: false },
+            { video: true, audio: false }
+          ]
+        : [
+            { video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+            { video: true, audio: false }
+          ];
+
+      let acquiredStream = null;
+      let lastErr = null;
+      for (let i = 0; i < candidates.length; i++) {
+        if (expectedSeq !== st.openSessionSeq || !overlay.classList.contains('open')) return;
+        try {
+          acquiredStream = await navigator.mediaDevices.getUserMedia(candidates[i]);
+          if (acquiredStream) break;
+        } catch (err) {
+          lastErr = err;
+          const errName = String((err && err.name) || '');
+          if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError' || errName === 'SecurityError') {
+            break;
+          }
+        }
+      }
+
+      if (!acquiredStream) {
+        if (expectedSeq !== st.openSessionSeq || !overlay.classList.contains('open')) return;
+        const errName = String((lastErr && lastErr.name) || '');
+        const msg = (errName === 'NotAllowedError' || errName === 'PermissionDeniedError')
+          ? 'Izin akses kamera belum diaktifkan. Mohon izinkan akses Kamera lalu tekan "Coba Kamera Lagi".'
+          : (errName === 'NotFoundError' || errName === 'DevicesNotFoundError')
+            ? 'Perangkat kamera tidak terdeteksi di komputer/HP ini. Pastikan kamera terpasang lalu coba lagi.'
+            : ('Gagal membuka kamera secara langsung' + (lastErr && lastErr.message ? ': ' + lastErr.message : '.'));
+        setChatLiveCameraPhase('error', msg);
+        return;
+      }
+
+      if (expectedSeq !== st.openSessionSeq || !overlay.classList.contains('open')) {
+        try {
+          acquiredStream.getTracks().forEach(function(t) { t.stop(); });
+        } catch (e) {}
+        return;
+      }
+
+      st.stream = acquiredStream;
+      const videoEl = document.getElementById('chatLiveCameraVideo');
+      setChatLiveCameraPhase('stream');
+      if (videoEl) {
+        videoEl.srcObject = acquiredStream;
+        videoEl.style.transform = (facing === 'user') ? 'scaleX(-1)' : 'none';
+        try {
+          await videoEl.play();
+        } catch (e) {}
+      }
+    }
+
+    function openChatLiveCamera(mode) {
+      toggleChatCameraMenu(false);
+      if (typeof closeChatMediaViewer === 'function') closeChatMediaViewer();
+      const st = window.__chatLiveCameraState;
+      st.mode = (mode === 'video') ? 'video' : 'photo';
+      st.openSessionSeq = (st.openSessionSeq || 0) + 1;
+      const seq = st.openSessionSeq;
+
+      const overlay = document.getElementById('chatLiveCameraOverlay');
+      const titleEl = document.getElementById('chatLiveCameraTitle');
+      if (!overlay) return;
+      overlay.setAttribute('data-camera-mode', st.mode);
+      if (titleEl) {
+        titleEl.textContent = (st.mode === 'video') ? '🎥 Kamera Video Langsung' : '📷 Kamera Foto Langsung';
+      }
+      overlay.classList.add('open');
+      overlay.setAttribute('aria-hidden', 'false');
+      setChatLiveCameraPhase('stream');
+      startChatLiveCameraStream(seq);
+    }
+
+    function toggleChatLiveCameraFacing() {
+      const st = window.__chatLiveCameraState;
+      if (!st || (st.mediaRecorder && st.mediaRecorder.state === 'recording')) return;
+      st.facingMode = (st.facingMode === 'environment') ? 'user' : 'environment';
+      st.openSessionSeq = (st.openSessionSeq || 0) + 1;
+      startChatLiveCameraStream(st.openSessionSeq);
+    }
+
+    function captureChatLivePhoto() {
+      const st = window.__chatLiveCameraState;
+      const videoEl = document.getElementById('chatLiveCameraVideo');
+      const capImg = document.getElementById('chatLiveCameraCapturedImg');
+      if (!st || !videoEl || !st.stream) return;
+
+      const vw = Number(videoEl.videoWidth || 0) || 1280;
+      const vh = Number(videoEl.videoHeight || 0) || 720;
+      const cv = document.createElement('canvas');
+      cv.width = vw;
+      cv.height = vh;
+      const ctx = cv.getContext('2d');
+      ctx.drawImage(videoEl, 0, 0, vw, vh);
+
+      const finishCapture = function(blob) {
+        if (!blob) return;
+        revokeChatLiveCapturedPreview();
+        const url = (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') ? URL.createObjectURL(blob) : '';
+        st.capturedBlob = blob;
+        st.capturedMime = 'image/jpeg';
+        st.capturedFileName = 'kamera_foto_' + Date.now() + '.jpg';
+        st.capturedPreviewUrl = url;
+        st.capturedIsVideo = false;
+        if (capImg && url) capImg.src = url;
+        stopChatLiveStreamTracks();
+        setChatLiveCameraPhase('preview-photo');
+      };
+
+      if (typeof cv.toBlob === 'function') {
+        cv.toBlob(function(blob) {
+          if (blob) {
+            finishCapture(blob);
+          } else {
+            try {
+              const dUrl = cv.toDataURL('image/jpeg', 0.90);
+              fetch(dUrl).then(function(r) { return r.blob(); }).then(finishCapture);
+            } catch (e) {}
+          }
+        }, 'image/jpeg', 0.90);
+      } else {
+        try {
+          const dUrl = cv.toDataURL('image/jpeg', 0.90);
+          fetch(dUrl).then(function(r) { return r.blob(); }).then(finishCapture);
+        } catch (e) {}
+      }
+    }
+
+    function startChatLiveVideoRec() {
+      const st = window.__chatLiveCameraState;
+      if (!st || !st.stream) return;
+      if (typeof MediaRecorder === 'undefined') {
+        setChatLiveCameraPhase('error', 'Perekam video (MediaRecorder) tidak didukung di browser ini.');
+        return;
+      }
+
+      const mimeCandidates = [
+        'video/mp4',
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm'
+      ];
+      let chosenMime = '';
+      if (typeof MediaRecorder.isTypeSupported === 'function') {
+        for (let i = 0; i < mimeCandidates.length; i++) {
+          if (MediaRecorder.isTypeSupported(mimeCandidates[i])) {
+            chosenMime = mimeCandidates[i];
+            break;
+          }
+        }
+      }
+
+      st.recordedChunks = [];
+      let mr = null;
+      try {
+        mr = chosenMime ? new MediaRecorder(st.stream, { mimeType: chosenMime }) : new MediaRecorder(st.stream);
+      } catch (err) {
+        try {
+          mr = new MediaRecorder(st.stream);
+        } catch (err2) {
+          setChatLiveCameraPhase('error', 'Gagal memulai rekaman video kamera.');
+          return;
+        }
+      }
+
+      const expectedSeq = st.openSessionSeq;
+      st.mediaRecorder = mr;
+      mr.ondataavailable = function(ev) {
+        if (ev && ev.data && ev.data.size > 0) {
+          st.recordedChunks.push(ev.data);
+        }
+      };
+      mr.onstop = function() {
+        clearChatLiveRecTimer();
+        st.mediaRecorder = null;
+        if (expectedSeq !== st.openSessionSeq) return;
+        const overlay = document.getElementById('chatLiveCameraOverlay');
+        if (!overlay || !overlay.classList.contains('open')) return;
+
+        const outMime = (mr.mimeType || chosenMime || 'video/webm').split(';')[0] || 'video/webm';
+        const ext = outMime.includes('mp4') ? 'mp4' : 'webm';
+        const blob = new Blob(st.recordedChunks || [], { type: outMime });
+        st.recordedChunks = [];
+        if (!blob || blob.size === 0) {
+          setChatLiveCameraPhase('stream');
+          return;
+        }
+        revokeChatLiveCapturedPreview();
+        const previewUrl = (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') ? URL.createObjectURL(blob) : '';
+        st.capturedBlob = blob;
+        st.capturedMime = outMime;
+        st.capturedFileName = 'kamera_video_' + Date.now() + '.' + ext;
+        st.capturedPreviewUrl = previewUrl;
+        st.capturedIsVideo = true;
+
+        const recVid = document.getElementById('chatLiveCameraRecordedVideo');
+        if (recVid && previewUrl) {
+          recVid.src = previewUrl;
+        }
+        stopChatLiveStreamTracks();
+        setChatLiveCameraPhase('preview-video');
+      };
+
+      try {
+        mr.start(250);
+      } catch (e) {
+        try { mr.start(); } catch (e2) { return; }
+      }
+      st.recStartedAt = Date.now();
+      clearChatLiveRecTimer();
+      setChatLiveCameraPhase('recording');
+      st.recTimerInterval = setInterval(function() {
+        const elapsed = (Date.now() - st.recStartedAt) / 1000;
+        const timerEl = document.getElementById('chatLiveCameraRecTimer');
+        if (timerEl) timerEl.textContent = formatChatLiveRecDuration(elapsed);
+        if (elapsed >= 45) {
+          stopChatLiveVideoRec();
+        }
+      }, 400);
+    }
+
+    function stopChatLiveVideoRec() {
+      const st = window.__chatLiveCameraState;
+      clearChatLiveRecTimer();
+      if (st && st.mediaRecorder && st.mediaRecorder.state !== 'inactive') {
+        try {
+          st.mediaRecorder.stop();
+        } catch (e) {}
+      }
+    }
+
+    function retakeChatLiveMedia() {
+      const st = window.__chatLiveCameraState;
+      if (!st) return;
+      st.openSessionSeq = (st.openSessionSeq || 0) + 1;
+      startChatLiveCameraStream(st.openSessionSeq);
+    }
+
+    function retryChatLiveCamera() {
+      const st = window.__chatLiveCameraState;
+      if (!st) return;
+      st.openSessionSeq = (st.openSessionSeq || 0) + 1;
+      startChatLiveCameraStream(st.openSessionSeq);
+    }
+
+    function useFileFallbackFromLiveCamera() {
+      closeChatLiveCamera();
+      const gal = document.getElementById('chatCameraGalleryInput');
+      if (gal) gal.click();
+    }
+
+    function confirmChatLiveMedia() {
+      const st = window.__chatLiveCameraState;
+      if (!st || !st.capturedBlob) return;
+      const blob = st.capturedBlob;
+      const fileName = st.capturedFileName || (st.capturedIsVideo ? 'kamera_video.webm' : 'kamera_foto.jpg');
+      const mimeType = st.capturedMime || blob.type || (st.capturedIsVideo ? 'video/webm' : 'image/jpeg');
+      let fileObj = blob;
+      try {
+        if (typeof File === 'function') {
+          fileObj = new File([blob], fileName, { type: mimeType });
+        }
+      } catch (e) {
+        fileObj = blob;
+      }
+      closeChatLiveCamera();
+      stageChatCameraFileObject(fileObj, { name: fileName, mimeType: mimeType });
+    }
+
+    function closeChatLiveCamera() {
+      const st = window.__chatLiveCameraState;
+      if (st) {
+        st.openSessionSeq = (st.openSessionSeq || 0) + 1;
+        clearChatLiveRecTimer();
+        if (st.mediaRecorder && st.mediaRecorder.state !== 'inactive') {
+          try {
+            st.mediaRecorder.onstop = null;
+            st.mediaRecorder.stop();
+          } catch (e) {}
+        }
+        st.mediaRecorder = null;
+        st.recordedChunks = [];
+      }
+      stopChatLiveStreamTracks();
+      revokeChatLiveCapturedPreview();
+      const overlay = document.getElementById('chatLiveCameraOverlay');
+      if (overlay) {
+        overlay.classList.remove('open');
+        overlay.setAttribute('aria-hidden', 'true');
+      }
     }
 
     function clearChatCameraStaged() {
@@ -11779,11 +12466,13 @@
       });
     }
 
-    function handleChatCameraFilePick(inputEl) {
-      if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
-      toggleChatCameraMenu(false);
-      const file = inputEl.files[0];
-      const isVideo = Boolean((file.type && file.type.startsWith('video/')) || /\.(mp4|webm|mov|m4v|3gp|ogg)$/i.test(file.name || ''));
+    function stageChatCameraFileObject(file, metaOverride) {
+      if (!file) return Promise.resolve(null);
+      const fileName = String((metaOverride && metaOverride.name) || file.name || '');
+      const fileMime = String((metaOverride && metaOverride.mimeType) || file.type || '');
+      const isVideo = Boolean((fileMime && fileMime.startsWith('video/')) || /\.(mp4|webm|mov|m4v|3gp|ogg)$/i.test(fileName));
+      const finalName = fileName || (isVideo ? 'video_chat.mp4' : 'foto_chat.jpg');
+      const finalMime = fileMime || (isVideo ? 'video/mp4' : 'image/jpeg');
       const mediaId = 'CHATMED-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
       const objUrl = (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') ? URL.createObjectURL(file) : '';
       if (objUrl) window.__chatMediaBlobUrlCache[mediaId] = objUrl;
@@ -11795,7 +12484,7 @@
 
       (async function() {
         try {
-          await saveChatMediaBlobToIdb(mediaId, file, { name: file.name, mimeType: file.type });
+          await saveChatMediaBlobToIdb(mediaId, file, { name: finalName, mimeType: finalMime });
           let dataUrl = '';
           if (isVideo) {
             dataUrl = await new Promise(function(res) {
@@ -11812,8 +12501,8 @@
           window.__chatCameraStagedMedia = {
             mediaId: mediaId,
             type: isVideo ? 'video' : 'image',
-            name: file.name || (isVideo ? 'video_chat.mp4' : 'foto_chat.jpg'),
-            mimeType: file.type || (isVideo ? 'video/mp4' : 'image/jpeg'),
+            name: finalName,
+            mimeType: finalMime,
             size: file.size || 0,
             previewUrl: objUrl || dataUrl,
             thumbUrl: !isVideo ? dataUrl : '',
@@ -11822,12 +12511,22 @@
           renderChatCameraStagedBanner();
           const chatInput = document.getElementById('notesHistoryChatInput');
           if (chatInput) chatInput.focus();
+          return window.__chatCameraStagedMedia;
         } finally {
           window.__chatCameraPendingReads.delete(p);
           if (resolveRead) resolveRead();
-          try { inputEl.value = ''; } catch (e) {}
         }
       })();
+      return p;
+    }
+
+    function handleChatCameraFilePick(inputEl) {
+      if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
+      toggleChatCameraMenu(false);
+      const file = inputEl.files[0];
+      stageChatCameraFileObject(file).finally(function() {
+        try { inputEl.value = ''; } catch (e) {}
+      });
     }
 
     async function hydrateChatMediaElements() {
@@ -13116,6 +13815,7 @@
         metaEl.textContent = `${item.queueCode || '-'} • ${item.customerName || '-'} — ${item.projectName || '-'}`;
       }
 
+      if (typeof closeChatLiveCamera === 'function') closeChatLiveCamera();
       if (typeof closeChatMediaViewer === 'function') closeChatMediaViewer();
       if (typeof clearChatSelectionMode === 'function') clearChatSelectionMode();
       if (typeof clearChatReplyTarget === 'function') clearChatReplyTarget();
@@ -14922,6 +15622,7 @@
       if (modal) modal.classList.remove('open');
       if (id === 'modalNotesHistory') {
         document.body.classList.remove('chat-drawer-open');
+        if (typeof closeChatLiveCamera === 'function') closeChatLiveCamera();
         if (typeof closeChatMediaViewer === 'function') closeChatMediaViewer();
         if (typeof clearChatSelectionMode === 'function') clearChatSelectionMode();
         if (typeof toggleChatCameraMenu === 'function') toggleChatCameraMenu(false);
