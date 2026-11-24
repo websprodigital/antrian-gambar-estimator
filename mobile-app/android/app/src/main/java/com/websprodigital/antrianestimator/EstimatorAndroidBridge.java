@@ -247,6 +247,13 @@ public class EstimatorAndroidBridge {
         return LiveHtmlUpdater.getStatusJson(activity).toString();
     }
 
+    @JavascriptInterface
+    public void openNativeCameraCapture(String mode) {
+        if (activity instanceof MainActivity) {
+            ((MainActivity) activity).launchDirectNativeCamera(mode);
+        }
+    }
+
     private String sanitizeFileName(String raw) {
         String cleaned = (raw == null || raw.trim().isEmpty()) ? "Dokumen_Estimator" : raw.trim();
         return cleaned.replaceAll("[<>:\"/\\\\|?*\\x00-\\x1f]", "_");

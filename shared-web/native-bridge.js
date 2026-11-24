@@ -141,7 +141,7 @@
         font-weight: 600;
         padding: 0.55rem 0.75rem 0.55rem 0.95rem;
         border-radius: 999px;
-        z-index: 1000001;
+        z-index: 9990;
         box-shadow: 0 10px 28px rgba(30, 58, 138, 0.35);
         display: none;
         align-items: center;
@@ -150,6 +150,9 @@
       }
       .native-live-update-banner.visible {
         display: inline-flex;
+      }
+      body.chat-drawer-open .native-live-update-banner {
+        display: none !important;
       }
       .native-live-update-btn {
         background: #ffffff;

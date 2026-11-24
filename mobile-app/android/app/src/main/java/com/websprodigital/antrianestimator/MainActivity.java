@@ -376,7 +376,8 @@ public class MainActivity extends BridgeActivity {
             }
 
             List<Intent> extraIntents = new ArrayList<>();
-            boolean allowExtraCameraIntents = captureEnabled || hasOther || !(hasImage && hasVideo);
+            boolean hasCamPerm = ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+            boolean allowExtraCameraIntents = hasCamPerm && (captureEnabled || hasOther || !(hasImage && hasVideo));
             if (allowExtraCameraIntents && (hasImage || hasOther)) {
                 try {
                     Intent camIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -457,6 +458,14 @@ public class MainActivity extends BridgeActivity {
         }
 
         @Override
+        public void onPermissionRequestCanceled(PermissionRequest request) {
+            if (pendingWebPermissionRequest != null && pendingWebPermissionRequest == request) {
+                pendingWebPermissionRequest = null;
+            }
+            super.onPermissionRequestCanceled(request);
+        }
+
+        @Override
         public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
             WebView tempWebView = new WebView(view.getContext());
             tempWebView.setWebViewClient(new WebViewClient() {
@@ -474,5 +483,171 @@ public class MainActivity extends BridgeActivity {
             resultMsg.sendToTarget();
             return true;
         }
+    }
+
+    private static final int REQ_NATIVE_CAMERA_PERMISSION = 2003;
+    private static final int REQ_NATIVE_CAMERA_CAPTURE = 2004;
+    private String pendingNativeCameraMode = "photo";
+    private File pendingNativeCameraOutputFile = null;
+
+    public void launchDirectNativeCamera(final String mode) {
+        runOnUiThread(() -> {
+            pendingNativeCameraMode = "video".equalsIgnoreCase(mode) ? "video" : "photo";
+            if (ContextCompat.checkSelfPermission(
+                this, Manifest.permission.CAMERA
+            ) != PackageManager.PERMISSION_GRANTED) {
+                androidx.core.app.ActivityCompat.requestPermissions(
+                    this,
+                    new String[] { Manifest.permission.CAMERA },
+                    REQ_NATIVE_CAMERA_PERMISSION
+                );
+                return;
+            }
+            startDirectNativeCameraIntent(pendingNativeCameraMode);
+        });
+    }
+
+    private void startDirectNativeCameraIntent(String mode) {
+        boolean isVideo = "video".equalsIgnoreCase(mode);
+        try {
+            File dir = new File(getCacheDir(), "chat_camera_capture");
+            if (!dir.exists()) {
+                //noinspection ResultOfMethodCallIgnored
+                dir.mkdirs();
+            }
+            String stamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
+            String fileName = isVideo ? ("VID_" + stamp + ".mp4") : ("IMG_" + stamp + ".jpg");
+            File outFile = new File(dir, fileName);
+            pendingNativeCameraOutputFile = outFile;
+            Uri fileUri = FileProvider.getUriForFile(
+                this,
+                getPackageName() + ".fileprovider",
+                outFile
+            );
+            Intent intent = new Intent(isVideo ? MediaStore.ACTION_VIDEO_CAPTURE : MediaStore.ACTION_IMAGE_CAPTURE);
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            if (isVideo) {
+                intent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 1);
+                intent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 45);
+            }
+            startActivityForResult(intent, REQ_NATIVE_CAMERA_CAPTURE);
+        } catch (ActivityNotFoundException e) {
+            notifyJsNativeCameraError("Aplikasi kamera tidak ditemukan di perangkat.");
+        } catch (Exception e) {
+            notifyJsNativeCameraError("Gagal membuka kamera perangkat: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQ_NATIVE_CAMERA_PERMISSION) {
+            boolean hasCamera = ContextCompat.checkSelfPermission(
+                this, Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED;
+            if (hasCamera) {
+                startDirectNativeCameraIntent(pendingNativeCameraMode);
+            } else {
+                notifyJsNativeCameraError("Izin kamera ditolak oleh pengguna.");
+            }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQ_NATIVE_CAMERA_CAPTURE) return;
+        if (resultCode != Activity.RESULT_OK) {
+            evaluateJsCameraCallback("window.__onNativeCameraMediaCancelled && window.__onNativeCameraMediaCancelled();");
+            return;
+        }
+        final boolean isVideo = "video".equalsIgnoreCase(pendingNativeCameraMode);
+        final File capturedFile = pendingNativeCameraOutputFile;
+        final Uri dataUri = data != null ? data.getData() : null;
+        new Thread(() -> {
+            try {
+                File targetFile = capturedFile;
+                byte[] bytes = null;
+                if (targetFile != null && targetFile.exists() && targetFile.length() > 0) {
+                    bytes = readFileBytesBounded(targetFile, 24 * 1024 * 1024);
+                } else if (dataUri != null) {
+                    try (java.io.InputStream in = getContentResolver().openInputStream(dataUri)) {
+                        if (in != null) {
+                            bytes = readStreamBytesBounded(in, 24 * 1024 * 1024);
+                            if (targetFile != null && bytes != null) {
+                                try (java.io.FileOutputStream fos = new java.io.FileOutputStream(targetFile)) {
+                                    fos.write(bytes);
+                                }
+                            }
+                        }
+                    }
+                }
+                if (bytes == null || bytes.length == 0) {
+                    notifyJsNativeCameraError("File hasil kamera kosong atau terlalu besar.");
+                    return;
+                }
+                String fileName = targetFile != null ? targetFile.getName() : (isVideo ? "video_chat.mp4" : "foto_chat.jpg");
+                String mimeType = isVideo ? "video/mp4" : "image/jpeg";
+                String kind = isVideo ? "video" : "image";
+                if (bytes.length <= 3 * 1024 * 1024 || targetFile == null) {
+                    String b64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP);
+                    String dataUrl = "data:" + mimeType + ";base64," + b64;
+                    String script = "window.__onNativeCameraMediaCaptured && window.__onNativeCameraMediaCaptured(" +
+                        JSONObject.quote(dataUrl) + ", " +
+                        JSONObject.quote(fileName) + ", " +
+                        JSONObject.quote(mimeType) + ", " +
+                        JSONObject.quote(kind) + ");";
+                    evaluateJsCameraCallback(script);
+                } else {
+                    String absPath = targetFile.getAbsolutePath();
+                    String capUrl = "/_capacitor_file_" + absPath;
+                    String script = "window.__onNativeCameraMediaCaptured && window.__onNativeCameraMediaCaptured(" +
+                        JSONObject.quote(capUrl) + ", " +
+                        JSONObject.quote(fileName) + ", " +
+                        JSONObject.quote(mimeType) + ", " +
+                        JSONObject.quote(kind) + ");";
+                    evaluateJsCameraCallback(script);
+                }
+            } catch (Exception e) {
+                notifyJsNativeCameraError("Gagal memproses hasil kamera: " + e.getMessage());
+            }
+        }).start();
+    }
+
+    private byte[] readFileBytesBounded(File file, int maxBytes) throws IOException {
+        if (file == null || !file.exists() || file.length() > maxBytes) return null;
+        try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
+            return readStreamBytesBounded(fis, maxBytes);
+        }
+    }
+
+    private byte[] readStreamBytesBounded(java.io.InputStream in, int maxBytes) throws IOException {
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        byte[] buf = new byte[16384];
+        int total = 0;
+        int n;
+        while ((n = in.read(buf)) != -1) {
+            total += n;
+            if (total > maxBytes) return null;
+            baos.write(buf, 0, n);
+        }
+        return baos.toByteArray();
+    }
+
+    private void notifyJsNativeCameraError(String msg) {
+        evaluateJsCameraCallback(
+            "window.__onNativeCameraMediaError && window.__onNativeCameraMediaError(" + JSONObject.quote(msg != null ? msg : "Kamera gagal dibuka.") + ");"
+        );
+    }
+
+    private void evaluateJsCameraCallback(final String js) {
+        runOnUiThread(() -> {
+            try {
+                if (this.bridge != null && this.bridge.getWebView() != null) {
+                    this.bridge.getWebView().evaluateJavascript(js, null);
+                }
+            } catch (Exception ignored) {}
+        });
     }
 }
